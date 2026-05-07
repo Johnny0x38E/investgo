@@ -17,17 +17,6 @@ type cachedSnapshot struct {
 	snapshot core.StateSnapshot
 }
 
-// quoteRefreshTTL returns the TTL used when caching a quote-refresh result.
-// It delegates to derivedCacheTTLLocked so that all data caches (watchlist
-// quotes, hot list rankings, portfolio overview) are controlled by the single
-// unified CacheTTLSeconds setting. Auto-refresh always forces a live fetch
-// and is not subject to this TTL.
-func (s *Store) quoteRefreshTTL() time.Duration {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.derivedCacheTTLLocked()
-}
-
 func (s *Store) quoteRefreshTTLLocked() time.Duration {
 	return s.derivedCacheTTLLocked()
 }

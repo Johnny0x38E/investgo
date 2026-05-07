@@ -360,17 +360,6 @@ func overviewHistoryIntervalFor(firstBuy time.Time) core.HistoryInterval {
 	}
 }
 
-func enumerateTrendDays(start, end time.Time) []time.Time {
-	if end.Before(start) {
-		return nil
-	}
-	dates := make([]time.Time, 0, int(end.Sub(start).Hours()/24)+1)
-	for day := start; !day.After(end); day = day.AddDate(0, 0, 1) {
-		dates = append(dates, day)
-	}
-	return dates
-}
-
 func collectTrendDates(start time.Time, seeds []overviewTrendSeed) []time.Time {
 	set := make(map[time.Time]struct{})
 	for _, seed := range seeds {

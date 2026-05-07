@@ -387,17 +387,6 @@ func (p *EastMoneyQuoteProvider) fetchDiffBatch(ctx context.Context, secids []st
 	return parsed.Data.Diff, nil
 }
 
-// resolveEastMoneySecID converts a standard target to the secid required by the EastMoney API (returns the first match).
-// Note: US stocks default to 105 (NASDAQ), but may actually be on 106 (NYSE) or 107 (NYSE Arca).
-// For batch quote requests, prefer resolveAllEastMoneySecIDs to cover all US exchanges.
-func resolveEastMoneySecID(target core.QuoteTarget) (string, error) {
-	ids, err := ResolveAllEastMoneySecIDs(target)
-	if err != nil {
-		return "", err
-	}
-	return ids[0], nil
-}
-
 // ResolveAllEastMoneySecIDs converts a standard target to all possible secids required by the EastMoney API.
 // For US stocks, since the same ticker may list on NASDAQ (105), NYSE (106), or NYSE Arca (107),
 // all three variants are returned to ensure the correct exchange is hit.

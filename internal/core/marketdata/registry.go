@@ -21,31 +21,9 @@ type DataSource struct {
 	history core.HistoryProvider
 }
 
-// ID returns the unique identifier of this data source (e.g. "yahoo", "eastmoney").
-func (ds *DataSource) ID() string { return ds.id }
-
-// DisplayName returns the human-readable provider name.
-func (ds *DataSource) DisplayName() string { return ds.name }
-
-// Description returns a short description suitable for the settings UI.
-func (ds *DataSource) Description() string { return ds.desc }
-
-// SupportedMarkets returns the list of market identifiers this source covers.
-func (ds *DataSource) SupportedMarkets() []string { return ds.markets }
-
 // QuoteProvider returns the real-time quote provider, or nil if this source
 // does not support live quotes.
 func (ds *DataSource) QuoteProvider() core.QuoteProvider { return ds.quote }
-
-// HistoryProvider returns the historical chart provider, or nil if this source
-// does not support historical data.
-func (ds *DataSource) HistoryProvider() core.HistoryProvider { return ds.history }
-
-// HasQuote reports whether this source supports real-time quotes.
-func (ds *DataSource) HasQuote() bool { return ds.quote != nil }
-
-// HasHistory reports whether this source supports historical chart data.
-func (ds *DataSource) HasHistory() bool { return ds.history != nil }
 
 // Registry is the central registry of all market data sources.
 //
@@ -56,20 +34,6 @@ func (ds *DataSource) HasHistory() bool { return ds.history != nil }
 type Registry struct {
 	sources map[string]*DataSource
 	order   []string // preserves registration order for UI display
-}
-
-// NewDataSource creates a DataSource for registration in the Registry.
-// This constructor is the only way to create a DataSource from outside the
-// marketdata package, since all DataSource fields are unexported.
-func NewDataSource(id, name, desc string, markets []string, quote core.QuoteProvider, history core.HistoryProvider) *DataSource {
-	return &DataSource{
-		id:      id,
-		name:    name,
-		desc:    desc,
-		markets: markets,
-		quote:   quote,
-		history: history,
-	}
 }
 
 // NewRegistry creates an empty Registry.
@@ -88,37 +52,12 @@ func (r *Registry) Register(ds *DataSource) {
 	r.sources[ds.id] = ds
 }
 
-// Source returns the DataSource for the given ID, or nil if not registered.
-func (r *Registry) Source(id string) *DataSource {
-	return r.sources[id]
-}
-
 // QuoteProvider returns the QuoteProvider for the given source ID, or nil.
 func (r *Registry) QuoteProvider(id string) core.QuoteProvider {
 	if ds := r.sources[id]; ds != nil {
 		return ds.quote
 	}
 	return nil
-}
-
-// HistoryProvider returns the HistoryProvider for the given source ID, or nil.
-func (r *Registry) HistoryProvider(id string) core.HistoryProvider {
-	if ds := r.sources[id]; ds != nil {
-		return ds.history
-	}
-	return nil
-}
-
-// HasQuote reports whether the given source ID is registered and supports quotes.
-func (r *Registry) HasQuote(id string) bool {
-	ds := r.sources[id]
-	return ds != nil && ds.quote != nil
-}
-
-// HasHistory reports whether the given source ID is registered and supports history.
-func (r *Registry) HasHistory(id string) bool {
-	ds := r.sources[id]
-	return ds != nil && ds.history != nil
 }
 
 // QuoteProviders returns a map of all registered QuoteProviders keyed by
@@ -171,11 +110,6 @@ func (r *Registry) NewHistoryRouter(settings func() core.AppSettings) core.Histo
 		settings = func() core.AppSettings { return core.AppSettings{} }
 	}
 	return NewHistoryRouter(r.HistoryProviders(), settings)
-}
-
-// IDs returns the ordered list of all registered source IDs.
-func (r *Registry) IDs() []string {
-	return append([]string(nil), r.order...)
 }
 
 // DefaultRegistry constructs the standard registry with all known market data
