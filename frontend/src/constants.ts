@@ -1,5 +1,17 @@
 import { translate } from "./i18n";
-import type { AlertCondition, AppSettings, ColorTheme, HotCategory, HotMarketGroup, HotSort, HistoryInterval, MarketType, ModuleTab, OptionItem, SettingsTab } from "./types";
+import type {
+    AlertCondition,
+    AppSettings,
+    ColorTheme,
+    HotCategory,
+    HotMarketGroup,
+    HotSort,
+    HistoryInterval,
+    MarketType,
+    ModuleTab,
+    OptionItem,
+    SettingsTab,
+} from "./types";
 
 export const projectMeta = {
     repositoryUrl: "https://github.com/Johnny0x38E/InvestGo",
@@ -43,12 +55,12 @@ export function getMarketOptions(): OptionItem<MarketType>[] {
     // Sub-markets (CN-GEM, CN-STAR, CN-BJ, HK-GEM) are handled by the backend
     // automatically via symbol-prefix inference and are not exposed as choices.
     return [
-        { label: translate("options.market.CN-A"),     value: "CN-A" },
-        { label: translate("options.market.CN-ETF"),   value: "CN-ETF" },
-        { label: translate("options.market.HK-MAIN"),  value: "HK-MAIN" },
-        { label: translate("options.market.HK-ETF"),   value: "HK-ETF" },
+        { label: translate("options.market.CN-A"), value: "CN-A" },
+        { label: translate("options.market.CN-ETF"), value: "CN-ETF" },
+        { label: translate("options.market.HK-MAIN"), value: "HK-MAIN" },
+        { label: translate("options.market.HK-ETF"), value: "HK-ETF" },
         { label: translate("options.market.US-STOCK"), value: "US-STOCK" },
-        { label: translate("options.market.US-ETF"),   value: "US-ETF" },
+        { label: translate("options.market.US-ETF"), value: "US-ETF" },
     ];
 }
 
@@ -88,13 +100,13 @@ export function getColorThemeOptions(): OptionItem<AppSettings["colorTheme"]>[] 
 
 /** Representative accent swatch for each color theme (always light-mode tones for visibility). */
 export const COLOR_THEME_SWATCHES: Record<ColorTheme, string> = {
-    blue:     "#355f96",
+    blue: "#355f96",
     graphite: "#627588",
-    forest:   "#2f7d69",
-    sunset:   "#c36f37",
-    rose:     "#b84c6e",
-    violet:   "#6b4fc8",
-    amber:    "#a87928",
+    forest: "#2f7d69",
+    sunset: "#c36f37",
+    rose: "#b84c6e",
+    violet: "#6b4fc8",
+    amber: "#a87928",
 };
 
 export function getAmountDisplayOptions(): OptionItem<AppSettings["amountDisplay"]>[] {

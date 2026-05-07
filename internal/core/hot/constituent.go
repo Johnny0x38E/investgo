@@ -1,8 +1,8 @@
 package hot
 
 import (
-	"investgo/internal/core/provider"
 	"investgo/internal/core"
+	"investgo/internal/core/provider"
 )
 
 // hotConstituents stores the maintained US category membership used by hot-list fallback classification.

@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"investgo/internal/logger"
-	"investgo/internal/core/hot"
 	"investgo/internal/core"
+	"investgo/internal/core/hot"
+	"investgo/internal/logger"
 )
 
 // handleOverview returns the backend-computed analytics payload for the overview module.

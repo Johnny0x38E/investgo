@@ -508,7 +508,6 @@ func (p *EastMoneyChartProvider) fetchWithSecID(
 	spec eastMoneyHistorySpec,
 	secid string,
 ) (core.HistorySeries, error) {
-
 	params := url.Values{}
 	params.Set("secid", secid)
 	params.Set("ut", "bd1d9ddb04089700cf9c27f6f7426281")

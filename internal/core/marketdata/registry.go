@@ -3,8 +3,8 @@ package marketdata
 import (
 	"net/http"
 
-	"investgo/internal/core/provider"
 	"investgo/internal/core"
+	"investgo/internal/core/provider"
 )
 
 // DataSource bundles the quote and history capabilities of a single market data

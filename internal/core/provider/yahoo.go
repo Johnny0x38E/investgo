@@ -35,13 +35,7 @@ type yahooChartResponse struct {
 			} `json:"meta"`
 			Timestamp  []int64 `json:"timestamp"`
 			Indicators struct {
-				Quote []struct {
-					Open   []*float64 `json:"open"`
-					High   []*float64 `json:"high"`
-					Low    []*float64 `json:"low"`
-					Close  []*float64 `json:"close"`
-					Volume []*float64 `json:"volume"`
-				} `json:"quote"`
+				Quote []yahooQuoteIndicators `json:"quote"`
 			} `json:"indicators"`
 		} `json:"result"`
 		Error *struct {
@@ -50,8 +44,18 @@ type yahooChartResponse struct {
 	} `json:"chart"`
 }
 
-var yahooCookieJarOnce sync.Once
-var yahooCookieJar http.CookieJar
+type yahooQuoteIndicators struct {
+	Open   []*float64 `json:"open"`
+	High   []*float64 `json:"high"`
+	Low    []*float64 `json:"low"`
+	Close  []*float64 `json:"close"`
+	Volume []*float64 `json:"volume"`
+}
+
+var (
+	yahooCookieJarOnce sync.Once
+	yahooCookieJar     http.CookieJar
+)
 
 func getYahooCookieJar() http.CookieJar {
 	yahooCookieJarOnce.Do(func() {
@@ -417,42 +421,29 @@ func historyQuerySpecFor(interval core.HistoryInterval) (historyQuerySpec, error
 
 // buildHistoryPoints constructs a unified list of historical price points from raw Yahoo Finance data,
 // automatically filtering out invalid entries.
-func buildHistoryPoints(timestamps []int64, quote struct {
-	Open   []*float64 `json:"open"`
-	High   []*float64 `json:"high"`
-	Low    []*float64 `json:"low"`
-	Close  []*float64 `json:"close"`
-	Volume []*float64 `json:"volume"`
-}) []core.HistoryPoint {
-	limit := len(timestamps)
-	limit = MinInt(limit, len(quote.Open))
-	limit = MinInt(limit, len(quote.High))
-	limit = MinInt(limit, len(quote.Low))
-	limit = MinInt(limit, len(quote.Close))
+func buildHistoryPoints(timestamps []int64, quote yahooQuoteIndicators) []core.HistoryPoint {
+	limit := min(len(timestamps), len(quote.Open), len(quote.High), len(quote.Low), len(quote.Close))
 	if len(quote.Volume) > 0 {
-		limit = MinInt(limit, len(quote.Volume))
+		limit = min(limit, len(quote.Volume))
 	}
 
 	points := make([]core.HistoryPoint, 0, limit)
-	for index := 0; index < limit; index++ {
-		open := derefFloat(quote.Open[index])
-		high := derefFloat(quote.High[index])
-		low := derefFloat(quote.Low[index])
-		closePrice := derefFloat(quote.Close[index])
+	for i := 0; i < limit; i++ {
+		closePrice := deref(quote.Close[i])
 		if closePrice <= 0 {
 			continue
 		}
 
 		volume := 0.0
-		if len(quote.Volume) > index {
-			volume = derefFloat(quote.Volume[index])
+		if i < len(quote.Volume) {
+			volume = deref(quote.Volume[i])
 		}
 
 		points = append(points, core.HistoryPoint{
-			Timestamp: time.Unix(timestamps[index], 0),
-			Open:      open,
-			High:      high,
-			Low:       low,
+			Timestamp: time.Unix(timestamps[i], 0),
+			Open:      deref(quote.Open[i]),
+			High:      deref(quote.High[i]),
+			Low:       deref(quote.Low[i]),
 			Close:     closePrice,
 			Volume:    volume,
 		})
@@ -461,9 +452,10 @@ func buildHistoryPoints(timestamps []int64, quote struct {
 	return points
 }
 
-func derefFloat(value *float64) float64 {
-	if value == nil {
-		return 0
+func deref[T any](p *T) T {
+	if p == nil {
+		var zero T
+		return zero
 	}
-	return *value
+	return *p
 }

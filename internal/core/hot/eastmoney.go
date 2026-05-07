@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"investgo/internal/core/provider"
 	"investgo/internal/core"
 	"investgo/internal/core/endpoint"
+	"investgo/internal/core/provider"
 )
 
 // eastMoneySuggestResponse models the JSON envelope returned by the EastMoney suggest API.

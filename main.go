@@ -21,9 +21,11 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
-var defaultTerminalLogging = "0"
-var defaultDevToolsBuild = "0"
-var appVersion = "dev"
+var (
+	defaultTerminalLogging = "0"
+	defaultDevToolsBuild   = "0"
+	appVersion             = "dev"
+)
 
 // Embed frontend build assets for Wails to serve as static resources at runtime.
 //

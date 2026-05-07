@@ -220,7 +220,7 @@ const messages: Record<SupportedLocale, TranslationTree> = {
             historyRange: {
                 "1h": "1小时",
                 "1d": "1天",
-                "1w": "7天",
+                "1w": "1周",
                 "1mo": "1月",
                 "1y": "1年",
                 "3y": "3年",
@@ -766,12 +766,12 @@ const messages: Record<SupportedLocale, TranslationTree> = {
         },
         options: {
             historyRange: {
-                "1h": "1h",
-                "1d": "1d",
+                "1h": "1H",
+                "1d": "1D",
                 "1w": "1W",
-                "1mo": "1mo",
-                "1y": "1y",
-                "3y": "3y",
+                "1mo": "1Mo",
+                "1y": "1Y",
+                "3y": "3Y",
                 all: "All",
                 fallback: "Range",
             },
