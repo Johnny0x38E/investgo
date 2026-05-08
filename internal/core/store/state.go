@@ -2,6 +2,7 @@ package store
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -289,12 +290,7 @@ func (s *Store) quoteSourceSupportsMarketOption(option core.QuoteSourceOption, m
 	if len(option.SupportedMarkets) == 0 {
 		return true
 	}
-	for _, candidate := range option.SupportedMarkets {
-		if candidate == market {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(option.SupportedMarkets, market)
 }
 
 // activeQuoteProviderLocked returns the quote provider that should be effective for the given market.

@@ -79,7 +79,13 @@ type eastMoneyHotDiff struct {
 }
 
 // listEastMoney calls the EastMoney clist API, applicable to CN-A and HK categories.
-func (s *HotService) listEastMoney(ctx context.Context, category core.HotCategory, sortBy core.HotSort, page, pageSize int) (core.HotListResponse, error) {
+func (s *HotService) listEastMoney(
+	ctx context.Context,
+	category core.HotCategory,
+	sortBy core.HotSort,
+	page int,
+	pageSize int,
+) (core.HotListResponse, error) {
 	fs, market, currency := resolveEastMoneyHotFilter(category)
 	if fs == "" {
 		return core.HotListResponse{}, fmt.Errorf("EastMoney hot category is unsupported: %s", category)
@@ -224,7 +230,12 @@ func normaliseEastMoneyCode(code string, marketID int) string {
 
 // fetchEastMoneySuggest calls the EastMoney suggest API to search stocks by keyword (name or code).
 // Returns up to the requested number of matching items across all markets.
-func fetchEastMoneySuggest(ctx context.Context, client *http.Client, keyword string, count int) ([]eastMoneySuggestItem, error) {
+func fetchEastMoneySuggest(
+	ctx context.Context,
+	client *http.Client,
+	keyword string,
+	count int,
+) ([]eastMoneySuggestItem, error) {
 	if client == nil {
 		client = &http.Client{}
 	}

@@ -124,7 +124,12 @@ func fetchYahooSearch(ctx context.Context, client *http.Client, keyword string) 
 
 // fetchYahooSearchFromHost fetches search results from the specified Yahoo Search API host
 // and parses them into the yahooSearchResponse struct.
-func fetchYahooSearchFromHost(ctx context.Context, client *http.Client, host string, params url.Values) (yahooSearchResponse, error) {
+func fetchYahooSearchFromHost(
+	ctx context.Context,
+	client *http.Client,
+	host string,
+	params url.Values,
+) (yahooSearchResponse, error) {
 	// Copy params to avoid mutating the shared slice across concurrent calls.
 	query := make(url.Values, len(params))
 	for key, values := range params {

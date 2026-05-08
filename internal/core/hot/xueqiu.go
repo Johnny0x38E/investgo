@@ -38,7 +38,13 @@ type xueqiuScreenerResponse struct {
 
 // listXueqiu fetches a page of hot-list items from the Xueqiu screener API.
 // It supports the HK and CN-A categories; other categories return an error.
-func (s *HotService) listXueqiu(ctx context.Context, category core.HotCategory, sortBy core.HotSort, page, pageSize int) (core.HotListResponse, error) {
+func (s *HotService) listXueqiu(
+	ctx context.Context,
+	category core.HotCategory,
+	sortBy core.HotSort,
+	page int,
+	pageSize int,
+) (core.HotListResponse, error) {
 	market, typ, mkt, currency, err := resolveXueqiuMarket(category)
 	if err != nil {
 		return core.HotListResponse{}, err
@@ -144,7 +150,13 @@ func resolveXueqiuSort(sortBy core.HotSort) (orderBy, order string) {
 
 // resolveXueqiuMarket maps a HotCategory to the Xueqiu market/type query
 // parameters and the display market string and currency used in HotItem.
-func resolveXueqiuMarket(category core.HotCategory) (market, typ string, mkt string, currency string, err error) {
+func resolveXueqiuMarket(category core.HotCategory) (
+	market string,
+	typ string,
+	mkt string,
+	currency string,
+	err error,
+) {
 	switch category {
 	case core.HotCategoryHK:
 		return "HK", "hk", "HK-MAIN", "HKD", nil

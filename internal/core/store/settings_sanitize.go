@@ -9,7 +9,12 @@ import (
 )
 
 // sanitiseSettings merges user input with current configuration and performs unified validation.
-func sanitiseSettings(input core.AppSettings, current core.AppSettings, quoteProviders map[string]core.QuoteProvider, quoteSourceOptions []core.QuoteSourceOption) (core.AppSettings, error) {
+func sanitiseSettings(
+	input core.AppSettings,
+	current core.AppSettings,
+	quoteProviders map[string]core.QuoteProvider,
+	quoteSourceOptions []core.QuoteSourceOption,
+) (core.AppSettings, error) {
 	settings := current
 	if input.HotCacheTTLSeconds > 0 {
 		settings.HotCacheTTLSeconds = input.HotCacheTTLSeconds
@@ -183,7 +188,12 @@ func sanitiseSettings(input core.AppSettings, current core.AppSettings, quotePro
 }
 
 // normaliseQuoteSourceIDForSettings determines the final quote source ID to use based on user input, market type, and available quote source list.
-func normaliseQuoteSourceIDForSettings(sourceID, market string, providers map[string]core.QuoteProvider, options []core.QuoteSourceOption) string {
+func normaliseQuoteSourceIDForSettings(
+	sourceID string,
+	market string,
+	providers map[string]core.QuoteProvider,
+	options []core.QuoteSourceOption,
+) string {
 	sourceID = strings.ToLower(strings.TrimSpace(sourceID))
 	if sourceID != "" {
 		if _, ok := providers[sourceID]; ok && quoteSourceSupportsMarketForSettings(sourceID, market, options) {

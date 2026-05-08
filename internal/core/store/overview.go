@@ -272,7 +272,12 @@ func (c overviewCalculator) loadTrendSeeds(ctx context.Context, candidates []ove
 	return seeds, problems
 }
 
-func (c overviewCalculator) buildTrendValues(item core.WatchlistItem, dates []time.Time, history core.HistorySeries, hasPosition bool) []float64 {
+func (c overviewCalculator) buildTrendValues(
+	item core.WatchlistItem,
+	dates []time.Time,
+	history core.HistorySeries,
+	hasPosition bool,
+) []float64 {
 	historyPoints := append([]core.HistoryPoint(nil), history.Points...)
 	sort.Slice(historyPoints, func(i, j int) bool {
 		return historyPoints[i].Timestamp.Before(historyPoints[j].Timestamp)

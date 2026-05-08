@@ -42,7 +42,12 @@ type pinItemRequest struct {
 }
 
 // NewHandler returns the unified API handler.
-func NewHandler(store *store.Store, hot *hot.HotService, logs *logger.LogBook, proxyTransport *platform.ProxyTransport) *Handler {
+func NewHandler(
+	store *store.Store,
+	hot *hot.HotService,
+	logs *logger.LogBook,
+	proxyTransport *platform.ProxyTransport,
+) *Handler {
 	h := &Handler{
 		store:          store,
 		hot:            hot,
@@ -220,7 +225,17 @@ func localizeQuoteSourceOptions(locale string, options []core.QuoteSourceOption)
 }
 
 func localizeQuoteSourceSummary(locale, summary string) string {
-	replacements := []string{"EastMoney", "Yahoo Finance", "Sina Finance", "Xueqiu", "Tencent Finance", "Alpha Vantage", "Twelve Data", "Finnhub", "Polygon"}
+	replacements := []string{
+		"EastMoney",
+		"Yahoo Finance",
+		"Sina Finance",
+		"Xueqiu",
+		"Tencent Finance",
+		"Alpha Vantage",
+		"Twelve Data",
+		"Finnhub",
+		"Polygon",
+	}
 	for _, name := range replacements {
 		summary = strings.ReplaceAll(summary, name, localizeQuoteSourceName(locale, name))
 	}

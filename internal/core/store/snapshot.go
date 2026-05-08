@@ -75,7 +75,12 @@ func (s *Store) snapshotLocked() core.StateSnapshot {
 }
 
 // buildDashboard builds dashboard summary data based on items, alerts, and FX rate information.
-func buildDashboard(items []core.WatchlistItem, alerts []core.AlertRule, fx *fx.FxRates, displayCurrency string) core.DashboardSummary {
+func buildDashboard(
+	items []core.WatchlistItem,
+	alerts []core.AlertRule,
+	fx *fx.FxRates,
+	displayCurrency string,
+) core.DashboardSummary {
 	var summary core.DashboardSummary
 	summary.ItemCount = len(items)
 

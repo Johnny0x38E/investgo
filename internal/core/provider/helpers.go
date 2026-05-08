@@ -35,7 +35,16 @@ func CollectQuoteTargets(items []core.WatchlistItem) (map[string]core.QuoteTarge
 }
 
 // BuildQuote constructs a unified Quote object from the key price fields.
-func BuildQuote(name string, current, previous, open, high, low float64, updatedAt time.Time, source string) core.Quote {
+func BuildQuote(
+	name string,
+	current float64,
+	previous float64,
+	open float64,
+	high float64,
+	low float64,
+	updatedAt time.Time,
+	source string,
+) core.Quote {
 	change := 0.0
 	changePercent := 0.0
 	if previous > 0 {
@@ -120,7 +129,13 @@ func ParseTimestamp(raw string) time.Time {
 
 // FetchTextWithHeaders makes a GET request with custom headers and returns the response text.
 // Optionally decodes GB18030-encoded responses.
-func FetchTextWithHeaders(ctx context.Context, client *http.Client, requestURL string, headers map[string]string, decodeGB18030 bool) (string, error) {
+func FetchTextWithHeaders(
+	ctx context.Context,
+	client *http.Client,
+	requestURL string,
+	headers map[string]string,
+	decodeGB18030 bool,
+) (string, error) {
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, requestURL, nil)
 	if err != nil {
 		return "", err

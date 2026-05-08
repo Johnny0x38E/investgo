@@ -13,7 +13,12 @@ import (
 // overlaying the quote data on the existing hot items.
 // If the items already use the configured source, or the source is the default "eastmoney",
 // the items are returned as-is without an additional network call.
-func (s *HotService) applyConfiguredQuotes(ctx context.Context, category core.HotCategory, items []core.HotItem, options HotListOptions) ([]core.HotItem, error) {
+func (s *HotService) applyConfiguredQuotes(
+	ctx context.Context,
+	category core.HotCategory,
+	items []core.HotItem,
+	options HotListOptions,
+) ([]core.HotItem, error) {
 	sourceID := resolveHotQuoteSource(category, options)
 
 	// EastMoney is the default membership source — no overlay needed.

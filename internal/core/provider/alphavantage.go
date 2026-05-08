@@ -130,7 +130,14 @@ func (p *AlphaVantageHistoryProvider) Fetch(ctx context.Context, item core.Watch
 	return series, nil
 }
 
-func fetchAlphaVantageQuote(ctx context.Context, client *http.Client, symbol, fallbackName, fallbackCurrency, apiKey string) (core.Quote, error) {
+func fetchAlphaVantageQuote(
+	ctx context.Context,
+	client *http.Client,
+	symbol string,
+	fallbackName string,
+	fallbackCurrency string,
+	apiKey string,
+) (core.Quote, error) {
 	params := url.Values{}
 	params.Set("function", "GLOBAL_QUOTE")
 	params.Set("symbol", symbol)
@@ -188,7 +195,13 @@ func fetchAlphaVantageQuote(ctx context.Context, client *http.Client, symbol, fa
 	return quote, nil
 }
 
-func fetchAlphaVantageHistory(ctx context.Context, client *http.Client, symbol string, interval core.HistoryInterval, apiKey string) ([]core.HistoryPoint, string, error) {
+func fetchAlphaVantageHistory(
+	ctx context.Context,
+	client *http.Client,
+	symbol string,
+	interval core.HistoryInterval,
+	apiKey string,
+) ([]core.HistoryPoint, string, error) {
 	params := url.Values{}
 	params.Set("symbol", symbol)
 	params.Set("apikey", apiKey)

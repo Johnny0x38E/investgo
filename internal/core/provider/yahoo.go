@@ -117,7 +117,12 @@ func primeYahooSession(ctx context.Context, client *http.Client) error {
 }
 
 // fetchYahooChart polls multiple Yahoo Finance hosts for quote data, returning the first successful response or a combined error message.
-func fetchYahooChart(ctx context.Context, client *http.Client, symbol string, params url.Values) (yahooChartResponse, error) {
+func fetchYahooChart(
+	ctx context.Context,
+	client *http.Client,
+	symbol string,
+	params url.Values,
+) (yahooChartResponse, error) {
 	if client == nil {
 		client = &http.Client{Timeout: 10 * time.Second}
 	}
@@ -138,7 +143,13 @@ func fetchYahooChart(ctx context.Context, client *http.Client, symbol string, pa
 }
 
 // fetchYahooChartFromHost sends a request to the specified Yahoo Finance host, parses the response and handles possible errors.
-func fetchYahooChartFromHost(ctx context.Context, client *http.Client, host, symbol string, params url.Values) (yahooChartResponse, error) {
+func fetchYahooChartFromHost(
+	ctx context.Context,
+	client *http.Client,
+	host string,
+	symbol string,
+	params url.Values,
+) (yahooChartResponse, error) {
 	query := make(url.Values, len(params))
 	for key, values := range params {
 		query[key] = append([]string(nil), values...)

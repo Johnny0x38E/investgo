@@ -164,7 +164,14 @@ func (p *PolygonHistoryProvider) Fetch(ctx context.Context, item core.WatchlistI
 	return series, nil
 }
 
-func fetchPolygonQuote(ctx context.Context, client *http.Client, symbol, fallbackName, fallbackCurrency, apiKey string) (core.Quote, error) {
+func fetchPolygonQuote(
+	ctx context.Context,
+	client *http.Client,
+	symbol string,
+	fallbackName string,
+	fallbackCurrency string,
+	apiKey string,
+) (core.Quote, error) {
 	params := url.Values{}
 	params.Set("apiKey", apiKey)
 	apiURL := endpoint.PolygonSnapshotAPI + "/" + url.PathEscape(symbol)
@@ -243,7 +250,13 @@ func fetchPolygonQuote(ctx context.Context, client *http.Client, symbol, fallbac
 	return quote, nil
 }
 
-func fetchPolygonHistory(ctx context.Context, client *http.Client, symbol string, interval core.HistoryInterval, apiKey string) ([]core.HistoryPoint, error) {
+func fetchPolygonHistory(
+	ctx context.Context,
+	client *http.Client,
+	symbol string,
+	interval core.HistoryInterval,
+	apiKey string,
+) ([]core.HistoryPoint, error) {
 	multiplier, resolution := polygonRangeConfig(interval)
 	params := url.Values{}
 	params.Set("adjusted", "true")

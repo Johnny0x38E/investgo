@@ -37,7 +37,6 @@ func (s *HotService) storeCachedResponse(key string, response core.HotListRespon
 	cached := cloneHotListResponse(response)
 	cached.Cached = false
 	cached.CacheExpiresAt = ptrTime(expiresAt)
-
 	expiresAt = s.responseCache.Set(key, cached, ttl)
 
 	return expiresAt
@@ -48,7 +47,14 @@ func hotSearchCacheKey(category core.HotCategory, sortBy core.HotSort, sourceID 
 	return string(category) + "|" + string(sortBy) + "|" + strings.TrimSpace(sourceID)
 }
 
-func hotResponseCacheKey(category core.HotCategory, sortBy core.HotSort, keyword string, page, pageSize int, options HotListOptions) string {
+func hotResponseCacheKey(
+	category core.HotCategory,
+	sortBy core.HotSort,
+	keyword string,
+	page int,
+	pageSize int,
+	options HotListOptions,
+) string {
 	return strings.Join([]string{
 		string(category),
 		string(sortBy),

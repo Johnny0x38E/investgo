@@ -29,7 +29,13 @@ type sinaHotItem struct {
 
 // listSina fetches a hot list page from Sina Finance.
 // Supports core.HotCategoryCNA and core.HotCategoryCNETF; other categories return an error.
-func (s *HotService) listSina(ctx context.Context, category core.HotCategory, sortBy core.HotSort, page, pageSize int) (core.HotListResponse, error) {
+func (s *HotService) listSina(
+	ctx context.Context,
+	category core.HotCategory,
+	sortBy core.HotSort,
+	page int,
+	pageSize int,
+) (core.HotListResponse, error) {
 	if category != core.HotCategoryCNA && category != core.HotCategoryCNETF {
 		return core.HotListResponse{}, fmt.Errorf("Sina hot category is unsupported: %s", category)
 	}

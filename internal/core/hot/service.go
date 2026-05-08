@@ -56,7 +56,15 @@ func NewHotService(client *http.Client, logger *slog.Logger, registry *marketdat
 }
 
 // List returns the hot list for the given category and sort order.
-func (s *HotService) List(ctx context.Context, category core.HotCategory, sortBy core.HotSort, keyword string, page, pageSize int, options HotListOptions) (core.HotListResponse, error) {
+func (s *HotService) List(
+	ctx context.Context,
+	category core.HotCategory,
+	sortBy core.HotSort,
+	keyword string,
+	page int,
+	pageSize int,
+	options HotListOptions,
+) (core.HotListResponse, error) {
 	category = normaliseHotCategory(category)
 	sortBy = normaliseHotSort(sortBy)
 	keyword = normaliseHotKeyword(keyword)
@@ -103,7 +111,15 @@ func (s *HotService) List(ctx context.Context, category core.HotCategory, sortBy
 // search filters the data pool by keyword. Each market uses a lightweight search approach:
 // CN/HK uses EastMoney suggest API, US equities use local seed filtering + Yahoo search,
 // US ETFs combine local pool + Yahoo search.
-func (s *HotService) search(ctx context.Context, category core.HotCategory, sortBy core.HotSort, keyword string, page, pageSize int, options HotListOptions) (core.HotListResponse, error) {
+func (s *HotService) search(
+	ctx context.Context,
+	category core.HotCategory,
+	sortBy core.HotSort,
+	keyword string,
+	page int,
+	pageSize int,
+	options HotListOptions,
+) (core.HotListResponse, error) {
 	if category == core.HotCategoryUSETF {
 		return s.searchUSETFs(ctx, sortBy, keyword, page, pageSize, options)
 	}
@@ -125,7 +141,14 @@ func (s *HotService) search(ctx context.Context, category core.HotCategory, sort
 // searchUSETFs handles US ETF search specially:
 // filter from the pool first, then call the Yahoo Finance search API for more matches,
 // merge and deduplicate, and fetch real-time quotes.
-func (s *HotService) searchUSETFs(ctx context.Context, sortBy core.HotSort, keyword string, page, pageSize int, options HotListOptions) (core.HotListResponse, error) {
+func (s *HotService) searchUSETFs(
+	ctx context.Context,
+	sortBy core.HotSort,
+	keyword string,
+	page int,
+	pageSize int,
+	options HotListOptions,
+) (core.HotListResponse, error) {
 	seeds := filterHotSeeds(normalizedUSHotSeeds(core.HotCategoryUSETF, hotConstituents[core.HotCategoryUSETF]), keyword)
 
 	remoteSeeds, err := s.searchYahooUSSeeds(ctx, keyword)
@@ -156,7 +179,15 @@ func (s *HotService) searchUSETFs(ctx context.Context, sortBy core.HotSort, keyw
 // It first filters the local seed pool by name/symbol, then calls Yahoo search for
 // broader coverage (e.g. matching by company name that may not be in the local seed names),
 // merges and deduplicates, then fetches quotes for the combined matches.
-func (s *HotService) searchUSStocks(ctx context.Context, category core.HotCategory, sortBy core.HotSort, keyword string, page, pageSize int, options HotListOptions) (core.HotListResponse, error) {
+func (s *HotService) searchUSStocks(
+	ctx context.Context,
+	category core.HotCategory,
+	sortBy core.HotSort,
+	keyword string,
+	page int,
+	pageSize int,
+	options HotListOptions,
+) (core.HotListResponse, error) {
 	pool := normalizedUSHotSeeds(category, hotConstituents[category])
 
 	// Filter seeds locally — no network I/O.
@@ -203,7 +234,15 @@ func (s *HotService) searchUSStocks(ctx context.Context, category core.HotCatego
 
 // searchCNHK handles keyword search for CN and HK categories using the EastMoney suggest API.
 // This replaces the old fetch-all-then-filter approach that would download thousands of items.
-func (s *HotService) searchCNHK(ctx context.Context, category core.HotCategory, sortBy core.HotSort, keyword string, page, pageSize int, options HotListOptions) (core.HotListResponse, error) {
+func (s *HotService) searchCNHK(
+	ctx context.Context,
+	category core.HotCategory,
+	sortBy core.HotSort,
+	keyword string,
+	page int,
+	pageSize int,
+	options HotListOptions,
+) (core.HotListResponse, error) {
 	// Call EastMoney suggest API — single lightweight request, returns only matches.
 	seeds := s.searchEastMoneySeeds(ctx, keyword, category)
 
@@ -254,7 +293,14 @@ func (s *HotService) searchCNHK(ctx context.Context, category core.HotCategory, 
 }
 
 // listFromPool returns paginated hot list results using the predefined data pool + real-time quotes.
-func (s *HotService) listFromPool(ctx context.Context, category core.HotCategory, sortBy core.HotSort, page, pageSize int, options HotListOptions) (core.HotListResponse, error) {
+func (s *HotService) listFromPool(
+	ctx context.Context,
+	category core.HotCategory,
+	sortBy core.HotSort,
+	page int,
+	pageSize int,
+	options HotListOptions,
+) (core.HotListResponse, error) {
 	items, err := s.loadPoolItems(ctx, category, sortBy, options)
 	if err != nil {
 		return core.HotListResponse{}, err
@@ -273,7 +319,14 @@ func (s *HotService) listFromPool(ctx context.Context, category core.HotCategory
 	}, nil
 }
 
-func (s *HotService) listConfiguredCategory(ctx context.Context, category core.HotCategory, sortBy core.HotSort, page, pageSize int, options HotListOptions) (core.HotListResponse, error) {
+func (s *HotService) listConfiguredCategory(
+	ctx context.Context,
+	category core.HotCategory,
+	sortBy core.HotSort,
+	page int,
+	pageSize int,
+	options HotListOptions,
+) (core.HotListResponse, error) {
 	sourceID := resolveHotQuoteSource(category, options)
 
 	if sourceID == "yahoo" {
@@ -287,7 +340,14 @@ func (s *HotService) listConfiguredCategory(ctx context.Context, category core.H
 	return s.listConfiguredCategoryWithOverlay(ctx, category, sortBy, page, pageSize, options)
 }
 
-func (s *HotService) listConfiguredCategoryWithOverlay(ctx context.Context, category core.HotCategory, sortBy core.HotSort, page, pageSize int, options HotListOptions) (core.HotListResponse, error) {
+func (s *HotService) listConfiguredCategoryWithOverlay(
+	ctx context.Context,
+	category core.HotCategory,
+	sortBy core.HotSort,
+	page int,
+	pageSize int,
+	options HotListOptions,
+) (core.HotListResponse, error) {
 	baseSource := membershipSourceForCategory(category)
 	if baseSource == "" {
 		return core.HotListResponse{}, fmt.Errorf("Hot quote source is unsupported: %s", resolveHotQuoteSource(category, options))
@@ -308,7 +368,14 @@ func (s *HotService) listConfiguredCategoryWithOverlay(ctx context.Context, cate
 	return response, nil
 }
 
-func (s *HotService) listCategoryBySource(ctx context.Context, sourceID string, category core.HotCategory, sortBy core.HotSort, page, pageSize int) (core.HotListResponse, error) {
+func (s *HotService) listCategoryBySource(
+	ctx context.Context,
+	sourceID string,
+	category core.HotCategory,
+	sortBy core.HotSort,
+	page int,
+	pageSize int,
+) (core.HotListResponse, error) {
 	switch sourceID {
 	case "eastmoney":
 		return s.listEastMoney(ctx, category, sortBy, page, pageSize)
@@ -322,7 +389,12 @@ func (s *HotService) listCategoryBySource(ctx context.Context, sourceID string, 
 }
 
 // loadPoolItems loads instruments from the predefined data pool and fetches real-time quotes.
-func (s *HotService) loadPoolItems(ctx context.Context, category core.HotCategory, sortBy core.HotSort, options HotListOptions) ([]core.HotItem, error) {
+func (s *HotService) loadPoolItems(
+	ctx context.Context,
+	category core.HotCategory,
+	sortBy core.HotSort,
+	options HotListOptions,
+) ([]core.HotItem, error) {
 	var pool []hotSeed
 	if category == core.HotCategoryHKETF {
 		pool = hkETFConstituents

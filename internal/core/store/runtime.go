@@ -203,7 +203,12 @@ func (s *Store) refreshQuotesForItems(ctx context.Context, items []core.Watchlis
 // ItemHistory queries historical price data for the specified item.
 // Routing to the appropriate data source is handled by the historyProvider (HistoryRouter),
 // which selects and sequences providers based on the item market and user settings.
-func (s *Store) ItemHistory(ctx context.Context, itemID string, interval core.HistoryInterval, force bool) (core.HistorySeries, error) {
+func (s *Store) ItemHistory(
+	ctx context.Context,
+	itemID string,
+	interval core.HistoryInterval,
+	force bool,
+) (core.HistorySeries, error) {
 	cacheKey := itemID + "|" + string(interval)
 	if !force {
 		if cached, expiresAt, ok := s.historyCache.Get(cacheKey); ok {
@@ -273,9 +278,11 @@ func (s *Store) OverviewAnalytics(ctx context.Context, force bool) (core.Overvie
 	// is already cached, which is the common case after the user loads the chart
 	// for any holding. Bypassing historyProvider.Fetch directly would circumvent
 	// the cache and issue redundant network requests on every price refresh.
-	calculator := newOverviewCalculator(s.fxRates, displayCurrency, func(ctx context.Context, item core.WatchlistItem, interval core.HistoryInterval) (core.HistorySeries, error) {
-		return s.ItemHistory(ctx, item.ID, interval, false)
-	})
+	calculator := newOverviewCalculator(
+		s.fxRates, displayCurrency,
+		func(ctx context.Context, item core.WatchlistItem, interval core.HistoryInterval) (core.HistorySeries, error) {
+			return s.ItemHistory(ctx, item.ID, interval, false)
+		})
 
 	analytics, err := calculator.Build(ctx, relevantItems)
 	if err != nil {

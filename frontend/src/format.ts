@@ -13,7 +13,10 @@ const currencySymbolMap: Record<string, string> = {
 // Formatter cache: keyed by a string describing the options
 const formatterCache = new Map<string, Intl.NumberFormat>();
 
-function getCachedFormatter(key: string, factory: () => Intl.NumberFormat): Intl.NumberFormat {
+function getCachedFormatter(
+    key: string,
+    factory: () => Intl.NumberFormat,
+): Intl.NumberFormat {
     let formatter = formatterCache.get(key);
     if (!formatter) {
         formatter = factory();
@@ -35,8 +38,15 @@ export function formatMoney(value: number, signed = false): string {
     const key = compact ? `money-compact-${locale}` : `money-full-${locale}`;
     const formatter = getCachedFormatter(key, () =>
         compact
-            ? new Intl.NumberFormat(locale, { notation: "compact", minimumFractionDigits: 0, maximumFractionDigits: 2 })
-            : new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            ? new Intl.NumberFormat(locale, {
+                  notation: "compact",
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 2,
+              })
+            : new Intl.NumberFormat(locale, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+              }),
     );
     const prefix = signed && amount > 0 ? "+" : "";
     return `${prefix}${formatter.format(amount)}`;
@@ -47,19 +57,31 @@ export function formatNumber(value: number, digits = 2): string {
     const key = `number-${locale}-${digits}`;
     const formatter = getCachedFormatter(
         key,
-        () => new Intl.NumberFormat(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits }),
+        () =>
+            new Intl.NumberFormat(locale, {
+                minimumFractionDigits: digits,
+                maximumFractionDigits: digits,
+            }),
     );
     return formatter.format(Number(value || 0));
 }
 
 // formatFlexNumber formats value with at least minDigits and at most maxDigits decimal places,
 // trimming unnecessary trailing zeros beyond minDigits.
-export function formatFlexNumber(value: number, minDigits: number, maxDigits: number): string {
+export function formatFlexNumber(
+    value: number,
+    minDigits: number,
+    maxDigits: number,
+): string {
     const locale = resolvedLocale();
     const key = `number-flex-${locale}-${minDigits}-${maxDigits}`;
     const formatter = getCachedFormatter(
         key,
-        () => new Intl.NumberFormat(locale, { minimumFractionDigits: minDigits, maximumFractionDigits: maxDigits }),
+        () =>
+            new Intl.NumberFormat(locale, {
+                minimumFractionDigits: minDigits,
+                maximumFractionDigits: maxDigits,
+            }),
     );
     return formatter.format(Number(value || 0));
 }
@@ -73,7 +95,11 @@ export function formatPercent(value: number): string {
 // formatUnitPrice formats a price/amount in the given currency.
 // Pass maxFractionDigits > 2 (e.g. 4) when the stored value may have more decimal places
 // that should be shown in full (e.g. cost-price, DCA buy-price).
-export function formatUnitPrice(value: number, currency: string, maxFractionDigits = 2): string {
+export function formatUnitPrice(
+    value: number,
+    currency: string,
+    maxFractionDigits = 2,
+): string {
     const numeric = formatFlexNumber(value, 2, maxFractionDigits);
     if (settings.currencyDisplay === "code") {
         return `${currency} ${numeric}`;
@@ -130,19 +156,20 @@ function isIntradayHistoryRange(interval: HistoryInterval): boolean {
 }
 
 // Format a chart data point into a time-axis label suitable for the given interval.
-export function formatHistoryTick(value: string, interval: HistoryInterval): string {
+export function formatHistoryTick(
+    value: string,
+    interval: HistoryInterval,
+): string {
     let options: Intl.DateTimeFormatOptions;
     if (isIntradayHistoryRange(interval)) {
         options = { hour12: false, hour: "2-digit", minute: "2-digit" };
-    } else if (interval === "1w" || interval === "1mo") {
-        options = { month: "2-digit", day: "2-digit" };
-    } else if (interval === "1y" || interval === "3y" || interval === "all") {
-        options = { year: "2-digit", month: "2-digit" };
     } else {
-        options = { month: "2-digit", day: "2-digit" };
+        options = { year: "numeric", month: "2-digit", day: "2-digit" };
     }
 
-    return new Intl.DateTimeFormat(resolvedLocale(), options).format(new Date(value));
+    return new Intl.DateTimeFormat(resolvedLocale(), options).format(
+        new Date(value),
+    );
 }
 
 // Return the localized display label for a market identifier.
@@ -153,7 +180,9 @@ export function formatMarket(market: string): string {
 }
 
 export function resolvedLocale(): string {
-    return settings.locale === "system" ? navigator.language || "zh-CN" : settings.locale;
+    return settings.locale === "system"
+        ? navigator.language || "zh-CN"
+        : settings.locale;
 }
 
 // Return a short localized label for the chart interval used in the summary area.

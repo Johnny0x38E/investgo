@@ -3,7 +3,15 @@ import { onMounted, reactive, ref } from "vue";
 
 import { formatDateTime } from "../format";
 import { useI18n } from "../i18n";
-import { closeWindow, isWindowMaximised, maximiseWindow, minimiseWindow, restoreWindow, startWindowDrag, toggleMaximiseWindow } from "../wails-runtime";
+import {
+    closeWindow,
+    isWindowMaximised,
+    maximiseWindow,
+    minimiseWindow,
+    restoreWindow,
+    startWindowDrag,
+    toggleMaximiseWindow,
+} from "../wails-runtime";
 import type { StatusTone } from "../types";
 
 defineProps<{
@@ -29,7 +37,11 @@ function isInteractiveTarget(target: EventTarget | null): boolean {
         return false;
     }
 
-    return Boolean(target.closest("button, a, input, textarea, select, [role='button'], [data-window-dblclick-ignore='true']"));
+    return Boolean(
+        target.closest(
+            "button, a, input, textarea, select, [role='button'], [data-window-dblclick-ignore='true']",
+        ),
+    );
 }
 
 function resetDragState(): void {
@@ -62,7 +74,11 @@ function handleBarMouseDown(event: MouseEvent): void {
 }
 
 function handleBarMouseMove(event: MouseEvent): void {
-    if (!dragState.active || dragState.dragging || isInteractiveTarget(event.target)) {
+    if (
+        !dragState.active ||
+        dragState.dragging ||
+        isInteractiveTarget(event.target)
+    ) {
         return;
     }
 
@@ -126,22 +142,63 @@ onMounted(() => {
 </script>
 
 <template>
-    <header class="window-bar" @mousedown="handleBarMouseDown" @mousemove="handleBarMouseMove" @mouseup="handleBarMouseUp" @mouseleave="handleBarMouseLeave" @dblclick="handleBarDoubleClick">
+    <header
+        class="window-bar"
+        @mousedown="handleBarMouseDown"
+        @mousemove="handleBarMouseMove"
+        @mouseup="handleBarMouseUp"
+        @mouseleave="handleBarMouseLeave"
+        @dblclick="handleBarDoubleClick"
+    >
         <div class="window-bar-spacer" aria-hidden="true"></div>
         <div class="window-tools">
             <div class="window-status" :data-tone="statusTone">
                 <span class="window-status-text">{{ statusText }}</span>
                 <span class="window-status-separator">·</span>
-                <span class="window-status-time">{{ t("app.recentRefresh", { time: formatDateTime(generatedAt) }) }}</span>
+                <span class="window-status-time">{{
+                    t("app.recentRefresh", {
+                        time: formatDateTime(generatedAt),
+                    })
+                }}</span>
             </div>
-            <div v-if="showWindowControls" class="window-controls" data-window-dblclick-ignore="true">
-                <button type="button" class="window-control-button" :aria-label="t('windowControls.minimise')" @click="handleMinimise">
+            <div v-if="showWindowControls" class="window-controls">
+                <button
+                    type="button"
+                    class="window-control-button"
+                    data-window-dblclick-ignore="true"
+                    :aria-label="t('windowControls.minimise')"
+                    @click="handleMinimise"
+                >
                     <i class="pi pi-minus" aria-hidden="true"></i>
                 </button>
-                <button type="button" class="window-control-button" :aria-label="maximised ? t('windowControls.restore') : t('windowControls.maximise')" @click="handleToggleMaximise">
-                    <i class="pi" :class="maximised ? 'pi-window-minimize' : 'pi-window-maximize'" aria-hidden="true"></i>
+                <button
+                    type="button"
+                    class="window-control-button"
+                    data-window-dblclick-ignore="true"
+                    :aria-label="
+                        maximised
+                            ? t('windowControls.restore')
+                            : t('windowControls.maximise')
+                    "
+                    @click="handleToggleMaximise"
+                >
+                    <i
+                        class="pi"
+                        :class="
+                            maximised
+                                ? 'pi-window-minimize'
+                                : 'pi-window-maximize'
+                        "
+                        aria-hidden="true"
+                    ></i>
                 </button>
-                <button type="button" class="window-control-button window-control-close" :aria-label="t('windowControls.close')" @click="handleClose">
+                <button
+                    type="button"
+                    class="window-control-button window-control-close"
+                    data-window-dblclick-ignore="true"
+                    :aria-label="t('windowControls.close')"
+                    @click="handleClose"
+                >
                     <i class="pi pi-times" aria-hidden="true"></i>
                 </button>
             </div>
@@ -165,6 +222,7 @@ onMounted(() => {
 .window-bar-spacer {
     flex: 1 1 auto;
     min-width: 0;
+    align-self: stretch;
 }
 
 .window-tools {

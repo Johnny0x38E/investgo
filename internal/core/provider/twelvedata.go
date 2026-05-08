@@ -157,7 +157,14 @@ func (p *TwelveDataHistoryProvider) Fetch(ctx context.Context, item core.Watchli
 	return series, nil
 }
 
-func fetchTwelveDataQuote(ctx context.Context, client *http.Client, symbol, fallbackName, fallbackCurrency, apiKey string) (core.Quote, error) {
+func fetchTwelveDataQuote(
+	ctx context.Context,
+	client *http.Client,
+	symbol string,
+	fallbackName string,
+	fallbackCurrency string,
+	apiKey string,
+) (core.Quote, error) {
 	params := url.Values{}
 	params.Set("symbol", symbol)
 	params.Set("apikey", apiKey)
@@ -205,7 +212,13 @@ func fetchTwelveDataQuote(ctx context.Context, client *http.Client, symbol, fall
 	return quote, nil
 }
 
-func fetchTwelveDataHistory(ctx context.Context, client *http.Client, symbol string, interval core.HistoryInterval, apiKey string) ([]core.HistoryPoint, string, error) {
+func fetchTwelveDataHistory(
+	ctx context.Context,
+	client *http.Client,
+	symbol string,
+	interval core.HistoryInterval,
+	apiKey string,
+) ([]core.HistoryPoint, string, error) {
 	params := url.Values{}
 	params.Set("symbol", symbol)
 	params.Set("apikey", apiKey)

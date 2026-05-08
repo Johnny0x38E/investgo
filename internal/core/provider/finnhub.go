@@ -141,7 +141,14 @@ func (p *FinnhubHistoryProvider) Fetch(ctx context.Context, item core.WatchlistI
 	return series, nil
 }
 
-func fetchFinnhubQuote(ctx context.Context, client *http.Client, symbol, fallbackName, fallbackCurrency, apiKey string) (core.Quote, error) {
+func fetchFinnhubQuote(
+	ctx context.Context,
+	client *http.Client,
+	symbol string,
+	fallbackName string,
+	fallbackCurrency string,
+	apiKey string,
+) (core.Quote, error) {
 	params := url.Values{}
 	params.Set("symbol", symbol)
 	params.Set("token", apiKey)
@@ -189,7 +196,13 @@ func fetchFinnhubQuote(ctx context.Context, client *http.Client, symbol, fallbac
 	return quote, nil
 }
 
-func fetchFinnhubHistory(ctx context.Context, client *http.Client, symbol string, interval core.HistoryInterval, apiKey string) ([]core.HistoryPoint, error) {
+func fetchFinnhubHistory(
+	ctx context.Context,
+	client *http.Client,
+	symbol string,
+	interval core.HistoryInterval,
+	apiKey string,
+) ([]core.HistoryPoint, error) {
 	now := time.Now()
 	from := now.Add(-HistoryTrimWindow(interval))
 	if interval == core.HistoryRangeAll {
