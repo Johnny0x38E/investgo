@@ -247,6 +247,7 @@ func (p *TencentHistoryProvider) fetchHistoryWithCode(
 
 	rows := selectTencentHistoryRows(payload, period, qfq)
 	points := parseTencentHistoryRows(rows)
+	points = TrimHistoryPoints(points, HistoryTrimWindow(interval))
 	if len(points) == 0 {
 		return core.HistorySeries{}, fmt.Errorf("Tencent history response is empty for %s", code)
 	}

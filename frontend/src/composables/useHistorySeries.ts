@@ -1,8 +1,21 @@
-import { computed, onBeforeUnmount, ref, watch, type ComputedRef, type Ref } from "vue";
+import {
+    computed,
+    onBeforeUnmount,
+    ref,
+    watch,
+    type ComputedRef,
+    type Ref,
+} from "vue";
 
 import { ApiAbortError, api } from "../api";
 import { translate } from "../i18n";
-import type { HistoryInterval, HistorySeries, ModuleKey, StatusTone, WatchlistItem } from "../types";
+import type {
+    HistoryInterval,
+    HistorySeries,
+    ModuleKey,
+    StatusTone,
+    WatchlistItem,
+} from "../types";
 
 type StatusReporter = (message: string, tone: StatusTone) => void;
 
@@ -13,14 +26,21 @@ interface CachedHistorySeries {
 }
 const HISTORY_CACHE_MAX_SIZE = 60; // max items x intervals
 
-export function useHistorySeries(items: Ref<WatchlistItem[]>, selectedItem: ComputedRef<WatchlistItem | null>, activeModule: Ref<ModuleKey>, setStatus: StatusReporter) {
+// The useHistorySeries composable manages the state and logic for fetching and caching historical price data for watchlist items,
+// including handling loading and error states, cache management, and request cancellation.
+export function useHistorySeries(
+    items: Ref<WatchlistItem[]>,
+    selectedItem: ComputedRef<WatchlistItem | null>,
+    activeModule: Ref<ModuleKey>,
+    setStatus: StatusReporter,
+) {
+    // The currently selected history interval, defaulting to "1d".
     const historyInterval = ref<HistoryInterval>("1d");
     const historySeries = ref<HistorySeries | null>(null);
     const historyLoading = ref(false);
     const historyError = ref("");
     const historyCache = new Map<string, CachedHistorySeries>();
     let inflightController: AbortController | null = null;
-
 
     // Cancel any in-flight history request.
     function cancelInflightHistory(resetLoading = false): void {
@@ -32,7 +52,10 @@ export function useHistorySeries(items: Ref<WatchlistItem[]>, selectedItem: Comp
     }
 
     // Load chart data for the current item and interval; forceRefresh bypasses the cache to fetch fresh data.
-    async function loadHistory(silent = false, forceRefresh = false): Promise<void> {
+    async function loadHistory(
+        silent = false,
+        forceRefresh = false,
+    ): Promise<void> {
         const item = selectedItem.value;
         if (!item) {
             cancelInflightHistory(true);
@@ -74,10 +97,13 @@ export function useHistorySeries(items: Ref<WatchlistItem[]>, selectedItem: Comp
             if (forceRefresh) {
                 params.set("force", "1");
             }
-            const series = await api<HistorySeries>(`/api/history?${params.toString()}`, {
-                signal: controller.signal,
-                timeoutMs: 12000,
-            });
+            const series = await api<HistorySeries>(
+                `/api/history?${params.toString()}`,
+                {
+                    signal: controller.signal,
+                    timeoutMs: 12000,
+                },
+            );
             // When the response arrives, the controller may have been replaced by a newer request; discard stale results.
             if (inflightController !== controller) {
                 return;
@@ -106,7 +132,10 @@ export function useHistorySeries(items: Ref<WatchlistItem[]>, selectedItem: Comp
             if (keepCurrentSeries) {
                 return;
             }
-            historyError.value = error instanceof Error ? error.message : translate("history.loadFailed");
+            historyError.value =
+                error instanceof Error
+                    ? error.message
+                    : translate("history.loadFailed");
             historySeries.value = null;
             setStatus(historyError.value, "error");
         } finally {
@@ -136,7 +165,12 @@ export function useHistorySeries(items: Ref<WatchlistItem[]>, selectedItem: Comp
     }
 
     watch(
-        () => [activeModule.value, selectedItem.value?.id ?? "", historyInterval.value] as const,
+        () =>
+            [
+                activeModule.value,
+                selectedItem.value?.id ?? "",
+                historyInterval.value,
+            ] as const,
         () => {
             if (activeModule.value !== "watchlist" || !selectedItem.value) {
                 // When leaving the watchlist module, cancel the request directly to avoid unnecessary background updates.

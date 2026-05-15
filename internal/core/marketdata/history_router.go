@@ -134,15 +134,14 @@ func (r *HistoryRouter) preferredSourceID(market string, settings core.AppSettin
 // used when the user preferred source has no history capability, or as the
 // fallback tail after the preferred source.
 //
-// US: user-selected API-backed providers are respected when configured; the
-// default chain still falls back to Yahoo Finance, then Finnhub, Polygon, and
-// finally EastMoney so startup does not require API-key-backed sources.
+// Yahoo remains the broadest no-key US intraday chart source, while Tencent is
+// useful as a no-key fallback for wider US daily/weekly ranges.
 func defaultHistoryChain(market string) []string {
 	switch historyMarketGroup(market) {
 	case "us":
-		return []string{"yahoo", "finnhub", "polygon", "alpha-vantage", "twelve-data", "eastmoney"}
+		return []string{"yahoo", "tencent", "finnhub", "polygon", "alpha-vantage", "twelve-data", "eastmoney"}
 	default:
-		return []string{"yahoo", "eastmoney"}
+		return []string{"eastmoney", "tencent", "yahoo"}
 	}
 }
 
