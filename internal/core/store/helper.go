@@ -15,6 +15,10 @@ func applyQuoteToItem(item *core.WatchlistItem, quote core.Quote) {
 	if strings.TrimSpace(quote.Name) != "" {
 		item.Name = quote.Name
 	}
+	// apply custom name overrides for US-ETF seeds
+	if custom, ok := core.USETFSeedNames[item.Symbol]; ok {
+		item.Name = custom
+	}
 	item.CurrentPrice = quote.CurrentPrice
 	item.PreviousClose = quote.PreviousClose
 	item.OpenPrice = quote.OpenPrice

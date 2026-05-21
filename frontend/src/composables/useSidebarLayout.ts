@@ -1,4 +1,4 @@
-import { onBeforeUnmount, ref } from "vue";
+import { onBeforeUnmount, ref } from 'vue';
 
 export function useSidebarLayout() {
     const appShellRef = ref<HTMLElement | null>(null);
@@ -28,10 +28,10 @@ export function useSidebarLayout() {
             return;
         }
         sidebarResizeActive = false;
-        document.body.style.cursor = "";
-        document.body.style.userSelect = "";
-        window.removeEventListener("mousemove", handleSidebarResize);
-        window.removeEventListener("mouseup", stopSidebarResize);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        window.removeEventListener('mousemove', handleSidebarResize);
+        window.removeEventListener('mouseup', stopSidebarResize);
     }
 
     function startSidebarResize(): void {
@@ -40,10 +40,10 @@ export function useSidebarLayout() {
             return;
         }
         sidebarResizeActive = true;
-        document.body.style.cursor = "col-resize";
-        document.body.style.userSelect = "none";
-        window.addEventListener("mousemove", handleSidebarResize);
-        window.addEventListener("mouseup", stopSidebarResize);
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        window.addEventListener('mousemove', handleSidebarResize);
+        window.addEventListener('mouseup', stopSidebarResize);
     }
 
     onBeforeUnmount(() => {

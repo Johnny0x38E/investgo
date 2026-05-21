@@ -422,7 +422,18 @@ func (s *HotService) loadHotItemsForSeeds(ctx context.Context, seeds []hotSeed, 
 
 	category := categoryForHotSeeds(seeds)
 	sourceID := effectivePoolQuoteSource(category, resolveHotQuoteSource(category, options))
-	return s.fetchPoolQuotes(ctx, seeds, sourceID)
+	// return s.fetchPoolQuotes(ctx, seeds, sourceID)
+	items, err := s.fetchPoolQuotes(ctx, seeds, sourceID)
+	if err != nil {
+		return nil, err
+	}
+	// apply custom name overrides for US-ETF seeds
+	for i, item := range items {
+		if custom, ok := core.USETFSeedNames[item.Symbol]; ok {
+			items[i].Name = custom
+		}
+	}
+	return items, nil
 }
 
 // categoryForHotSeeds infers the HotCategory from the market field of the first seed.

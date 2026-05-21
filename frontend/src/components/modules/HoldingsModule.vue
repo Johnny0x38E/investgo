@@ -1,75 +1,75 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
-import Tag from "primevue/tag";
+    import { computed } from 'vue';
+    import Button from 'primevue/button';
+    import InputText from 'primevue/inputtext';
+    import Tag from 'primevue/tag';
 
-import DataFreshnessMeta from "../DataFreshnessMeta.vue";
-import { formatDateTime, formatMoney, formatPercent, formatRange, formatUnitPrice } from "../../format";
-import { useI18n } from "../../i18n";
-import type { WatchlistItem } from "../../types";
+    import DataFreshnessMeta from '../DataFreshnessMeta.vue';
+    import { formatDateTime, formatMoney, formatPercent, formatRange, formatUnitPrice } from '../../format';
+    import { useI18n } from '../../i18n';
+    import type { WatchlistItem } from '../../types';
 
-const props = defineProps<{
-    search: string;
-    filteredItems: WatchlistItem[];
-    selectedItemId: string;
-}>();
+    const props = defineProps<{
+        search: string;
+        filteredItems: WatchlistItem[];
+        selectedItemId: string;
+    }>();
 
-const emit = defineEmits<{
-    (event: "update:search", value: string): void;
-    (event: "add-item"): void;
-    (event: "edit-item", value: WatchlistItem): void;
-    (event: "delete-item", value: string): void;
-    (event: "toggle-pin", value: WatchlistItem): void;
-    (event: "select-item", value: string): void;
-    (event: "show-dca", value: WatchlistItem): void;
-}>();
+    const emit = defineEmits<{
+        (event: 'update:search', value: string): void;
+        (event: 'add-item'): void;
+        (event: 'edit-item', value: WatchlistItem): void;
+        (event: 'delete-item', value: string): void;
+        (event: 'toggle-pin', value: WatchlistItem): void;
+        (event: 'select-item', value: string): void;
+        (event: 'show-dca', value: WatchlistItem): void;
+    }>();
 
-const searchProxy = computed({
-    get: () => props.search,
-    set: (value: string) => emit("update:search", value),
-});
+    const searchProxy = computed({
+        get: () => props.search,
+        set: (value: string) => emit('update:search', value),
+    });
 
-const { t } = useI18n();
-const holdingsItems = computed(() => props.filteredItems.filter((item) => item.position?.hasPosition));
+    const { t } = useI18n();
+    const holdingsItems = computed(() => props.filteredItems.filter((item) => item.position?.hasPosition));
 
-const lastSyncedAt = computed(() => {
-    const timestamps = holdingsItems.value.map((item) => item.quoteUpdatedAt).filter(Boolean) as string[];
-    if (!timestamps.length) {
-        return "";
-    }
+    const lastSyncedAt = computed(() => {
+        const timestamps = holdingsItems.value.map((item) => item.quoteUpdatedAt).filter(Boolean) as string[];
+        if (!timestamps.length) {
+            return '';
+        }
 
-    return timestamps.reduce((latest, current) =>
-        new Date(current).getTime() > new Date(latest).getTime() ? current : latest,
-    );
-});
+        return timestamps.reduce((latest, current) =>
+            new Date(current).getTime() > new Date(latest).getTime() ? current : latest,
+        );
+    });
 
-const holdingsSourceSummary = computed(() => {
-    const sources = Array.from(new Set(holdingsItems.value.map((item) => item.quoteSource).filter(Boolean)));
-    if (!sources.length) {
-        return t("common.notAvailable");
-    }
-    return sources.join(" / ");
-});
+    const holdingsSourceSummary = computed(() => {
+        const sources = Array.from(new Set(holdingsItems.value.map((item) => item.quoteSource).filter(Boolean)));
+        if (!sources.length) {
+            return t('common.notAvailable');
+        }
+        return sources.join(' / ');
+    });
 
-const freshnessMeta = computed(() => {
-    const syncedAt = lastSyncedAt.value ? formatDateTime(lastSyncedAt.value) : t("common.notAvailable");
-    return {
-        summary: `${t("common.syncedAt")} ${syncedAt}`,
-        details: [
-            { label: t("common.syncedAt"), value: syncedAt },
-            { label: t("common.source"), value: holdingsSourceSummary.value },
-            { label: t("common.results"), value: String(holdingsItems.value.length) },
-        ],
-    };
-});
+    const freshnessMeta = computed(() => {
+        const syncedAt = lastSyncedAt.value ? formatDateTime(lastSyncedAt.value) : t('common.notAvailable');
+        return {
+            summary: `${t('common.syncedAt')} ${syncedAt}`,
+            details: [
+                { label: t('common.syncedAt'), value: syncedAt },
+                { label: t('common.source'), value: holdingsSourceSummary.value },
+                { label: t('common.results'), value: String(holdingsItems.value.length) },
+            ],
+        };
+    });
 </script>
 
 <template>
     <section class="module-content">
         <div class="panel-header">
             <div>
-                <h3 class="title">{{ t("holdings.title") }}</h3>
+                <h3 class="title">{{ t('holdings.title') }}</h3>
             </div>
             <div class="toolbar-row">
                 <InputText v-model="searchProxy" class="search-input" :placeholder="t('holdings.searchPlaceholder')" />
@@ -78,7 +78,7 @@ const freshnessMeta = computed(() => {
         </div>
 
         <div class="table-meta-row">
-            <span>{{ t("holdings.meta.results", { count: holdingsItems.length }) }}</span>
+            <span>{{ t('holdings.meta.results', { count: holdingsItems.length }) }}</span>
             <DataFreshnessMeta :summary="freshnessMeta.summary" :details="freshnessMeta.details" />
         </div>
 
@@ -86,12 +86,12 @@ const freshnessMeta = computed(() => {
             <table class="watch-table">
                 <thead>
                     <tr>
-                        <th>{{ t("holdings.table.item") }}</th>
-                        <th>{{ t("holdings.table.currentPrice") }}</th>
-                        <th>{{ t("holdings.table.dayChange") }}</th>
-                        <th>{{ t("holdings.table.positionPnL") }}</th>
-                        <th>{{ t("holdings.table.intradayRange") }}</th>
-                        <th class="watch-table-sticky watch-table-sticky-dca">{{ t("holdings.table.dca") }}</th>
+                        <th>{{ t('holdings.table.item') }}</th>
+                        <th>{{ t('holdings.table.currentPrice') }}</th>
+                        <th>{{ t('holdings.table.dayChange') }}</th>
+                        <th>{{ t('holdings.table.positionPnL') }}</th>
+                        <th>{{ t('holdings.table.intradayRange') }}</th>
+                        <th class="watch-table-sticky watch-table-sticky-dca">{{ t('holdings.table.dca') }}</th>
                         <th class="watch-table-sticky watch-table-sticky-actions"></th>
                     </tr>
                 </thead>
@@ -114,7 +114,7 @@ const freshnessMeta = computed(() => {
                         <td>
                             <div class="value-stack">
                                 <strong>{{ formatUnitPrice(item.currentPrice, item.currency) }}</strong>
-                                <span>{{ item.quoteSource || "manual" }}</span>
+                                <span>{{ item.quoteSource || 'manual' }}</span>
                             </div>
                         </td>
                         <td>
@@ -161,10 +161,10 @@ const freshnessMeta = computed(() => {
                                 <strong>{{ formatRange(item.dayLow, item.dayHigh) }}</strong>
                                 <span>{{
                                     item.openPrice > 0
-                                        ? t("holdings.openPrice", {
+                                        ? t('holdings.openPrice', {
                                               price: formatUnitPrice(item.openPrice, item.currency),
                                           })
-                                        : t("holdings.rangePending")
+                                        : t('holdings.rangePending')
                                 }}</span>
                             </div>
                         </td>
@@ -218,7 +218,7 @@ const freshnessMeta = computed(() => {
                 </tbody>
                 <tbody v-else>
                     <tr>
-                        <td colspan="7" class="empty-row">{{ t("holdings.empty") }}</td>
+                        <td colspan="7" class="empty-row">{{ t('holdings.empty') }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -227,121 +227,121 @@ const freshnessMeta = computed(() => {
 </template>
 
 <style scoped>
-.watch-table td {
-    vertical-align: top;
-}
+    .watch-table td {
+        vertical-align: top;
+    }
 
-.watch-table td.watch-table-cell-dca,
-.watch-table td.table-action-cell {
-    vertical-align: middle;
-}
+    .watch-table td.watch-table-cell-dca,
+    .watch-table td.table-action-cell {
+        vertical-align: middle;
+    }
 
-.watch-table th:first-child,
-.watch-table td:first-child {
-    width: 34%;
-}
+    .watch-table th:first-child,
+    .watch-table td:first-child {
+        width: 34%;
+    }
 
-.watch-table th:nth-child(2),
-.watch-table td:nth-child(2) {
-    width: 106px;
-}
+    .watch-table th:nth-child(2),
+    .watch-table td:nth-child(2) {
+        width: 106px;
+    }
 
-.watch-table th:nth-child(3),
-.watch-table td:nth-child(3) {
-    width: 108px;
-}
+    .watch-table th:nth-child(3),
+    .watch-table td:nth-child(3) {
+        width: 108px;
+    }
 
-.watch-table th:nth-child(4),
-.watch-table td:nth-child(4) {
-    width: 108px;
-}
+    .watch-table th:nth-child(4),
+    .watch-table td:nth-child(4) {
+        width: 108px;
+    }
 
-.watch-table th:nth-child(5),
-.watch-table td:nth-child(5) {
-    width: 160px;
-    white-space: nowrap;
-}
+    .watch-table th:nth-child(5),
+    .watch-table td:nth-child(5) {
+        width: 160px;
+        white-space: nowrap;
+    }
 
-.watch-table th.watch-table-sticky-dca,
-.watch-table td.watch-table-sticky-dca {
-    right: 112px;
-    width: 88px;
-    min-width: 88px;
-    max-width: 88px;
-    text-align: left;
-}
+    .watch-table th.watch-table-sticky-dca,
+    .watch-table td.watch-table-sticky-dca {
+        right: 112px;
+        width: 88px;
+        min-width: 88px;
+        max-width: 88px;
+        text-align: left;
+    }
 
-.watch-table th.watch-table-sticky-actions,
-.watch-table td.watch-table-sticky-actions {
-    right: 0;
-    width: 124px;
-    min-width: 124px;
-    max-width: 124px;
-}
+    .watch-table th.watch-table-sticky-actions,
+    .watch-table td.watch-table-sticky-actions {
+        right: 0;
+        width: 124px;
+        min-width: 124px;
+        max-width: 124px;
+    }
 
-.watch-table td.watch-table-cell-dca,
-.watch-table td.table-action-cell {
-    padding-left: 14px;
-    padding-right: 14px;
-}
+    .watch-table td.watch-table-cell-dca,
+    .watch-table td.table-action-cell {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
 
-.watch-table th.watch-table-sticky-dca {
-    padding-left: 18px;
-    padding-right: 14px;
-}
+    .watch-table th.watch-table-sticky-dca {
+        padding-left: 18px;
+        padding-right: 14px;
+    }
 
-.watch-table .table-action-stack {
-    width: 100%;
-    justify-content: center;
-    gap: 6px;
-}
+    .watch-table .table-action-stack {
+        width: 100%;
+        justify-content: center;
+        gap: 6px;
+    }
 
-.watch-table .table-action-stack-centered {
-    width: 100%;
-    justify-content: flex-start;
-}
+    .watch-table .table-action-stack-centered {
+        width: 100%;
+        justify-content: flex-start;
+    }
 
-.watch-table .dca-empty-placeholder {
-    display: inline-flex;
-    align-items: center;
-    min-height: 22px;
-    padding: 0 0.45rem;
-    color: var(--muted);
-    font-size: 12px;
-    line-height: 1;
-}
+    .watch-table .dca-empty-placeholder {
+        display: inline-flex;
+        align-items: center;
+        min-height: 22px;
+        padding: 0 0.45rem;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1;
+    }
 
-.watch-table :deep(.dca-list-button.p-button) {
-    min-width: 0;
-    padding: 0.42rem 0.65rem;
-    gap: 0.3rem;
-    justify-content: center;
-    white-space: nowrap;
-    border-radius: var(--radius-control);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 38%, var(--border));
-}
+    .watch-table :deep(.dca-list-button.p-button) {
+        min-width: 0;
+        padding: 0.42rem 0.65rem;
+        gap: 0.3rem;
+        justify-content: center;
+        white-space: nowrap;
+        border-radius: var(--radius-control);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 38%, var(--border));
+    }
 
-.watch-table :deep(.dca-list-button .p-button-icon),
-.watch-table :deep(.dca-list-button .p-button-label) {
-    font-size: 13px;
-    color: var(--accent);
-}
+    .watch-table :deep(.dca-list-button .p-button-icon),
+    .watch-table :deep(.dca-list-button .p-button-label) {
+        font-size: 13px;
+        color: var(--accent);
+    }
 
-.watch-table :deep(.dca-list-button.p-button:hover) {
-    background: color-mix(in srgb, var(--accent-soft) 72%, transparent);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 60%, var(--border));
-}
+    .watch-table :deep(.dca-list-button.p-button:hover) {
+        background: color-mix(in srgb, var(--accent-soft) 72%, transparent);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 60%, var(--border));
+    }
 
-.watch-table .table-action-cell :deep(.p-button) {
-    width: 28px;
-    height: 28px;
-    min-width: 28px;
-    padding: 0;
-}
+    .watch-table .table-action-cell :deep(.p-button) {
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        padding: 0;
+    }
 
-.watch-table .table-action-cell :deep(.p-button.is-pinned-action) {
-    color: var(--accent-strong);
-    background: color-mix(in srgb, var(--accent-soft) 94%, var(--panel-strong));
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, var(--border));
-}
+    .watch-table .table-action-cell :deep(.p-button.is-pinned-action) {
+        color: var(--accent-strong);
+        background: color-mix(in srgb, var(--accent-soft) 94%, var(--panel-strong));
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, var(--border));
+    }
 </style>

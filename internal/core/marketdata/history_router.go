@@ -141,7 +141,7 @@ func defaultHistoryChain(market string) []string {
 	case "us":
 		return []string{"yahoo", "tencent", "finnhub", "polygon", "alpha-vantage", "twelve-data", "eastmoney"}
 	default:
-		return []string{"eastmoney", "tencent", "yahoo"}
+		return []string{"tencent", "yahoo", "eastmoney"}
 	}
 }
 

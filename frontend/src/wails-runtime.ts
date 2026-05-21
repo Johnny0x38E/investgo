@@ -21,7 +21,7 @@ function getWailsBridge(): WailsBridge | null {
     return (window as Window & { _wails?: WailsBridge })._wails ?? null;
 }
 
-type DesktopPlatform = "darwin" | "windows" | "linux" | "browser" | "unknown";
+type DesktopPlatform = 'darwin' | 'windows' | 'linux' | 'browser' | 'unknown';
 
 const windowRuntimeObject = 6;
 const windowMethodClose = 2;
@@ -36,9 +36,9 @@ async function callWailsWindowMethod<T>(method: number): Promise<T | null> {
         return null;
     }
 
-    const response = await fetch("/wails/runtime", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+    const response = await fetch('/wails/runtime', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             object: windowRuntimeObject,
             method,
@@ -49,8 +49,8 @@ async function callWailsWindowMethod<T>(method: number): Promise<T | null> {
         throw new Error(await response.text());
     }
 
-    const contentType = response.headers.get("Content-Type") ?? "";
-    if (contentType.includes("application/json")) {
+    const contentType = response.headers.get('Content-Type') ?? '';
+    if (contentType.includes('application/json')) {
         return (await response.json()) as T;
     }
 
@@ -60,22 +60,22 @@ async function callWailsWindowMethod<T>(method: number): Promise<T | null> {
 
 export function getDesktopPlatform(): DesktopPlatform {
     const os = getWailsBridge()?.environment?.OS;
-    if (os === "darwin" || os === "windows" || os === "linux") {
+    if (os === 'darwin' || os === 'windows' || os === 'linux') {
         return os;
     }
     if (!os) {
-        return "browser";
+        return 'browser';
     }
-    return "unknown";
+    return 'unknown';
 }
 
 export function shouldShowCustomWindowControls(useNativeTitleBar: boolean): boolean {
     const platform = getDesktopPlatform();
-    return !useNativeTitleBar && (platform === "windows" || platform === "linux");
+    return !useNativeTitleBar && (platform === 'windows' || platform === 'linux');
 }
 
 export function shouldReserveMacWindowControls(useNativeTitleBar: boolean): boolean {
-    return !useNativeTitleBar && getDesktopPlatform() === "darwin";
+    return !useNativeTitleBar && getDesktopPlatform() === 'darwin';
 }
 
 // The frontend can also run under the browser dev server, so the Wails runtime is safely wrapped here.
@@ -136,5 +136,5 @@ export async function closeWindow(): Promise<void> {
 
 // Trigger native Wails window dragging.
 export function startWindowDrag(): void {
-    getWailsBridge()?.invoke("wails:drag");
+    getWailsBridge()?.invoke('wails:drag');
 }

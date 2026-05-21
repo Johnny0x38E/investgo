@@ -29,10 +29,26 @@
       <stop stop-color="#A8D7FF" />
       <stop offset="1" stop-color="#5A8EDE" />
     </linearGradient>
-    <filter id="shadow-soft" x="122" y="118" width="780" height="794" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+    <filter
+            id="shadow-soft"
+            x="122"
+            y="118"
+            width="780"
+            height="794"
+            filterUnits="userSpaceOnUse"
+            color-interpolation-filters="sRGB"
+        >
       <feDropShadow dx="0" dy="28" stdDeviation="30" flood-color="#3B2C15" flood-opacity="0.14" />
     </filter>
-    <filter id="shadow-screen" x="222" y="170" width="580" height="574" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+    <filter
+            id="shadow-screen"
+            x="222"
+            y="170"
+            width="580"
+            height="574"
+            filterUnits="userSpaceOnUse"
+            color-interpolation-filters="sRGB"
+        >
       <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#07121F" flood-opacity="0.16" />
     </filter>
   </defs>
@@ -45,7 +61,18 @@
   <g filter="url(#shadow-screen)">
     <rect x="220" y="176" width="584" height="584" rx="146" fill="url(#frame-fill)" />
     <rect x="252" y="208" width="520" height="520" rx="118" fill="url(#screen-fill)" />
-    <rect x="284" y="240" width="456" height="456" rx="92" fill="#0A1930" fill-opacity="0.3" stroke="#F8FBFF" stroke-opacity="0.7" stroke-width="12" />
+    <rect
+            x="284"
+            y="240"
+            width="456"
+            height="456"
+            rx="92"
+            fill="#0A1930"
+            fill-opacity="0.3"
+            stroke="#F8FBFF"
+            stroke-opacity="0.7"
+            stroke-width="12"
+        />
 
     <path d="M362 360H662" stroke="#DCEBFF" stroke-opacity="0.14" stroke-width="10" stroke-linecap="round" />
     <path d="M362 474H662" stroke="#DCEBFF" stroke-opacity="0.14" stroke-width="10" stroke-linecap="round" />
@@ -55,12 +82,12 @@
     <path d="M644 618V322" stroke="#DCEBFF" stroke-opacity="0.08" stroke-width="8" stroke-linecap="round" />
 
     <path
-      d="M366 576L446 520L520 548L610 438L694 370"
-      stroke="url(#line-fill)"
-      stroke-width="32"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    />
+            d="M366 576L446 520L520 548L610 438L694 370"
+            stroke="url(#line-fill)"
+            stroke-width="32"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+        />
     <circle cx="694" cy="370" r="38" fill="#F8D78D" />
     <circle cx="694" cy="370" r="13" fill="#15365B" />
   </g>

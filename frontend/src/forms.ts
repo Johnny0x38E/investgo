@@ -1,26 +1,35 @@
-import type { AlertFormModel, AlertRule, AppSettings, DCAEntry, DCAEntryRow, HotItem, ItemFormModel, WatchlistItem } from "./types";
+import type {
+    AlertFormModel,
+    AlertRule,
+    AppSettings,
+    DCAEntry,
+    DCAEntryRow,
+    HotItem,
+    ItemFormModel,
+    WatchlistItem,
+} from './types';
 
 // Default settings used during frontend initialization; must stay in sync with backend defaults.
 export const defaultSettings: AppSettings = {
     hotCacheTTLSeconds: 60,
-    cnQuoteSource: "sina",
-    hkQuoteSource: "xueqiu",
-    usQuoteSource: "yahoo",
-    themeMode: "system",
-    colorTheme: "blue",
-    fontPreset: "system",
-    amountDisplay: "full",
-    currencyDisplay: "symbol",
-    priceColorScheme: "cn",
-    locale: "system",
-    proxyMode: "system",
-    proxyURL: "",
-    alphaVantageApiKey: "",
-    twelveDataApiKey: "",
-    finnhubApiKey: "",
-    polygonApiKey: "",
+    cnQuoteSource: 'sina',
+    hkQuoteSource: 'xueqiu',
+    usQuoteSource: 'yahoo',
+    themeMode: 'system',
+    colorTheme: 'blue',
+    fontPreset: 'system',
+    amountDisplay: 'full',
+    currencyDisplay: 'symbol',
+    priceColorScheme: 'cn',
+    locale: 'system',
+    proxyMode: 'system',
+    proxyURL: '',
+    alphaVantageApiKey: '',
+    twelveDataApiKey: '',
+    finnhubApiKey: '',
+    polygonApiKey: '',
     developerMode: false,
-    dashboardCurrency: "CNY",
+    dashboardCurrency: 'CNY',
     useNativeTitleBar: false,
 };
 
@@ -53,16 +62,16 @@ export function normaliseSettings(input: Partial<AppSettings> | null | undefined
 // Return an empty form model for creating a new watchlist item.
 export function emptyItemForm(): ItemFormModel {
     return {
-        id: "",
-        symbol: "",
-        name: "",
-        market: "CN-A",
-        currency: "CNY",
+        id: '',
+        symbol: '',
+        name: '',
+        market: 'CN-A',
+        currency: 'CNY',
         quantity: 0,
         costPrice: 0,
-        acquiredAt: "",
-        tagsText: "",
-        thesis: "",
+        acquiredAt: '',
+        tagsText: '',
+        thesis: '',
         currentPrice: 0,
         dcaEntries: [],
     };
@@ -70,24 +79,24 @@ export function emptyItemForm(): ItemFormModel {
 function todayDateString(): string {
     const d = new Date();
     const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
 }
 
 // Pre-fill a form for "观察" (watch only, no position) from a hot list item.
 export function hotItemToWatchForm(item: HotItem): ItemFormModel {
     return {
-        id: "",
+        id: '',
         symbol: item.symbol,
         name: item.name,
         market: item.market,
         currency: item.currency,
         quantity: 0,
         costPrice: 0,
-        acquiredAt: "",
-        tagsText: "",
-        thesis: "",
+        acquiredAt: '',
+        tagsText: '',
+        thesis: '',
         currentPrice: item.currentPrice,
         dcaEntries: [],
     };
@@ -97,7 +106,7 @@ export function hotItemToWatchForm(item: HotItem): ItemFormModel {
 // acquiredAt defaults to today; costPrice defaults to currentPrice.
 export function hotItemToPositionForm(item: HotItem): ItemFormModel {
     return {
-        id: "",
+        id: '',
         symbol: item.symbol,
         name: item.name,
         market: item.market,
@@ -105,8 +114,8 @@ export function hotItemToPositionForm(item: HotItem): ItemFormModel {
         quantity: 0,
         costPrice: item.currentPrice,
         acquiredAt: todayDateString(),
-        tagsText: "",
-        thesis: "",
+        tagsText: '',
+        thesis: '',
         currentPrice: item.currentPrice,
         dcaEntries: [],
     };
@@ -114,7 +123,7 @@ export function hotItemToPositionForm(item: HotItem): ItemFormModel {
 
 function isoDateToInputValue(value: string): string {
     if (!value) {
-        return "";
+        return '';
     }
 
     if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -127,8 +136,8 @@ function isoDateToInputValue(value: string): string {
     }
 
     const year = String(parsed.getFullYear());
-    const month = String(parsed.getMonth() + 1).padStart(2, "0");
-    const day = String(parsed.getDate()).padStart(2, "0");
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
+    const day = String(parsed.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 }
 
@@ -142,8 +151,8 @@ export function mapItemToForm(item: WatchlistItem): ItemFormModel {
         currency: item.currency,
         quantity: item.quantity,
         costPrice: item.costPrice,
-        acquiredAt: item.acquiredAt ? isoDateToInputValue(item.acquiredAt) : "",
-        tagsText: item.tags.join(", "),
+        acquiredAt: item.acquiredAt ? isoDateToInputValue(item.acquiredAt) : '',
+        tagsText: item.tags.join(', '),
         thesis: item.thesis,
         currentPrice: item.currentPrice,
         dcaEntries: (item.dcaEntries ?? []).map(
@@ -154,7 +163,7 @@ export function mapItemToForm(item: WatchlistItem): ItemFormModel {
                 shares: e.shares,
                 price: e.price && e.price > 0 ? e.price : null,
                 fee: e.fee && e.fee > 0 ? e.fee : null,
-                note: e.note ?? "",
+                note: e.note ?? '',
             }),
         ),
     };
@@ -163,20 +172,20 @@ export function mapItemToForm(item: WatchlistItem): ItemFormModel {
 // Serialize the form model into a backend-compatible item payload.
 export function serialiseItemForm(form: ItemFormModel): Omit<
     WatchlistItem,
-    | "currentPrice"
-    | "previousClose"
-    | "openPrice"
-    | "dayHigh"
-    | "dayLow"
-    | "change"
-    | "changePercent"
-    | "quoteSource"
-    | "quoteUpdatedAt"
-    | "pinnedAt"
-    | "updatedAt"
-    | "tags"
-    | "dcaSummary"
-    | "position"
+    | 'currentPrice'
+    | 'previousClose'
+    | 'openPrice'
+    | 'dayHigh'
+    | 'dayLow'
+    | 'change'
+    | 'changePercent'
+    | 'quoteSource'
+    | 'quoteUpdatedAt'
+    | 'pinnedAt'
+    | 'updatedAt'
+    | 'tags'
+    | 'dcaSummary'
+    | 'position'
 > & {
     tags: string[];
     dcaEntries: DCAEntry[];
@@ -189,18 +198,18 @@ export function serialiseItemForm(form: ItemFormModel): Omit<
         currency: form.currency,
         quantity: form.quantity || 0,
         costPrice: form.costPrice || 0,
-        acquiredAt: form.acquiredAt ? new Date(form.acquiredAt + "T00:00:00Z").toISOString() : undefined,
+        acquiredAt: form.acquiredAt ? new Date(form.acquiredAt + 'T00:00:00Z').toISOString() : undefined,
         thesis: form.thesis,
         tags: form.tagsText
-            .split(",")
+            .split(',')
             .map((value) => value.trim())
             .filter(Boolean),
         dcaEntries: form.dcaEntries
             .filter((e) => (e.amount ?? 0) > 0 && (e.shares ?? 0) > 0)
             .map(
                 (e): DCAEntry => ({
-                    id: e.id.startsWith("tmp-") ? "" : e.id,
-                    date: e.date ? new Date(e.date + "T00:00:00Z").toISOString() : new Date().toISOString(),
+                    id: e.id.startsWith('tmp-') ? '' : e.id,
+                    date: e.date ? new Date(e.date + 'T00:00:00Z').toISOString() : new Date().toISOString(),
                     amount: e.amount ?? 0,
                     shares: e.shares ?? 0,
                     price: e.price && e.price > 0 ? e.price : undefined,
@@ -212,12 +221,12 @@ export function serialiseItemForm(form: ItemFormModel): Omit<
 }
 
 // Return an empty form model for creating a new alert.
-export function emptyAlertForm(itemId = ""): AlertFormModel {
+export function emptyAlertForm(itemId = ''): AlertFormModel {
     return {
-        id: "",
-        name: "",
+        id: '',
+        name: '',
         itemId,
-        condition: "above",
+        condition: 'above',
         threshold: 1,
         enabled: true,
     };

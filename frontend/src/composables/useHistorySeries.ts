@@ -1,21 +1,8 @@
-import {
-    computed,
-    onBeforeUnmount,
-    ref,
-    watch,
-    type ComputedRef,
-    type Ref,
-} from "vue";
+import { computed, onBeforeUnmount, ref, watch, type ComputedRef, type Ref } from 'vue';
 
-import { ApiAbortError, api } from "../api";
-import { translate } from "../i18n";
-import type {
-    HistoryInterval,
-    HistorySeries,
-    ModuleKey,
-    StatusTone,
-    WatchlistItem,
-} from "../types";
+import { ApiAbortError, api } from '../api';
+import { translate } from '../i18n';
+import type { HistoryInterval, HistorySeries, ModuleKey, StatusTone, WatchlistItem } from '../types';
 
 type StatusReporter = (message: string, tone: StatusTone) => void;
 
@@ -35,16 +22,16 @@ export function useHistorySeries(
     setStatus: StatusReporter,
 ) {
     // The currently selected history interval, defaulting to "1d".
-    const historyInterval = ref<HistoryInterval>("1d");
+    const historyInterval = ref<HistoryInterval>('1d');
     const historySeries = ref<HistorySeries | null>(null);
     const historyLoading = ref(false);
-    const historyError = ref("");
+    const historyError = ref('');
     const historyCache = new Map<string, CachedHistorySeries>();
     let inflightController: AbortController | null = null;
 
     // Cancel any in-flight history request.
     function cancelInflightHistory(resetLoading = false): void {
-        inflightController?.abort(new ApiAbortError("aborted"));
+        inflightController?.abort(new ApiAbortError('aborted'));
         inflightController = null;
         if (resetLoading) {
             historyLoading.value = false;
@@ -52,15 +39,12 @@ export function useHistorySeries(
     }
 
     // Load chart data for the current item and interval; forceRefresh bypasses the cache to fetch fresh data.
-    async function loadHistory(
-        silent = false,
-        forceRefresh = false,
-    ): Promise<void> {
+    async function loadHistory(silent = false, forceRefresh = false): Promise<void> {
         const item = selectedItem.value;
         if (!item) {
             cancelInflightHistory(true);
             historySeries.value = null;
-            historyError.value = "";
+            historyError.value = '';
             return;
         }
 
@@ -74,7 +58,7 @@ export function useHistorySeries(
             // a cache hit regardless of the original backend Cached value (which
             // was false when the data was first fetched live from the provider).
             historySeries.value = { ...cached.series, cached: true };
-            historyError.value = "";
+            historyError.value = '';
             return;
         }
 
@@ -84,9 +68,9 @@ export function useHistorySeries(
         if (!keepCurrentSeries) {
             historyLoading.value = true;
         }
-        historyError.value = "";
+        historyError.value = '';
         if (!silent) {
-            setStatus(translate("history.loading"), "success");
+            setStatus(translate('history.loading'), 'success');
         }
 
         try {
@@ -95,15 +79,12 @@ export function useHistorySeries(
                 interval: historyInterval.value,
             });
             if (forceRefresh) {
-                params.set("force", "1");
+                params.set('force', '1');
             }
-            const series = await api<HistorySeries>(
-                `/api/history?${params.toString()}`,
-                {
-                    signal: controller.signal,
-                    timeoutMs: 12000,
-                },
-            );
+            const series = await api<HistorySeries>(`/api/history?${params.toString()}`, {
+                signal: controller.signal,
+                timeoutMs: 12000,
+            });
             // When the response arrives, the controller may have been replaced by a newer request; discard stale results.
             if (inflightController !== controller) {
                 return;
@@ -118,9 +99,9 @@ export function useHistorySeries(
                 if (oldest !== undefined) historyCache.delete(oldest);
             }
             historySeries.value = series;
-            historyError.value = "";
+            historyError.value = '';
             if (!silent) {
-                setStatus(translate("history.updated"), "success");
+                setStatus(translate('history.updated'), 'success');
             }
         } catch (error) {
             if (error instanceof ApiAbortError) {
@@ -132,12 +113,9 @@ export function useHistorySeries(
             if (keepCurrentSeries) {
                 return;
             }
-            historyError.value =
-                error instanceof Error
-                    ? error.message
-                    : translate("history.loadFailed");
+            historyError.value = error instanceof Error ? error.message : translate('history.loadFailed');
             historySeries.value = null;
-            setStatus(historyError.value, "error");
+            setStatus(historyError.value, 'error');
         } finally {
             if (inflightController === controller) {
                 inflightController = null;
@@ -150,7 +128,7 @@ export function useHistorySeries(
     function clearHistoryCache(): void {
         cancelInflightHistory(true);
         historyCache.clear();
-        if (activeModule.value === "watchlist") {
+        if (activeModule.value === 'watchlist') {
             void loadHistory(true, true);
         }
     }
@@ -165,14 +143,9 @@ export function useHistorySeries(
     }
 
     watch(
-        () =>
-            [
-                activeModule.value,
-                selectedItem.value?.id ?? "",
-                historyInterval.value,
-            ] as const,
+        () => [activeModule.value, selectedItem.value?.id ?? '', historyInterval.value] as const,
         () => {
-            if (activeModule.value !== "watchlist" || !selectedItem.value) {
+            if (activeModule.value !== 'watchlist' || !selectedItem.value) {
                 // When leaving the watchlist module, cancel the request directly to avoid unnecessary background updates.
                 cancelInflightHistory(true);
                 return;

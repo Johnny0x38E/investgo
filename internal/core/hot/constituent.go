@@ -44,7 +44,7 @@ var hotConstituents = map[core.HotCategory][]hotSeed{
 		"UNH", "VZ", "V", "WMT",
 	),
 	core.HotCategoryUSETF: usETFSeeds(
-		"SPY", "QQQ", "IVV", "VOO", "VTI", "DIA", "IWM", "IWF", "IWD", "VTV", "VUG", "IJH", "IJR", "RSP", "XLF", "XLK", "XLE", "XLV", "XLI", "XLP", "XLY", "XLC", "XLU", "XLB", "XLRE", "VGT",
+		"SPY", "QQQ", "QQQM", "IVV", "VOO", "VTI", "DIA", "IWM", "IWF", "IWD", "VTV", "VUG", "IJH", "IJR", "RSP", "XLF", "XLK", "XLE", "XLV", "XLI", "XLP", "XLY", "XLC", "XLU", "XLB", "XLRE", "VGT",
 		"VNQ", "ARKK", "SOXX", "SMH", "KWEB", "FXI", "HACK", "LIT", "TAN", "ICLN", "BITO", "TLT", "IEF", "SHY", "BND", "AGG", "LQD", "HYG", "JNK", "TIP", "EMB", "GLD", "IAU", "SLV", "GDX",
 		"GDXJ", "USO", "UNG", "EEM", "EMXC", "VEA", "VWO", "EFA", "IEMG", "INDA", "EWJ", "EWZ", "TQQQ", "SQQQ", "SPXL", "SOXL", "SOXS", "UVXY", "SH", "SDS", "VYM", "SCHD", "DVY", "HDV", "DGRO",
 		"JEPI", "JEPQ", "MTUM", "QUAL", "MOAT", "SGOV", "BIL", "SPLG", "SCHX", "SCHB", "VT", "VB", "VBK", "VBR", "VTWO", "IWB", "IWR", "IWP", "SCHG", "SCHV", "IBIT", "FBTC", "BOTZ", "XBI",
@@ -569,12 +569,16 @@ func usETFSeeds(symbols ...string) []hotSeed {
 	return buildUSSeeds("US-ETF", symbols)
 }
 
+// buildUSSeeds builds a slice of hotSeed for the given market and symbols.
 func buildUSSeeds(market string, symbols []string) []hotSeed {
 	seeds := make([]hotSeed, 0, len(symbols))
 	for _, symbol := range symbols {
 		name := symbol
-		if market == "US-STOCK" {
+		switch market {
+		case "US-STOCK":
 			name = provider.FirstNonEmpty(usEquitySeedNames[symbol], symbol)
+		case "US-ETF":
+			name = provider.FirstNonEmpty(core.USETFSeedNames[symbol], symbol)
 		}
 		seeds = append(seeds, hotSeed{
 			Symbol:   symbol,

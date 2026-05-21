@@ -1,43 +1,43 @@
 // History intervals use time-window semantics; there is no separate real-time label.
-export type HistoryInterval = "1h" | "1d" | "1w" | "1mo" | "1y" | "3y" | "all";
-export type AlertCondition = "above" | "below";
-export type ModuleKey = "overview" | "watchlist" | "hot" | "holdings" | "alerts" | "settings";
-export type SettingsTabKey = "general" | "display" | "region" | "network" | "developer" | "about";
-export type StatusTone = "success" | "warn" | "error";
-export type CardTone = "neutral" | "rise" | "fall" | "warn";
-export type DeveloperLogLevel = "debug" | "info" | "warn" | "error";
-export type DeveloperLogSource = "backend" | "frontend" | "system";
-export type ThemeMode = "system" | "light" | "dark";
-export type ColorTheme = "blue" | "graphite" | "forest" | "sunset" | "rose" | "violet" | "amber";
+export type HistoryInterval = '1h' | '1d' | '1w' | '1mo' | '1y' | '3y' | 'all';
+export type AlertCondition = 'above' | 'below';
+export type ModuleKey = 'overview' | 'watchlist' | 'hot' | 'holdings' | 'alerts' | 'settings';
+export type SettingsTabKey = 'general' | 'display' | 'region' | 'network' | 'developer' | 'about';
+export type StatusTone = 'success' | 'warn' | 'error';
+export type CardTone = 'neutral' | 'rise' | 'fall' | 'warn';
+export type DeveloperLogLevel = 'debug' | 'info' | 'warn' | 'error';
+export type DeveloperLogSource = 'backend' | 'frontend' | 'system';
+export type ThemeMode = 'system' | 'light' | 'dark';
+export type ColorTheme = 'blue' | 'graphite' | 'forest' | 'sunset' | 'rose' | 'violet' | 'amber';
 
 // Unified market types conforming to exchange conventions
 export type MarketType =
-    | "CN-A" // CSI A-shares (Main Board)
-    | "CN-GEM" // SZSE ChiNext
-    | "CN-STAR" // SSE STAR Market
-    | "CN-ETF" // Onshore ETF/LOF
-    | "CN-BJ" // Beijing Stock Exchange
-    | "HK-MAIN" // HK Main Board
-    | "HK-GEM" // HK GEM (Growth Enterprise Market)
-    | "HK-ETF" // HK-listed ETF
-    | "US-STOCK" // US stocks (NYSE + NASDAQ)
-    | "US-ETF"; // US-listed ETF
+    | 'CN-A' // CSI A-shares (Main Board)
+    | 'CN-GEM' // SZSE ChiNext
+    | 'CN-STAR' // SSE STAR Market
+    | 'CN-ETF' // Onshore ETF/LOF
+    | 'CN-BJ' // Beijing Stock Exchange
+    | 'HK-MAIN' // HK Main Board
+    | 'HK-GEM' // HK GEM (Growth Enterprise Market)
+    | 'HK-ETF' // HK-listed ETF
+    | 'US-STOCK' // US stocks (NYSE + NASDAQ)
+    | 'US-ETF'; // US-listed ETF
 
 // Hot list market groups
-export type HotMarketGroup = "cn" | "hk" | "us";
+export type HotMarketGroup = 'cn' | 'hk' | 'us';
 
 // Hot list detailed categories
 export type HotCategory =
-    | "cn-a" // CSI A-shares (Main Board + ChiNext + STAR)
-    | "cn-etf" // CSI ETFs
-    | "hk" // Hong Kong stocks
-    | "hk-etf" // HK-listed ETFs
-    | "us-sp500" // S&P 500
-    | "us-nasdaq" // NASDAQ-100
-    | "us-dow" // Dow Jones 30
-    | "us-etf"; // US-listed ETFs
+    | 'cn-a' // CSI A-shares (Main Board + ChiNext + STAR)
+    | 'cn-etf' // CSI ETFs
+    | 'hk' // Hong Kong stocks
+    | 'hk-etf' // HK-listed ETFs
+    | 'us-sp500' // S&P 500
+    | 'us-nasdaq' // NASDAQ-100
+    | 'us-dow' // Dow Jones 30
+    | 'us-etf'; // US-listed ETFs
 
-export type HotSort = "volume" | "gainers" | "losers" | "market-cap" | "price";
+export type HotSort = 'volume' | 'gainers' | 'losers' | 'market-cap' | 'price';
 
 export interface DCAEntry {
     id: string;
@@ -116,12 +116,12 @@ export interface AppSettings {
     usQuoteSource: string;
     themeMode: ThemeMode;
     colorTheme: ColorTheme;
-    fontPreset: "system" | "compact" | "reading";
-    amountDisplay: "full" | "compact";
-    currencyDisplay: "symbol" | "code";
-    priceColorScheme: "cn" | "intl";
-    locale: "system" | "zh-CN" | "en-US";
-    proxyMode: "none" | "system" | "custom";
+    fontPreset: 'system' | 'compact' | 'reading';
+    amountDisplay: 'full' | 'compact';
+    currencyDisplay: 'symbol' | 'code';
+    priceColorScheme: 'cn' | 'intl';
+    locale: 'system' | 'zh-CN' | 'en-US';
+    proxyMode: 'none' | 'system' | 'custom';
     proxyURL: string;
     alphaVantageApiKey: string;
     twelveDataApiKey: string;
@@ -296,7 +296,7 @@ export interface MarketMetricCard {
     label: string;
     value: string;
     sub: string;
-    tone: Exclude<CardTone, "warn">;
+    tone: Exclude<CardTone, 'warn'>;
 }
 
 export interface DCAEntryRow {

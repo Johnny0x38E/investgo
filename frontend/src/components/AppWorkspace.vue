@@ -1,79 +1,79 @@
 <script setup lang="ts">
-import AlertsModule from "./modules/AlertsModule.vue";
-import HotModule from "./modules/HotModule.vue";
-import HoldingsModule from "./modules/HoldingsModule.vue";
-import OverviewModule from "./modules/OverviewModule.vue";
-import SettingsModule from "./modules/SettingsModule.vue";
-import WatchlistModule from "./modules/WatchlistModule.vue";
-import type {
-    AlertRule,
-    AppSettings,
-    DeveloperLogEntry,
-    HistoryInterval,
-    HistorySeries,
-    HotItem,
-    HotMarketGroup,
-    ModuleKey,
-    QuoteSourceOption,
-    SettingsTabKey,
-    StateSnapshot,
-    WatchlistItem,
-} from "../types";
+    import AlertsModule from './modules/AlertsModule.vue';
+    import HotModule from './modules/HotModule.vue';
+    import HoldingsModule from './modules/HoldingsModule.vue';
+    import OverviewModule from './modules/OverviewModule.vue';
+    import SettingsModule from './modules/SettingsModule.vue';
+    import WatchlistModule from './modules/WatchlistModule.vue';
+    import type {
+        AlertRule,
+        AppSettings,
+        DeveloperLogEntry,
+        HistoryInterval,
+        HistorySeries,
+        HotItem,
+        HotMarketGroup,
+        ModuleKey,
+        QuoteSourceOption,
+        SettingsTabKey,
+        StateSnapshot,
+        WatchlistItem,
+    } from '../types';
 
-defineProps<{
-    activeModule: ModuleKey;
-    dashboard: StateSnapshot["dashboard"] | null;
-    itemCount: number;
-    livePriceCount: number;
-    runtime: StateSnapshot["runtime"];
-    generatedAt: string;
-    selectedItem: WatchlistItem | null;
-    historyInterval: HistoryInterval;
-    historySeries: HistorySeries | null;
-    historyLoading: boolean;
-    historyError: string;
-    trackedHotKeys: string[];
-    hotMarketGroup: HotMarketGroup;
-    hotAutoRefreshToken: number;
-    search: string;
-    filteredItems: WatchlistItem[];
-    selectedItemId: string;
-    alerts: AlertRule[];
-    items: WatchlistItem[];
-    settingsTab: SettingsTabKey;
-    settingsDraft: AppSettings;
-    quoteSources: QuoteSourceOption[];
-    storagePath: string;
-    logFilePath: string;
-    developerLogs: DeveloperLogEntry[];
-    savingSettings: boolean;
-    loadingLogs: boolean;
-}>();
+    defineProps<{
+        activeModule: ModuleKey;
+        dashboard: StateSnapshot['dashboard'] | null;
+        itemCount: number;
+        livePriceCount: number;
+        runtime: StateSnapshot['runtime'];
+        generatedAt: string;
+        selectedItem: WatchlistItem | null;
+        historyInterval: HistoryInterval;
+        historySeries: HistorySeries | null;
+        historyLoading: boolean;
+        historyError: string;
+        trackedHotKeys: string[];
+        hotMarketGroup: HotMarketGroup;
+        hotAutoRefreshToken: number;
+        search: string;
+        filteredItems: WatchlistItem[];
+        selectedItemId: string;
+        alerts: AlertRule[];
+        items: WatchlistItem[];
+        settingsTab: SettingsTabKey;
+        settingsDraft: AppSettings;
+        quoteSources: QuoteSourceOption[];
+        storagePath: string;
+        logFilePath: string;
+        developerLogs: DeveloperLogEntry[];
+        savingSettings: boolean;
+        loadingLogs: boolean;
+    }>();
 
-defineEmits<{
-    (event: "refresh"): void;
-    (event: "select-interval", value: HistoryInterval): void;
-    (event: "update:hotMarketGroup", value: HotMarketGroup): void;
-    (event: "hot-watch-item", item: HotItem): void;
-    (event: "hot-unwatch-item", item: HotItem): void;
-    (event: "hot-open-position", item: HotItem): void;
-    (event: "update:search", value: string): void;
-    (event: "add-item"): void;
-    (event: "edit-item", item: WatchlistItem): void;
-    (event: "delete-item", value: string): void;
-    (event: "toggle-pin", item: WatchlistItem): void;
-    (event: "select-item", value: string): void;
-    (event: "show-dca", item: WatchlistItem): void;
-    (event: "add-alert"): void;
-    (event: "edit-alert", value: AlertRule): void;
-    (event: "delete-alert", value: string): void;
-    (event: "update:settingsTab", value: SettingsTabKey): void;
-    (event: "save-settings"): void;
-    (event: "cancel-settings"): void;
-    (event: "refresh-logs"): void;
-    (event: "copy-logs"): void;
-    (event: "clear-logs"): void;
-}>();
+    defineEmits<{
+        (event: 'refresh'): void;
+        (event: 'select-interval', value: HistoryInterval): void;
+        (event: 'update:hotMarketGroup', value: HotMarketGroup): void;
+        (event: 'hot-watch-item', item: HotItem): void;
+        (event: 'hot-unwatch-item', item: HotItem): void;
+        (event: 'hot-open-position', item: HotItem): void;
+        (event: 'update:search', value: string): void;
+        (event: 'add-item'): void;
+        (event: 'edit-item', item: WatchlistItem): void;
+        (event: 'delete-item', value: string): void;
+        (event: 'toggle-pin', item: WatchlistItem): void;
+        (event: 'select-item', value: string): void;
+        (event: 'show-dca', item: WatchlistItem): void;
+        (event: 'add-alert'): void;
+        (event: 'edit-alert', value: AlertRule): void;
+        (event: 'delete-alert', value: string): void;
+        (event: 'update:settingsTab', value: SettingsTabKey): void;
+        (event: 'save-settings'): void;
+        (event: 'cancel-settings'): void;
+        (event: 'refresh-logs'): void;
+        (event: 'copy-logs'): void;
+        (event: 'clear-logs'): void;
+    }>();
 </script>
 
 <template>
