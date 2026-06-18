@@ -1,0 +1,82 @@
+version: "2"
+
+run:
+    timeout: 10m
+    tests: true
+    modules-download-mode: readonly
+
+output:
+    formats:
+        text:
+            colors: true
+            print-issued-lines: false
+
+linters:
+    default: none
+
+    enable:
+        - govet
+        - staticcheck
+        - errcheck
+        - ineffassign
+        - unused
+        - unparam
+        - contextcheck
+        - errorlint
+        - durationcheck
+        - bodyclose
+        - nilnil
+        - revive
+        - makezero
+        - nolintlint
+        - gocyclo
+        - gosec
+
+    settings:
+        staticcheck:
+            checks:
+                - all
+                - -ST1000
+                - -ST1003
+                - -ST1005
+                - -ST1016
+                - -ST1020
+                - -ST1021
+                - -ST1022
+
+        revive:
+            rules:
+                - name: exported
+                  disabled: true
+                - name: var-naming
+                  disabled: true
+                - name: package-comments
+                  disabled: true
+
+        govet:
+            enable-all: true
+            disable:
+                - fieldalignment
+
+        gocyclo:
+            min-complexity: 15
+
+        gosec:
+            excludes:
+                - G104
+                - G115
+
+    exclusions:
+        paths:
+            - vendor
+            - testdata
+            - mock
+            - mocks
+
+formatters:
+    enable:
+        - gofumpt
+
+issues:
+    max-issues-per-linter: 0
+    max-same-issues: 0

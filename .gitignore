@@ -19,7 +19,6 @@ Thumbs.db
 *.log
 *.test
 *.prof
-.golangci.yaml
 
 # Go testing
 *test.go
