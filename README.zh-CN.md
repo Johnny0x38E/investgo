@@ -23,7 +23,7 @@ InvestGo 主要把 Wails 用作 Go 后端和 Vue 前端的轻量桌面容器，�
 - 行情数据：东方财富、Yahoo Finance、新浪财经、雪球、腾讯财经、Alpha Vantage、Twelve Data、Finnhub、Polygon。
 - 汇率数据：Frankfurter。
 - macOS 打包：Shell 脚本以及 `swift`、`sips`、`iconutil`、`hdiutil`、`ditto`。
-- Windows 构建：PowerShell 脚本以及 `go`、`npm`、Microsoft Edge WebView2 Runtime。
+- Windows 构建：PowerShell 脚本以及 `go`、`pnpm`（或 `npm`）、Microsoft Edge WebView2 Runtime。
 
 ## 架构
 
@@ -68,13 +68,15 @@ winget install Microsoft.EdgeWebView2Runtime
 安装依赖：
 
 ```bash
-npm install
+pnpm install
 ```
+
+> 如果更习惯 npm，将以下命令中的 `pnpm` 替换为 `npm` 即可。
 
 运行前端开发服务器：
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 开发服务器运行在 5173 端口。此模式没有 Wails runtime，因此 `frontend/src/wails-runtime.ts` 必须保持可空安全。
@@ -82,14 +84,14 @@ npm run dev
 执行检查：
 
 ```bash
-npm run typecheck
+pnpm typecheck
 env GOCACHE=/tmp/go-build-cache go test ./...
 ```
 
 构建前端产物：
 
 ```bash
-npm run build
+pnpm build
 ```
 
 构建桌面二进制：
@@ -126,9 +128,9 @@ scripts\build-windows-amd64.bat
 
 这个 `.bat` 包装脚本会用 `-ExecutionPolicy Bypass` 启动当前 PowerShell 构建进程，并在构建失败时暂停窗口，方便看到缺少依赖或脚本错误，避免窗口立刻关闭。
 
-macOS 构建脚本会用 Swift/AppKit 生成 `build/appicon.png`，执行 `npm run build`，并输出 `build/bin/investgo-darwin-aarch64` 或 `build/bin/investgo-darwin-x86_64`。
-Windows 构建脚本会在缺少 `build/appicon.png` 时复制 `frontend/src/assets/appicon.png`，执行 `npm run build`，并输出 `build/bin/investgo-windows-amd64.exe`。只有在把 `ICON_SOURCE` 覆盖为 SVG 文件时才需要 ImageMagick。
-如果缺少 `npm`、`go` 或可选的 `magick`，Windows 构建脚本会打印对应的 `winget install ...` 安装命令。
+macOS 构建脚本会用 Swift/AppKit 生成 `build/appicon.png`，执行 `pnpm build`，并输出 `build/bin/investgo-darwin-aarch64` 或 `build/bin/investgo-darwin-x86_64`。
+Windows 构建脚本会在缺少 `build/appicon.png` 时复制 `frontend/src/assets/appicon.png`，执行 `pnpm build`，并输出 `build/bin/investgo-windows-amd64.exe`。只有在把 `ICON_SOURCE` 覆盖为 SVG 文件时才需要 ImageMagick。
+如果缺少 `pnpm`（或 `npm`）、`go` 或可选的 `magick`，Windows 构建脚本会打印对应的 `winget install ...` 安装命令。
 
 构建脚本支持的环境变量：
 
@@ -219,7 +221,7 @@ xattr -d com.apple.quarantine ~/Downloads/investgo-<version>-darwin-x86_64.dmg
 - Windows 构建要求目标机器存在 WebView2 Runtime。Windows 11 通常已安装，但干净系统应显式检查。
 - Windows 构建目前还没有把 `.ico`、版本资源或应用 manifest 嵌入 exe。
 - 前端可见文案是双语的。修改用户可见文案时，应同时更新 `frontend/src/i18n.ts` 中的 `zh-CN` 和 `en-US`。
-- 当前没有前端测试。前端验证使用 `npm run typecheck`，后端验证使用 `internal/**` 下的 Go tests。
+- 当前没有前端测试。前端验证使用 `pnpm typecheck`，后端验证使用 `internal/**` 下的 Go tests。
 
 ## 免责声明
 

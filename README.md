@@ -23,7 +23,7 @@ InvestGo uses Wails mainly as a lightweight desktop container for a Go backend a
 - Market data: EastMoney, Yahoo Finance, Sina Finance, Xueqiu, Tencent Finance, Alpha Vantage, Twelve Data, Finnhub, Polygon.
 - FX data: Frankfurter.
 - macOS packaging: shell scripts plus `swift`, `sips`, `iconutil`, `hdiutil`, and `ditto`.
-- Windows build: PowerShell script plus `go`, `npm`, and Microsoft Edge WebView2 Runtime.
+- Windows build: PowerShell script plus `go`, `pnpm` (or `npm`), and Microsoft Edge WebView2 Runtime.
 
 ## Architecture
 
@@ -68,13 +68,15 @@ winget install Microsoft.EdgeWebView2Runtime
 Install dependencies:
 
 ```bash
-npm install
+pnpm install
 ```
+
+> If you prefer npm, replace `pnpm` with `npm` in the commands below.
 
 Run the frontend dev server:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 The dev server runs on port 5173. It does not provide the Wails runtime, so `frontend/src/wails-runtime.ts` must remain nullable-safe.
@@ -82,14 +84,14 @@ The dev server runs on port 5173. It does not provide the Wails runtime, so `fro
 Run checks:
 
 ```bash
-npm run typecheck
+pnpm typecheck
 env GOCACHE=/tmp/go-build-cache go test ./...
 ```
 
 Build the frontend bundle:
 
 ```bash
-npm run build
+pnpm build
 ```
 
 Build the desktop binary:
@@ -126,9 +128,9 @@ scripts\build-windows-amd64.bat
 
 The `.bat` wrapper runs the PowerShell build with `-ExecutionPolicy Bypass` for this process and pauses when the build fails, which makes missing prerequisites or script errors visible instead of closing the window immediately.
 
-The macOS build scripts render `build/appicon.png` with Swift/AppKit, run `npm run build`, and output `build/bin/investgo-darwin-aarch64` or `build/bin/investgo-darwin-x86_64`.
-The Windows build script copies `frontend/src/assets/appicon.png` to `build/appicon.png` when missing, runs `npm run build`, and outputs `build/bin/investgo-windows-amd64.exe`. ImageMagick is only needed if `ICON_SOURCE` is overridden to point at an SVG file.
-If `npm`, `go`, or optional `magick` are missing, the Windows build script prints the matching `winget install ...` command.
+The macOS build scripts render `build/appicon.png` with Swift/AppKit, run `pnpm build`, and output `build/bin/investgo-darwin-aarch64` or `build/bin/investgo-darwin-x86_64`.
+The Windows build script copies `frontend/src/assets/appicon.png` to `build/appicon.png` when missing, runs `pnpm build`, and outputs `build/bin/investgo-windows-amd64.exe`. ImageMagick is only needed if `ICON_SOURCE` is overridden to point at an SVG file.
+If `pnpm` (or `npm`), `go`, or optional `magick` are missing, the Windows build script prints the matching `winget install ...` command.
 
 Build script environment variables:
 
@@ -219,7 +221,7 @@ Packaging script environment variables:
 - Windows builds require WebView2 Runtime on the target machine. Windows 11 usually has it installed, but clean systems should verify it explicitly.
 - The Windows build does not yet embed a `.ico`, version resource, or application manifest into the executable.
 - Frontend visible copy is bilingual. User-facing text changes should update both `zh-CN` and `en-US` entries in `frontend/src/i18n.ts`.
-- There are no frontend tests. Use `npm run typecheck` for frontend validation and Go tests under `internal/**` for backend validation.
+- There are no frontend tests. Use `pnpm typecheck` for frontend validation and Go tests under `internal/**` for backend validation.
 
 ## Disclaimer
 
