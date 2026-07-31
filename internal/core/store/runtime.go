@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"investgo/internal/common/errs"
@@ -78,10 +79,10 @@ func (s *Store) Refresh(ctx context.Context, force bool) (core.StateSnapshot, er
 	// Price refreshes do not change portfolio structure, so only the quote-result caches
 	// are invalidated. The history and overview caches remain valid across price ticks.
 	s.invalidatePriceCachesLocked()
-	if err := s.saveLocked(); err != nil {
-		s.logError("storage", fmt.Sprintf("save state failed after quote refresh: %v", err))
-		return core.StateSnapshot{}, err
-	}
+	// Live quotes are transient runtime state; persisting them on every price tick
+	// blocks all readers under the write lock and adds disk I/O latency per refresh.
+	// State is only restored from the last structural mutation (add/remove/update),
+	// and live prices are re-fetched on startup, so refresh must not touch disk.
 
 	snapshot := s.snapshotLocked()
 	s.refreshCache.Set("all", cloneStateSnapshot(snapshot), s.quoteRefreshTTLLocked())
@@ -144,10 +145,8 @@ func (s *Store) RefreshItem(ctx context.Context, itemID string, force bool) (cor
 	s.evaluateAlertsLocked()
 	s.state.UpdatedAt = time.Now()
 	s.invalidatePriceCachesLocked()
-	if err := s.saveLocked(); err != nil {
-		s.logError("storage", fmt.Sprintf("save state failed after single-item quote refresh: %v", err))
-		return core.StateSnapshot{}, err
-	}
+	// See Refresh: live price ticks are not persisted; the last structural mutation
+	// remains the on-disk state and prices are re-fetched on next startup.
 
 	snapshot := s.snapshotLocked()
 	s.itemRefreshCache.Set(itemID, cloneStateSnapshot(snapshot), s.quoteRefreshTTLLocked())
@@ -161,41 +160,69 @@ func (s *Store) refreshQuotesForItems(ctx context.Context, items []core.Watchlis
 		quotes:      map[string]core.Quote{},
 	}
 
+	// Resolve the active source/provider for every market under a single read lock
+	// instead of re-locking per item; the provider pointers are safe to use
+	// outside the lock because the provider map is immutable after startup.
+	type batchGroup struct {
+		sourceID string
+		provider core.QuoteProvider
+		items    []core.WatchlistItem
+	}
+	grouped := make(map[string]*batchGroup)
+	s.mu.RLock()
+	for _, item := range items {
+		sourceID := s.activeQuoteSourceIDLocked(item.Market)
+		provider := s.activeQuoteProviderLocked(item.Market)
+		if provider == nil || sourceID == "" {
+			continue
+		}
+		if g, ok := grouped[sourceID]; ok {
+			g.items = append(g.items, item)
+		} else {
+			grouped[sourceID] = &batchGroup{
+				sourceID: sourceID,
+				provider: provider,
+				items:    []core.WatchlistItem{item},
+			}
+		}
+	}
+	batchList := make([]*batchGroup, 0, len(grouped))
+	for _, g := range grouped {
+		batchList = append(batchList, g)
+	}
+	s.mu.RUnlock()
+
 	// Refresh FX opportunistically alongside quote requests so derived dashboard values stay aligned after quote updates.
 	if s.fxRates.IsStale() {
 		s.fxRates.Fetch(ctx)
 		result.fxFetched = true
 	}
 
-	if len(items) == 0 {
+	if len(batchList) == 0 {
 		return result
 	}
 
-	grouped := make(map[string][]core.WatchlistItem)
-	for _, item := range items {
-		s.mu.RLock()
-		sourceID := s.activeQuoteSourceIDLocked(item.Market)
-		provider := s.activeQuoteProviderLocked(item.Market)
-		s.mu.RUnlock()
-		if provider == nil || sourceID == "" {
-			continue
-		}
-		grouped[sourceID] = append(grouped[sourceID], item)
+	// Run each market's provider concurrently: a mixed CN/HK/US watchlist no longer
+	// waits for the slowest market sequentially, all providers run in parallel.
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+	for _, batch := range batchList {
+		batch := batch
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			batchQuotes, err := batch.provider.Fetch(ctx, batch.items)
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				result.problems = append(result.problems, fmt.Sprintf("%s: %v", batch.provider.Name(), err))
+			}
+			for key, quote := range batchQuotes {
+				result.quotes[key] = quote
+			}
+		}()
 	}
-
-	for sourceID, batch := range grouped {
-		provider := s.quoteProviders[sourceID]
-		if provider == nil {
-			continue
-		}
-		batchQuotes, err := provider.Fetch(ctx, batch)
-		if err != nil {
-			result.problems = append(result.problems, fmt.Sprintf("%s: %v", provider.Name(), err))
-		}
-		for key, quote := range batchQuotes {
-			result.quotes[key] = quote
-		}
-	}
+	wg.Wait()
 
 	return result
 }

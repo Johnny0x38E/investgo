@@ -397,7 +397,7 @@
 
 <template>
     <section class="module-content overview-module">
-        <div class="panel-header panel-header-stack">
+        <div class="panel-header">
             <div>
                 <h3 class="title">{{ t('modules.overview') }}</h3>
             </div>

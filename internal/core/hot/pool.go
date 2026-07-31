@@ -18,7 +18,7 @@ import (
 )
 
 // yahooHotConcurrency is the maximum number of concurrent Yahoo quote requests for hot pool fetching.
-const yahooHotConcurrency = 5
+const yahooHotConcurrency = 10
 
 // eastMoneyHotDiff represents the subset of fields returned by the EastMoney quote diff API used for hot fallback quotes and naming enrichment.
 const (
@@ -60,11 +60,30 @@ func (s *HotService) fetchPoolQuotes(ctx context.Context, seeds []hotSeed, sourc
 	return nil, fmt.Errorf("hot quote source is unsupported: %s", sourceID)
 }
 
+// usPoolExactFetchThreshold is the seed count above which US EastMoney pool
+// requests switch from per-secid batch lookup to the full-market pz=20000 scan.
+// Search result sets are small (capped at hotSearchMaxSeeds) and need fast
+// turnaround, so they use the lighter-weight batch secid API. The hot list
+// view pushes the full constituent pool (hundreds of seeds) through the
+// full-market scan because one big request beats dozens of batched ones there.
+const usPoolExactFetchThreshold = 60
+
 func (s *HotService) fetchPoolQuotesEastMoney(ctx context.Context, seeds []hotSeed) ([]core.HotItem, error) {
 	if len(seeds) > 0 && (seeds[0].Market == "US-STOCK" || seeds[0].Market == "US-ETF") {
+		if len(seeds) <= usPoolExactFetchThreshold {
+			// Small US seed set (e.g. from search): query the exact secids in
+			// batch instead of downloading the entire US market quote table.
+			return s.fetchPoolQuotesEastMoneyBySecID(ctx, seeds)
+		}
 		return s.fetchUSPoolQuotesEastMoney(ctx, seeds)
 	}
 
+	return s.fetchPoolQuotesEastMoneyBySecID(ctx, seeds)
+}
+
+// fetchPoolQuotesEastMoneyBySecID resolves seeds to EastMoney secids and fetches
+// quotes via the batch secid diff API. Works for any market (CN/HK/US).
+func (s *HotService) fetchPoolQuotesEastMoneyBySecID(ctx context.Context, seeds []hotSeed) ([]core.HotItem, error) {
 	secids := make([]string, 0, len(seeds)*2)
 	indexBySecID := make(map[string]hotSeed, len(seeds)*2)
 	for _, seed := range seeds {
@@ -166,6 +185,7 @@ func (s *HotService) fetchUSPoolQuotesEastMoney(ctx context.Context, seeds []hot
 	if err := json.Unmarshal(payload, &parsed); err != nil {
 		return nil, err
 	}
+
 	if parsed.RC != 0 {
 		return nil, fmt.Errorf("EastMoney hot response returned rc=%d", parsed.RC)
 	}

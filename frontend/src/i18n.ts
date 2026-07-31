@@ -363,6 +363,7 @@ const messages: Record<SupportedLocale, TranslationTree> = {
             title: '热门榜单',
             ariaCategoryTabs: '热门分类',
             searchPlaceholder: '搜索名称 / 代码',
+            search: '搜索',
             refresh: '刷新',
             forceRefresh: '强制刷新',
             meta: {
@@ -907,6 +908,7 @@ const messages: Record<SupportedLocale, TranslationTree> = {
             title: 'Hot',
             ariaCategoryTabs: 'Hot categories',
             searchPlaceholder: 'Search name / symbol',
+            search: 'Search',
             refresh: 'Refresh',
             forceRefresh: 'Force Refresh',
             meta: {

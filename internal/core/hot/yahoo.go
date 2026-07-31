@@ -3,11 +3,13 @@ package hot
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 
 	"investgo/internal/common/errs"
 	"investgo/internal/core/endpoint"
@@ -97,11 +99,18 @@ func (s *HotService) searchYahooUSSeeds(ctx context.Context, keyword string) ([]
 	return seeds, nil
 }
 
-// fetchYahooSearch queries the Yahoo Finance search API across all configured hosts and
-// returns the first successful response. If all hosts fail, the errors are combined and returned.
+// fetchYahooSearch queries the Yahoo Finance search API across all configured hosts
+// and returns the first successful response. Hosts are raced concurrently so a
+// single slow/unreachable host no longer blocks the whole search; the remaining
+// in-flight requests are cancelled as soon as one succeeds.
 func fetchYahooSearch(ctx context.Context, client *http.Client, keyword string) (yahooSearchResponse, error) {
 	if client == nil {
 		client = &http.Client{}
+	}
+
+	hosts := endpoint.YahooSearchHosts
+	if len(hosts) == 0 {
+		return yahooSearchResponse{}, errors.New("no Yahoo search hosts configured")
 	}
 
 	params := url.Values{}
@@ -110,15 +119,29 @@ func fetchYahooSearch(ctx context.Context, client *http.Client, keyword string) 
 	params.Set("newsCount", "0")
 	params.Set("enableFuzzyQuery", "false")
 
-	problems := make([]string, 0, len(endpoint.YahooSearchHosts))
-	for _, host := range endpoint.YahooSearchHosts {
-		parsed, err := fetchYahooSearchFromHost(ctx, client, host, params)
-		if err == nil {
-			return parsed, nil
-		}
-		problems = append(problems, fmt.Sprintf("%s: %v", host, err))
+	type hostResult struct {
+		parsed yahooSearchResponse
+		err    error
 	}
+	results := make([]hostResult, len(hosts))
+	var wg sync.WaitGroup
+	for i, host := range hosts {
+		wg.Add(1)
+		go func(idx int, h string) {
+			defer wg.Done()
+			parsed, err := fetchYahooSearchFromHost(ctx, client, h, params)
+			results[idx] = hostResult{parsed: parsed, err: err}
+		}(i, host)
+	}
+	wg.Wait()
 
+	var problems []string
+	for _, r := range results {
+		if r.err == nil {
+			return r.parsed, nil
+		}
+		problems = append(problems, r.err.Error())
+	}
 	return yahooSearchResponse{}, errs.JoinProblems(problems)
 }
 

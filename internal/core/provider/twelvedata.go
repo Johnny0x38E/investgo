@@ -44,22 +44,26 @@ type twelveDataQuoteResponse struct {
 }
 
 type twelveDataSeriesResponse struct {
-	Meta struct {
-		Symbol   string `json:"symbol"`
-		Name     string `json:"name"`
-		Currency string `json:"currency"`
-	} `json:"meta"`
-	Values []struct {
-		Datetime string `json:"datetime"`
-		Open     string `json:"open"`
-		High     string `json:"high"`
-		Low      string `json:"low"`
-		Close    string `json:"close"`
-		Volume   string `json:"volume"`
-	} `json:"values"`
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-	Status  string `json:"status"`
+	Meta    twelveDataSeriesMeta    `json:"meta"`
+	Values  []twelveDataSeriesValue `json:"values"`
+	Code    int                     `json:"code"`
+	Message string                  `json:"message"`
+	Status  string                  `json:"status"`
+}
+
+type twelveDataSeriesMeta struct {
+	Symbol   string `json:"symbol"`
+	Name     string `json:"name"`
+	Currency string `json:"currency"`
+}
+
+type twelveDataSeriesValue struct {
+	Datetime string `json:"datetime"`
+	Open     string `json:"open"`
+	High     string `json:"high"`
+	Low      string `json:"low"`
+	Close    string `json:"close"`
+	Volume   string `json:"volume"`
 }
 
 func NewTwelveDataQuoteProvider(client *http.Client, settings func() core.AppSettings) *TwelveDataQuoteProvider {

@@ -121,12 +121,71 @@ func (s *Store) normaliseLocked() {
 	s.evaluateAlertsLocked()
 }
 
+// flushDebounceDelay is the coalescing window for debounced (low-value) state
+// writes. A burst of pin toggles within this window collapses into one write.
+const flushDebounceDelay = 2 * time.Second
+
 // saveLocked persists state using a temporary file with atomic replacement.
+// Precondition: requires s.mu held.
 func (s *Store) saveLocked() error {
 	if s.repository == nil {
 		return fmt.Errorf("state repository is not configured")
 	}
-	return s.repository.Save(s.state)
+	if err := s.repository.Save(s.state); err != nil {
+		s.dirty = false
+		return err
+	}
+	s.dirty = false
+	return nil
+}
+
+// markDirtyLocked arms the debounced persistence timer for a low-value mutation.
+// Multiple marks within the debounce window collapse into a single write. Call
+// only for mutations whose loss on crash is acceptable (e.g. UI-only state such
+// as pin toggles). Must be called with s.mu held.
+func (s *Store) markDirtyLocked() {
+	s.dirty = true
+	if s.flushTimer != nil {
+		s.flushTimer.Reset(flushDebounceDelay)
+		return
+	}
+	s.flushTimer = time.AfterFunc(flushDebounceDelay, s.flushPending)
+}
+
+// flushPending is the timer-driven flush: re-lock and write if still dirty.
+// On write failure it keeps the dirty flag and rearms the timer so transient
+// disk errors are retried rather than silently lost.
+func (s *Store) flushPending() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !s.dirty {
+		s.flushTimer = nil
+		return
+	}
+	if err := s.repository.Save(s.state); err != nil {
+		s.logError("storage", fmt.Sprintf("debounced save failed: %v", err))
+		// Leave dirty=true and retry after the debounce window.
+		s.flushTimer = time.AfterFunc(flushDebounceDelay, s.flushPending)
+		return
+	}
+	s.dirty = false
+	s.flushTimer = nil
+}
+
+// Flush performs a blocking, immediate write of any pending debounced changes.
+// Use it on graceful shutdown to guarantee no dirty state is lost when the
+// process exits. Safe to call when nothing is pending (no-ops).
+func (s *Store) Flush() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.flushTimer != nil {
+		s.flushTimer.Stop()
+		s.flushTimer = nil
+	}
+	if !s.dirty {
+		return nil
+	}
+	return s.saveLocked()
 }
 
 // evaluateAlertsLocked recalculates trigger status of all alerts based on current prices.

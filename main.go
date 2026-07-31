@@ -3,6 +3,13 @@ package main
 import (
 	"embed"
 	"fmt"
+	"io/fs"
+	"log"
+	"log/slog"
+	"net/http"
+	"os"
+	"path/filepath"
+
 	"investgo/internal/api"
 	"investgo/internal/core"
 	"investgo/internal/core/hot"
@@ -10,12 +17,6 @@ import (
 	"investgo/internal/core/store"
 	"investgo/internal/logger"
 	"investgo/internal/platform"
-	"io/fs"
-	"log"
-	"log/slog"
-	"net/http"
-	"os"
-	"path/filepath"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -120,8 +121,10 @@ func main() {
 		},
 		OnShutdown: func() {
 			logs.Info("backend", "app", "shutdown requested")
-			if err := appStore.Save(); err != nil {
-				logs.Error("backend", "storage", fmt.Sprintf("save state on shutdown failed: %v", err))
+			// Flush any pending debounced writes so dirty state is not lost when
+			// the process exits. No-ops when nothing is pending.
+			if err := appStore.Flush(); err != nil {
+				logs.Error("backend", "storage", fmt.Sprintf("flush state on shutdown failed: %v", err))
 			}
 		},
 	})

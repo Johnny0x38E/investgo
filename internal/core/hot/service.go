@@ -84,7 +84,13 @@ func (s *HotService) List(
 	var response core.HotListResponse
 	var err error
 	if keyword != "" {
-		response, err = s.search(ctx, category, sortBy, keyword, page, pageSize, options)
+		// Search fans out to external suggest + quote APIs with no cache for some
+		// branches, so a single slow upstream can hold the request open for the
+		// full frontend 15s timeout. Cap the whole search phase below that so
+		// the user gets a fast error (or partial result) instead of a stuck UI.
+		searchCtx, cancel := context.WithTimeout(ctx, hotSearchTimeout)
+		defer cancel()
+		response, err = s.search(searchCtx, category, sortBy, keyword, page, pageSize, options)
 	} else {
 		switch {
 		case category == core.HotCategoryCNA,
@@ -138,6 +144,18 @@ func (s *HotService) search(
 	return core.HotListResponse{}, fmt.Errorf("Hot search is unsupported for category: %s", category)
 }
 
+// hotSearchMaxSeeds caps how many seeds a single hot search will load quotes for.
+// A broad keyword can match dozens of Yahoo results; each result fans out to a
+// real-time quote request, so an unbounded list turns one search into dozens of
+// slow upstream calls. Capping the seeds keeps searches responsive and still
+// returns plenty of results for the paginated UI.
+const hotSearchMaxSeeds = 25
+
+// hotSearchTimeout bounds the entire hot search phase (suggest API + quote fan-
+// out). It is intentionally shorter than the frontend 15s request timeout so a
+// slow upstream produces a fast, visible error rather than a frozen UI.
+const hotSearchTimeout = 8 * time.Second
+
 // searchUSETFs handles US ETF search specially:
 // filter from the pool first, then call the Yahoo Finance search API for more matches,
 // merge and deduplicate, and fetch real-time quotes.
@@ -154,6 +172,12 @@ func (s *HotService) searchUSETFs(
 	remoteSeeds, err := s.searchYahooUSSeeds(ctx, keyword)
 	if err == nil {
 		seeds = mergeHotSeeds(seeds, remoteSeeds)
+	}
+
+	// Trim the merged seed list before quoting: a broad keyword can produce far
+	// more matches than we have quote-budget for, and the UI paginates anyway.
+	if len(seeds) > hotSearchMaxSeeds {
+		seeds = seeds[:hotSearchMaxSeeds]
 	}
 
 	items, err := s.loadHotItemsForSeeds(ctx, seeds, options)
@@ -197,6 +221,13 @@ func (s *HotService) searchUSStocks(
 	remoteSeeds, err := s.searchYahooUSStockSeeds(ctx, keyword)
 	if err == nil && len(remoteSeeds) > 0 {
 		seeds = mergeHotSeeds(seeds, remoteSeeds)
+	}
+
+	// Trim the merged seed list before quoting: a broad keyword can match far
+	// more symbols than we have quote-budget for, and pagination handles the
+	// overflow on the UI side anyway.
+	if len(seeds) > hotSearchMaxSeeds {
+		seeds = seeds[:hotSearchMaxSeeds]
 	}
 
 	if len(seeds) == 0 {
@@ -257,6 +288,12 @@ func (s *HotService) searchCNHK(
 				Currency: item.Currency,
 			}})
 		}
+	}
+
+	// Cap the seed list before quote fetch so a broad keyword does not turn
+	// into an unbounded fan-out of quote requests.
+	if len(seeds) > hotSearchMaxSeeds {
+		seeds = seeds[:hotSearchMaxSeeds]
 	}
 
 	if len(seeds) == 0 {

@@ -21,20 +21,22 @@ type XueqiuQuoteProvider struct {
 }
 
 type xueqiuQuoteResponse struct {
-	Data []struct {
-		Symbol    string   `json:"symbol"`
-		Name      string   `json:"name"`
-		Current   *float64 `json:"current"`
-		Percent   *float64 `json:"percent"`
-		Chg       *float64 `json:"chg"`
-		High      *float64 `json:"high"`
-		Low       *float64 `json:"low"`
-		Open      *float64 `json:"open"`
-		LastClose *float64 `json:"last_close"`
-		Timestamp *int64   `json:"timestamp"`
-	} `json:"data"`
-	ErrorCode        int    `json:"error_code"`
-	ErrorDescription string `json:"error_description"`
+	Data            []xueqiuQuoteItem `json:"data"`
+	ErrorCode       int               `json:"error_code"`
+	ErrorDescription string           `json:"error_description"`
+}
+
+type xueqiuQuoteItem struct {
+	Symbol    string   `json:"symbol"`
+	Name      string   `json:"name"`
+	Current   *float64 `json:"current"`
+	Percent   *float64 `json:"percent"`
+	Chg       *float64 `json:"chg"`
+	High      *float64 `json:"high"`
+	Low       *float64 `json:"low"`
+	Open      *float64 `json:"open"`
+	LastClose *float64 `json:"last_close"`
+	Timestamp *int64   `json:"timestamp"`
 }
 
 const xueqiuBatchSize = 50

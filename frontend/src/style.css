@@ -350,6 +350,10 @@ body {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    /* A shared header height keeps the title bar aligned when switching
+       between modules whose toolbars have different intrinsic heights
+       (single button vs. input + button vs. multiple tab groups). */
+    min-height: 40px;
 }
 
 .panel-header-stack {

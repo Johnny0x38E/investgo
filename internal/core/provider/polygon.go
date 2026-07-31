@@ -28,45 +28,49 @@ type PolygonHistoryProvider struct {
 }
 
 type polygonSnapshotResponse struct {
-	Status string `json:"status"`
-	Ticker *struct {
-		Ticker    string `json:"ticker"`
-		Name      string `json:"name"`
-		LastTrade *struct {
-			Price     float64 `json:"p"`
-			Timestamp int64   `json:"t"`
-		} `json:"lastTrade"`
-		Min *struct {
-			Open   float64 `json:"o"`
-			High   float64 `json:"h"`
-			Low    float64 `json:"l"`
-			Close  float64 `json:"c"`
-			Volume float64 `json:"v"`
-		} `json:"min"`
-		Day *struct {
-			Open   float64 `json:"o"`
-			High   float64 `json:"h"`
-			Low    float64 `json:"l"`
-			Close  float64 `json:"c"`
-			Volume float64 `json:"v"`
-		} `json:"day"`
-		PrevDay *struct {
-			Close float64 `json:"c"`
-		} `json:"prevDay"`
-	} `json:"ticker"`
+	Status string             `json:"status"`
+	Ticker *polygonTicker     `json:"ticker"`
+}
+
+type polygonTicker struct {
+	Ticker    string             `json:"ticker"`
+	Name      string             `json:"name"`
+	LastTrade *polygonLastTrade  `json:"lastTrade"`
+	Min       *polygonOHLCV      `json:"min"`
+	Day       *polygonOHLCV      `json:"day"`
+	PrevDay   *polygonPrevDay    `json:"prevDay"`
+}
+
+type polygonLastTrade struct {
+	Price     float64 `json:"p"`
+	Timestamp int64   `json:"t"`
+}
+
+type polygonOHLCV struct {
+	Open   float64 `json:"o"`
+	High   float64 `json:"h"`
+	Low    float64 `json:"l"`
+	Close  float64 `json:"c"`
+	Volume float64 `json:"v"`
+}
+
+type polygonPrevDay struct {
+	Close float64 `json:"c"`
 }
 
 type polygonAggsResponse struct {
-	Status       string `json:"status"`
-	ResultsCount int    `json:"resultsCount"`
-	Results      []struct {
-		Timestamp int64   `json:"t"`
-		Open      float64 `json:"o"`
-		High      float64 `json:"h"`
-		Low       float64 `json:"l"`
-		Close     float64 `json:"c"`
-		Volume    float64 `json:"v"`
-	} `json:"results"`
+	Status       string             `json:"status"`
+	ResultsCount int                `json:"resultsCount"`
+	Results      []polygonAggResult `json:"results"`
+}
+
+type polygonAggResult struct {
+	Timestamp int64   `json:"t"`
+	Open      float64 `json:"o"`
+	High      float64 `json:"h"`
+	Low       float64 `json:"l"`
+	Close     float64 `json:"c"`
+	Volume    float64 `json:"v"`
 }
 
 func NewPolygonQuoteProvider(client *http.Client, settings func() core.AppSettings) *PolygonQuoteProvider {

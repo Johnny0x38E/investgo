@@ -233,18 +233,23 @@
 
         autoRefreshInFlight = true;
         try {
+            // Auto-refresh is cache-aware: passing force=false lets the backend
+            // serve a cached snapshot between cache-expiry boundaries, so most
+            // background ticks return instantly from cache instead of issuing
+            // upstream network requests + disk writes on every poll. The user
+            // can still trigger an explicit force-refresh via the UI button.
             switch (activeModule.value) {
                 case 'watchlist':
                     // Auto-refresh keeps the selected quote live, but history refreshes
                     // must stay cache-aware so periodic ticks do not bypass provider limits.
-                    await refreshSelectedItem(true, true, true, false);
+                    await refreshSelectedItem(true, true, false, false);
                     break;
                 case 'hot':
-                    await refreshQuotes(true, false, true);
+                    await refreshQuotes(true, false, false);
                     hotAutoRefreshToken.value += 1;
                     break;
                 default:
-                    await refreshQuotes(true, false, true);
+                    await refreshQuotes(true, false, false);
                     break;
             }
         } finally {

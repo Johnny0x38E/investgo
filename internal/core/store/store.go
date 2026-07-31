@@ -45,6 +45,13 @@ type Store struct {
 	// (e.g. every /api/state request) avoid re-sorting and re-decorating all items
 	// when nothing in the persisted state has changed.
 	snapshotCache atomic.Pointer[cachedSnapshot]
+	// flushDeferred manage a coalesced, debounce-style persistence: low-value
+	// mutations (e.g. pin toggles) mark the state dirty and arm a timer instead
+	// of writing synchronously; the timer fires once after writes settle, so a
+	// burst of changes collapses into a single disk write. High-value mutations
+	// (add/remove/update item, settings, alerts) still save immediately.
+	flushTimer *time.Timer
+	dirty      bool
 }
 
 // NewStore creates a Store and completes state loading and runtime dependency injection.

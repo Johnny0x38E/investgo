@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"investgo/internal/common/errs"
@@ -24,24 +25,34 @@ import (
 // ---------------------------------------------------------------------------
 
 type yahooChartResponse struct {
-	Chart struct {
-		Result []struct {
-			Meta struct {
-				Currency  string  `json:"currency"`
-				Symbol    string  `json:"symbol"`
-				ShortName string  `json:"shortName"`
-				LongName  string  `json:"longName"`
-				Price     float64 `json:"regularMarketPrice"`
-			} `json:"meta"`
-			Timestamp  []int64 `json:"timestamp"`
-			Indicators struct {
-				Quote []yahooQuoteIndicators `json:"quote"`
-			} `json:"indicators"`
-		} `json:"result"`
-		Error *struct {
-			Description string `json:"description"`
-		} `json:"error"`
-	} `json:"chart"`
+	Chart yahooChart `json:"chart"`
+}
+
+type yahooChart struct {
+	Result []yahooChartResult `json:"result"`
+	Error  *yahooChartError   `json:"error"`
+}
+
+type yahooChartResult struct {
+	Meta       yahooChartMeta       `json:"meta"`
+	Timestamp  []int64              `json:"timestamp"`
+	Indicators yahooChartIndicators `json:"indicators"`
+}
+
+type yahooChartMeta struct {
+	Currency  string  `json:"currency"`
+	Symbol    string  `json:"symbol"`
+	ShortName string  `json:"shortName"`
+	LongName  string  `json:"longName"`
+	Price     float64 `json:"regularMarketPrice"`
+}
+
+type yahooChartIndicators struct {
+	Quote []yahooQuoteIndicators `json:"quote"`
+}
+
+type yahooChartError struct {
+	Description string `json:"description"`
 }
 
 type yahooQuoteIndicators struct {
@@ -55,6 +66,7 @@ type yahooQuoteIndicators struct {
 var (
 	yahooCookieJarOnce sync.Once
 	yahooCookieJar     http.CookieJar
+	yahooSessionPrimed atomic.Bool
 )
 
 func getYahooCookieJar() http.CookieJar {
@@ -116,7 +128,10 @@ func primeYahooSession(ctx context.Context, client *http.Client) error {
 	return nil
 }
 
-// fetchYahooChart polls multiple Yahoo Finance hosts for quote data, returning the first successful response or a combined error message.
+// fetchYahooChart races multiple Yahoo Finance hosts concurrently for quote data,
+// returning the first successful response. A single slow host no longer blocks
+// the whole call; the remaining in-flight requests are cancelled once one host
+// wins.
 func fetchYahooChart(
 	ctx context.Context,
 	client *http.Client,
@@ -128,17 +143,49 @@ func fetchYahooChart(
 	}
 
 	primedClient := cloneYahooClient(client)
-	_ = primeYahooSession(ctx, primedClient)
-
-	problems := make([]string, 0, len(endpoint.YahooChartHosts))
-	for _, host := range endpoint.YahooChartHosts {
-		parsed, err := fetchYahooChartFromHost(ctx, primedClient, host, symbol, params)
-		if err == nil {
-			return parsed, nil
+	// Yahoo needs a warm cookie jar (A1/A3 consent cookies) before chart requests
+	// succeed. Priming issues an extra GET to the Yahoo homepage, so do it only
+	// once per process (the shared cookie jar keeps the session thereafter).
+	if !yahooSessionPrimed.Load() {
+		if primeErr := primeYahooSession(ctx, primedClient); primeErr == nil {
+			yahooSessionPrimed.Store(true)
 		}
-		problems = append(problems, fmt.Sprintf("%s: %v", host, err))
 	}
 
+	hosts := endpoint.YahooChartHosts
+	if len(hosts) == 0 {
+		return yahooChartResponse{}, errors.New("no Yahoo chart hosts configured")
+	}
+
+	raceCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	type hostResult struct {
+		parsed yahooChartResponse
+		err    error
+	}
+	results := make([]hostResult, len(hosts))
+	var wg sync.WaitGroup
+	for i, host := range hosts {
+		wg.Add(1)
+		go func(idx int, h string) {
+			defer wg.Done()
+			parsed, err := fetchYahooChartFromHost(raceCtx, primedClient, h, symbol, params)
+			results[idx] = hostResult{parsed: parsed, err: err}
+			if err == nil {
+				cancel() // stop the remaining hosts early
+			}
+		}(i, host)
+	}
+	wg.Wait()
+
+	var problems []string
+	for _, r := range results {
+		if r.err == nil {
+			return r.parsed, nil
+		}
+		problems = append(problems, r.err.Error())
+	}
 	return yahooChartResponse{}, errs.JoinProblems(problems)
 }
 
@@ -230,6 +277,15 @@ func (p *YahooQuoteProvider) Fetch(ctx context.Context, items []core.WatchlistIt
 		return quotes, errs.JoinProblems(problems)
 	}
 
+	// Yahoo's chart endpoint serves one symbol per request, so fetching a US
+	// watchlist serially takes one full round-trip per symbol. Fan out the
+	// per-symbol snapshot calls so the whole batch completes in ~one round-trip.
+	// Bound concurrency to avoid hammering Yahoo when a watchlist is large.
+	const maxConcurrent = 8
+	sem := make(chan struct{}, maxConcurrent)
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
 	for _, item := range items {
 		target, err := core.ResolveQuoteTarget(item)
 		if err != nil {
@@ -242,17 +298,26 @@ func (p *YahooQuoteProvider) Fetch(ctx context.Context, items []core.WatchlistIt
 			continue
 		}
 
-		quote, err := p.fetchChartSnapshot(ctx, item, yahooSymbol)
-		if err != nil {
-			problems = append(problems, fmt.Sprintf("%s: %v", target.DisplaySymbol, err))
-			continue
-		}
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(it core.WatchlistItem, tgt core.QuoteTarget, sym string) {
+			defer wg.Done()
+			defer func() { <-sem }()
 
-		quote.Symbol = target.DisplaySymbol
-		quote.Market = target.Market
-		quote.Currency = FirstNonEmpty(quote.Currency, target.Currency)
-		quotes[target.Key] = quote
+			quote, err := p.fetchChartSnapshot(ctx, it, sym)
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				problems = append(problems, fmt.Sprintf("%s: %v", tgt.DisplaySymbol, err))
+				return
+			}
+			quote.Symbol = tgt.DisplaySymbol
+			quote.Market = tgt.Market
+			quote.Currency = FirstNonEmpty(quote.Currency, tgt.Currency)
+			quotes[tgt.Key] = quote
+		}(item, target, yahooSymbol)
 	}
+	wg.Wait()
 
 	return quotes, errs.JoinProblems(problems)
 }

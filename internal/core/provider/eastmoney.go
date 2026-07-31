@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"investgo/internal/common/errs"
@@ -178,18 +179,37 @@ func (p *EastMoneyQuoteProvider) Fetch(ctx context.Context, items []core.Watchli
 		}
 	}
 
-	missingUSItems := make([]core.WatchlistItem, 0, len(itemByTargetKey))
-	usProblems := make(map[string]error)
+	// US quotes are fetched one HTTP request per symbol; doing them serially turns a
+	// multi-symbol US watchlist into a long chain of round-trips. Fan out so the
+	// whole US bucket completes in roughly one round-trip instead of N.
+	usTargets := make([]core.QuoteTarget, 0, len(targets))
 	for _, target := range targets {
 		if target.Market != "US-STOCK" && target.Market != "US-ETF" {
 			continue
 		}
-		quote, err := p.fetchUSQuote(ctx, target)
-		if err != nil {
-			usProblems[target.Key] = err
-			continue
+		usTargets = append(usTargets, target)
+	}
+
+	missingUSItems := make([]core.WatchlistItem, 0, len(itemByTargetKey))
+	usProblems := make(map[string]error)
+	if len(usTargets) > 0 {
+		var mu sync.Mutex
+		var wg sync.WaitGroup
+		for _, target := range usTargets {
+			wg.Add(1)
+			go func(t core.QuoteTarget) {
+				defer wg.Done()
+				quote, err := p.fetchUSQuote(ctx, t)
+				mu.Lock()
+				defer mu.Unlock()
+				if err != nil {
+					usProblems[t.Key] = err
+					return
+				}
+				quotes[t.Key] = quote
+			}(target)
 		}
-		quotes[target.Key] = quote
+		wg.Wait()
 	}
 
 	for key, target := range targets {

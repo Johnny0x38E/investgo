@@ -126,11 +126,10 @@ func (s *Store) SetItemPinned(id string, pinned bool) (core.StateSnapshot, error
 	s.state.Items[index] = item
 	s.state.UpdatedAt = now
 	s.invalidateAllCachesLocked()
-
-	if err := s.saveLocked(); err != nil {
-		s.logError("storage", fmt.Sprintf("save state failed after pin update: %v", err))
-		return core.StateSnapshot{}, err
-	}
+	// Pin toggles are pure UI preference and acceptable to lose on a hard crash;
+	// debounce the write so rapid pin/unpin bursts collapse into one disk write
+	// instead of N synchronous marshals under the write lock.
+	s.markDirtyLocked()
 
 	action := "unpinned"
 	if pinned {

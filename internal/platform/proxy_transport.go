@@ -52,9 +52,9 @@ func NewProxyTransport(mode, rawURL string) *ProxyTransport {
 		// on the tunnelled connection — DialTLSContext is only invoked for
 		// direct (non-proxied) HTTPS requests.
 		DialTLSContext:        chromeTLSDialer(dialer),
-		MaxIdleConns:          64,
-		MaxIdleConnsPerHost:   8,
-		IdleConnTimeout:       60 * time.Second,
+		MaxIdleConns:          128,
+		MaxIdleConnsPerHost:   32,
+		IdleConnTimeout:       90 * time.Second,
 		ResponseHeaderTimeout: 12 * time.Second,
 		TLSClientConfig:       &tls.Config{MinVersion: tls.VersionTLS12},
 		// ForceAttemptHTTP2 is intentionally omitted: DialTLSContext
@@ -63,6 +63,44 @@ func NewProxyTransport(mode, rawURL string) *ProxyTransport {
 	}
 	return pt
 }
+
+// tlsHandshakeConcurrency limits how many utls TLS handshakes run at once.
+// Each handshake is CPU-intensive (Chrome fingerprint emulation + crypto);
+// unbounded concurrent handshakes during a burst of new HTTPS connections
+// (e.g. auto-refresh + search firing together) saturate the CPU and on
+// macOS starve the WKWebView main thread, freezing the entire window.
+// 2 keeps throughput acceptable while leaving CPU headroom for the UI.
+const tlsHandshakeConcurrency = 2
+
+// chromeSpec caches the Chrome ClientHello spec with http/1.1-only ALPN so it
+// is built once per process instead of on every new TLS connection.
+var (
+	chromeSpec     utls.ClientHelloSpec
+	chromeSpecOnce sync.Once
+)
+
+func getChromeSpec() (utls.ClientHelloSpec, error) {
+	var specErr error
+	chromeSpecOnce.Do(func() {
+		spec, err := utls.UTLSIdToSpec(utls.HelloChrome_Auto)
+		if err != nil {
+			specErr = err
+			return
+		}
+		for i, ext := range spec.Extensions {
+			if alpn, ok := ext.(*utls.ALPNExtension); ok {
+				alpn.AlpnProtocols = []string{"http/1.1"}
+				spec.Extensions[i] = alpn
+				break
+			}
+		}
+		chromeSpec = spec
+	})
+	return chromeSpec, specErr
+}
+
+// tlsHandshakeSem limits concurrent utls handshakes to protect the UI thread.
+var tlsHandshakeSem = make(chan struct{}, tlsHandshakeConcurrency)
 
 // chromeTLSDialer returns a DialTLSContext function that dials TCP and then
 // performs a TLS handshake using utls with HelloChrome_Auto, which
@@ -79,22 +117,10 @@ func chromeTLSDialer(dialer *net.Dialer) func(ctx context.Context, network, addr
 			host = addr
 		}
 
-		// Build a Chrome ClientHello spec but force ALPN to http/1.1 only.
-		// The default HelloChrome_Auto advertises h2, causing servers to
-		// negotiate HTTP/2 over ALPN — but Go's http.Transport with a
-		// custom DialTLSContext only speaks HTTP/1.x, leading to
-		// "malformed HTTP response" errors on HTTP/2 frames.
-		spec, specErr := utls.UTLSIdToSpec(utls.HelloChrome_Auto)
+		spec, specErr := getChromeSpec()
 		if specErr != nil {
 			rawConn.Close()
 			return nil, specErr
-		}
-		for i, ext := range spec.Extensions {
-			if alpn, ok := ext.(*utls.ALPNExtension); ok {
-				alpn.AlpnProtocols = []string{"http/1.1"}
-				spec.Extensions[i] = alpn
-				break
-			}
 		}
 
 		tlsConn := utls.UClient(rawConn, &utls.Config{ServerName: host}, utls.HelloCustom)
@@ -102,6 +128,17 @@ func chromeTLSDialer(dialer *net.Dialer) func(ctx context.Context, network, addr
 			rawConn.Close()
 			return nil, err
 		}
+
+		// Limit concurrent handshakes so a burst of new connections does not
+		// saturate the CPU and freeze the macOS webview main thread.
+		select {
+		case tlsHandshakeSem <- struct{}{}:
+			defer func() { <-tlsHandshakeSem }()
+		case <-ctx.Done():
+			rawConn.Close()
+			return nil, ctx.Err()
+		}
+
 		if err := tlsConn.HandshakeContext(ctx); err != nil {
 			rawConn.Close()
 			return nil, err

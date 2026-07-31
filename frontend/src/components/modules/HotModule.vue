@@ -44,7 +44,6 @@
     const sentinelRef = ref<HTMLElement | null>(null);
     let observer: IntersectionObserver | null = null;
     let inflightController: AbortController | null = null;
-    let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
     const { t } = useI18n();
 
     const trackedSet = computed(() => new Set(props.trackedKeys));
@@ -151,15 +150,20 @@
         await resetAndLoad();
     });
 
+    // Search is triggered explicitly by Enter (commitSearch) or by clearing the
+    // input. The watch on activeKeyword below owns the actual request dispatch,
+    // so this watcher only updates the visible searchKeyword ref — it never fires
+    // a request on its own. This eliminates the entire class of mid-typing
+    // request storms that froze the window.
     watch(searchKeyword, (next, previous) => {
         if (next.trim() === previous.trim()) {
             return;
         }
-        clearSearchDebounce();
-        searchDebounceTimer = setTimeout(() => {
-            activeKeyword.value = searchKeyword.value.trim();
-            searchDebounceTimer = null;
-        }, 280);
+        // Clearing the input resets the search immediately so the user gets back
+        // to the full list without having to press Enter.
+        if (next.trim() === '') {
+            activeKeyword.value = '';
+        }
     });
 
     watch(activeKeyword, async (next, previous) => {
@@ -187,7 +191,6 @@
 
     onBeforeUnmount(() => {
         unbindObserver();
-        clearSearchDebounce();
         cancelInflightRequest(true);
     });
 
@@ -198,7 +201,6 @@
 
     onDeactivated(() => {
         unbindObserver();
-        clearSearchDebounce();
         cancelInflightRequest(true);
     });
 
@@ -219,11 +221,12 @@
         }
     }
 
-    function clearSearchDebounce(): void {
-        if (searchDebounceTimer) {
-            clearTimeout(searchDebounceTimer);
-            searchDebounceTimer = null;
+    function commitSearch(): void {
+        const next = searchKeyword.value.trim();
+        if (next === activeKeyword.value) {
+            return;
         }
+        activeKeyword.value = next;
     }
 
     function firstCategoryForGroup(group: HotMarketGroup): HotCategory {
@@ -298,7 +301,7 @@
 
             const payload = await api<HotListResponse>(`/api/hot?${params.toString()}`, {
                 signal: controller.signal,
-                timeoutMs: 15000,
+                timeoutMs: 9000,
             });
             // When categories switch rapidly, only accept the response from the most recent still-active request.
             if (inflightController !== controller) {
@@ -395,7 +398,22 @@
                         {{ entry.label }}
                     </button>
                 </div>
-                <InputText v-model="searchKeyword" class="search-input" :placeholder="t('hot.searchPlaceholder')" />
+                <div class="toolbar-row hot-search-inline">
+                    <InputText
+                        v-model="searchKeyword"
+                        class="search-input"
+                        :placeholder="t('hot.searchPlaceholder')"
+                        @keydown.enter="commitSearch"
+                    />
+                    <Button
+                        size="small"
+                        icon="pi pi-search"
+                        :label="t('hot.search')"
+                        :aria-label="t('hot.search')"
+                        :title="t('hot.search')"
+                        @click="commitSearch"
+                    />
+                </div>
             </div>
         </div>
 
@@ -554,9 +572,16 @@
     }
 
     .hot-toolbar .search-input {
-        height: 40px;
-        flex: 0 0 220px;
-        min-width: 180px;
+        flex: 1 1 180px;
+        min-width: 160px;
+    }
+
+    /* Keep the search box + button together as a single row that wraps as a
+       unit alongside the category tabs rather than splitting across rows. */
+    .hot-toolbar .hot-search-inline {
+        flex-wrap: nowrap;
+        flex: 0 1 auto;
+        min-width: 240px;
     }
 
     .hot-category-tabs {
