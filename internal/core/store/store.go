@@ -50,8 +50,9 @@ type Store struct {
 	// of writing synchronously; the timer fires once after writes settle, so a
 	// burst of changes collapses into a single disk write. High-value mutations
 	// (add/remove/update item, settings, alerts) still save immediately.
-	flushTimer *time.Timer
-	dirty      bool
+	flushTimer         *time.Timer
+	dirty              bool
+	initialFXFetchOnce sync.Once
 }
 
 // NewStore creates a Store and completes state loading and runtime dependency injection.
@@ -103,25 +104,33 @@ func NewStoreWithRepository(
 	}
 	store.holdingsUpdatedAt = store.state.UpdatedAt
 
-	// Kick off an initial FX rate fetch in the background so Snapshot() never blocks
-	// waiting for network on the first call.
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		defer cancel()
-		store.fxRates.Fetch(ctx)
-		store.mu.Lock()
-		if fxErr := store.fxRates.LastError(); fxErr != "" {
-			store.runtime.LastFxError = fxErr
-			store.logWarn("fx-rates", fxErr)
-		} else if validAt := store.fxRates.ValidAt(); !validAt.IsZero() {
-			store.runtime.LastFxError = ""
-			store.runtime.LastFxRefreshAt = ptrTime(validAt)
-			store.logInfo("fx-rates", fmt.Sprintf("FX rates ready (%d currencies)", store.fxRates.CurrencyCount()))
-		}
-		store.mu.Unlock()
-	}()
-
 	return store, nil
+}
+
+// StartInitialFXFetch starts the non-blocking initial FX refresh. Call it only
+// after the shared HTTP transport has been configured from persisted settings.
+func (s *Store) StartInitialFXFetch() {
+	s.initialFXFetchOnce.Do(func() {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
+
+			s.fxRates.Fetch(ctx)
+
+			s.mu.Lock()
+
+			if fxErr := s.fxRates.LastError(); fxErr != "" {
+				s.runtime.LastFxError = fxErr
+				s.logWarn("fx-rates", fxErr)
+			} else if validAt := s.fxRates.ValidAt(); !validAt.IsZero() {
+				s.runtime.LastFxError = ""
+				s.runtime.LastFxRefreshAt = ptrTime(validAt)
+				s.logInfo("fx-rates", fmt.Sprintf("FX rates ready (%d currencies)", s.fxRates.CurrencyCount()))
+			}
+
+			s.mu.Unlock()
+		}()
+	})
 }
 
 // Save persists current in-memory state to disk.
@@ -133,6 +142,7 @@ func (s *Store) Save() error {
 	if err != nil {
 		s.logError("storage", fmt.Sprintf("save state failed: %v", err))
 	}
+
 	return err
 }
 
@@ -141,6 +151,7 @@ func (s *Store) Save() error {
 func (s *Store) Snapshot() core.StateSnapshot {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+
 	return s.snapshotLocked()
 }
 
@@ -148,5 +159,6 @@ func (s *Store) Snapshot() core.StateSnapshot {
 func (s *Store) CurrentSettings() core.AppSettings {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+
 	return s.state.Settings
 }

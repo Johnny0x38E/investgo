@@ -55,7 +55,7 @@ cd "$ROOT_DIR"
 
 "$ROOT_DIR/scripts/render-app-icon.sh"
 
-npm run build
+pnpm build
 
 export CGO_ENABLED=1
 export GOOS=darwin

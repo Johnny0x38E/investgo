@@ -12,8 +12,8 @@ import (
 )
 
 // ApplySystemProxy reads system proxy settings on macOS and injects them into
-// process environment variables. Subsequent net/http clients will transparently
-// use the proxy via http.ProxyFromEnvironment.
+// process environment variables. ProxyTransport captures the resulting values
+// when system mode is configured.
 // Only call this when the configured proxy mode is "system".
 func ApplySystemProxy(logs *logger.LogBook) {
 	if runtime.GOOS != "darwin" {
@@ -59,6 +59,7 @@ func ApplySystemProxy(logs *logger.LogBook) {
 	if applyEntry("HTTPSProxy", "HTTPSPort", "HTTPSEnable", "443") {
 		return
 	}
+
 	applyEntry("HTTPProxy", "HTTPPort", "HTTPEnable", "8080")
 }
 
@@ -93,5 +94,6 @@ func parseScutilProxy(data []byte) (kvs map[string]string, exceptions []string) 
 			}
 		}
 	}
+
 	return kvs, exceptions
 }

@@ -15,7 +15,7 @@ function Require-Command {
     if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
         $hint = switch ($Name) {
             "go" { "winget install GoLang.Go" }
-            "npm" { "winget install OpenJS.NodeJS.LTS" }
+            "pnpm" { "winget install pnpm.pnpm" }
             "magick" { "winget install ImageMagick.ImageMagick" }
             default { "" }
         }
@@ -40,7 +40,7 @@ if ([string]::IsNullOrWhiteSpace($OutputFile)) {
     $OutputFile = Join-Path $RootDir "build/bin/investgo-windows-amd64.exe"
 }
 if ([string]::IsNullOrWhiteSpace($IconSource)) {
-    $IconSource = Join-Path $RootDir "frontend/src/assets/appicon.png"
+    $IconSource = Join-Path $RootDir "scripts/appicon.png"
 }
 if ([string]::IsNullOrWhiteSpace($AppIconOutputFile)) {
     $AppIconOutputFile = Join-Path $RootDir "build/appicon.png"
@@ -52,7 +52,7 @@ if ([string]::IsNullOrWhiteSpace($env:GOCACHE)) {
     $env:GOCACHE = Join-Path $env:TEMP "go-build-cache"
 }
 
-Require-Command "npm"
+Require-Command "pnpm"
 Require-Command "go"
 
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $OutputFile) | Out-Null
@@ -60,25 +60,23 @@ New-Item -ItemType Directory -Force -Path (Split-Path -Parent $AppIconOutputFile
 
 Push-Location $RootDir
 try {
-    if (-not (Test-Path $AppIconOutputFile)) {
-        if (-not (Test-Path $IconSource)) {
-            throw "Missing icon source file: $IconSource"
-        }
-
-        if ([System.IO.Path]::GetExtension($IconSource).ToLowerInvariant() -eq ".png") {
-            Copy-Item -Path $IconSource -Destination $AppIconOutputFile -Force
-            Write-Host "Copied $AppIconOutputFile"
-        } else {
-            Require-Command "magick"
-            & magick -background none -resize "${IconSize}x${IconSize}" $IconSource $AppIconOutputFile
-            if ($LASTEXITCODE -ne 0) {
-                throw "Icon rendering failed."
-            }
-            Write-Host "Rendered $AppIconOutputFile"
-        }
+    if (-not (Test-Path $IconSource)) {
+        throw "Missing icon source file: $IconSource"
     }
 
-    & npm run build
+    if ([System.IO.Path]::GetExtension($IconSource).ToLowerInvariant() -eq ".png") {
+        Copy-Item -Path $IconSource -Destination $AppIconOutputFile -Force
+        Write-Host "Copied $AppIconOutputFile"
+    } else {
+        Require-Command "magick"
+        & magick -background none -resize "${IconSize}x${IconSize}" $IconSource $AppIconOutputFile
+        if ($LASTEXITCODE -ne 0) {
+            throw "Icon rendering failed."
+        }
+        Write-Host "Rendered $AppIconOutputFile"
+    }
+
+    & pnpm build
     if ($LASTEXITCODE -ne 0) {
         throw "Frontend build failed."
     }

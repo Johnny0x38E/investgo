@@ -9,6 +9,7 @@ import (
 	"investgo/internal/core"
 	"investgo/internal/core/hot"
 	"investgo/internal/logger"
+	"investgo/internal/platform"
 )
 
 // handleOverview returns the backend-computed analytics payload for the overview module.
@@ -18,6 +19,7 @@ func (h *Handler) handleOverview(writer http.ResponseWriter, request *http.Reque
 		writeError(writer, request, http.StatusBadGateway, err)
 		return
 	}
+
 	writeJSON(writer, http.StatusOK, analytics)
 }
 
@@ -184,6 +186,9 @@ func (h *Handler) handleUpdateSettings(writer http.ResponseWriter, request *http
 		return
 	}
 	if h.proxyTransport != nil {
+		if snapshot.Settings.ProxyMode == "system" {
+			platform.ApplySystemProxy(h.logs)
+		}
 		h.proxyTransport.Update(snapshot.Settings.ProxyMode, snapshot.Settings.ProxyURL)
 	}
 

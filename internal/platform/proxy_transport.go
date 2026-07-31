@@ -10,6 +10,7 @@ import (
 	"time"
 
 	utls "github.com/refraction-networking/utls"
+	"golang.org/x/net/http/httpproxy"
 )
 
 // ProxyTransport wraps a standard http.Transport with a dynamically
@@ -23,6 +24,9 @@ type ProxyTransport struct {
 	mu   sync.RWMutex
 	mode string   // "system" | "custom" | "none"
 	url  *url.URL // non-nil only when mode == "custom"
+	// systemProxy is rebuilt whenever system mode is selected so proxy
+	// environment changes are not hidden by net/http's process-wide cache.
+	systemProxy func(*url.URL) (*url.URL, error)
 
 	inner *http.Transport
 }
@@ -30,10 +34,8 @@ type ProxyTransport struct {
 // NewProxyTransport builds a ProxyTransport initialised to the given mode/URL.
 // Pass mode "system", "custom", or "none".
 func NewProxyTransport(mode, rawURL string) *ProxyTransport {
-	pt := &ProxyTransport{mode: mode}
-	if mode == "custom" && rawURL != "" {
-		pt.url, _ = url.Parse(rawURL)
-	}
+	pt := &ProxyTransport{}
+	pt.updateConfigLocked(mode, rawURL)
 
 	dialer := &net.Dialer{
 		Timeout:   10 * time.Second,
@@ -72,31 +74,23 @@ func NewProxyTransport(mode, rawURL string) *ProxyTransport {
 // 2 keeps throughput acceptable while leaving CPU headroom for the UI.
 const tlsHandshakeConcurrency = 2
 
-// chromeSpec caches the Chrome ClientHello spec with http/1.1-only ALPN so it
-// is built once per process instead of on every new TLS connection.
-var (
-	chromeSpec     utls.ClientHelloSpec
-	chromeSpecOnce sync.Once
-)
+// newChromeSpec returns a fresh ClientHello spec for one connection. uTLS
+// mutates extension objects in ApplyPreset, so sharing a spec across hosts can
+// leak SNI and GREASE state from one TLS handshake into another.
+func newChromeSpec() (utls.ClientHelloSpec, error) {
+	spec, err := utls.UTLSIdToSpec(utls.HelloChrome_Auto)
+	if err != nil {
+		return utls.ClientHelloSpec{}, err
+	}
+	for i, ext := range spec.Extensions {
+		if alpn, ok := ext.(*utls.ALPNExtension); ok {
+			alpn.AlpnProtocols = []string{"http/1.1"}
+			spec.Extensions[i] = alpn
+			break
+		}
+	}
 
-func getChromeSpec() (utls.ClientHelloSpec, error) {
-	var specErr error
-	chromeSpecOnce.Do(func() {
-		spec, err := utls.UTLSIdToSpec(utls.HelloChrome_Auto)
-		if err != nil {
-			specErr = err
-			return
-		}
-		for i, ext := range spec.Extensions {
-			if alpn, ok := ext.(*utls.ALPNExtension); ok {
-				alpn.AlpnProtocols = []string{"http/1.1"}
-				spec.Extensions[i] = alpn
-				break
-			}
-		}
-		chromeSpec = spec
-	})
-	return chromeSpec, specErr
+	return spec, nil
 }
 
 // tlsHandshakeSem limits concurrent utls handshakes to protect the UI thread.
@@ -107,6 +101,15 @@ var tlsHandshakeSem = make(chan struct{}, tlsHandshakeConcurrency)
 // automatically selects the latest Chrome ClientHello fingerprint.
 func chromeTLSDialer(dialer *net.Dialer) func(ctx context.Context, network, addr string) (net.Conn, error) {
 	return func(ctx context.Context, network, addr string) (net.Conn, error) {
+		// Limit the whole connection setup so no mutable TLS state is prepared
+		// outside the concurrency guard.
+		select {
+		case tlsHandshakeSem <- struct{}{}:
+			defer func() { <-tlsHandshakeSem }()
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+
 		rawConn, err := dialer.DialContext(ctx, network, addr)
 		if err != nil {
 			return nil, err
@@ -117,7 +120,7 @@ func chromeTLSDialer(dialer *net.Dialer) func(ctx context.Context, network, addr
 			host = addr
 		}
 
-		spec, specErr := getChromeSpec()
+		spec, specErr := newChromeSpec()
 		if specErr != nil {
 			rawConn.Close()
 			return nil, specErr
@@ -129,20 +132,11 @@ func chromeTLSDialer(dialer *net.Dialer) func(ctx context.Context, network, addr
 			return nil, err
 		}
 
-		// Limit concurrent handshakes so a burst of new connections does not
-		// saturate the CPU and freeze the macOS webview main thread.
-		select {
-		case tlsHandshakeSem <- struct{}{}:
-			defer func() { <-tlsHandshakeSem }()
-		case <-ctx.Done():
-			rawConn.Close()
-			return nil, ctx.Err()
-		}
-
 		if err := tlsConn.HandshakeContext(ctx); err != nil {
 			rawConn.Close()
 			return nil, err
 		}
+
 		return tlsConn, nil
 	}
 }
@@ -151,13 +145,27 @@ func chromeTLSDialer(dialer *net.Dialer) func(ctx context.Context, network, addr
 // connections so that subsequent requests use the new settings.
 func (pt *ProxyTransport) Update(mode, rawURL string) {
 	pt.mu.Lock()
+	pt.updateConfigLocked(mode, rawURL)
+	pt.mu.Unlock()
+	pt.inner.CloseIdleConnections()
+}
+
+func (pt *ProxyTransport) updateConfigLocked(mode, rawURL string) {
 	pt.mode = mode
 	pt.url = nil
+	pt.systemProxy = nil
+
 	if mode == "custom" && rawURL != "" {
 		pt.url, _ = url.Parse(rawURL)
 	}
-	pt.mu.Unlock()
-	pt.inner.CloseIdleConnections()
+
+	if mode == "system" {
+		pt.systemProxy = environmentProxyFunc()
+	}
+}
+
+func environmentProxyFunc() func(*url.URL) (*url.URL, error) {
+	return httpproxy.FromEnvironment().ProxyFunc()
 }
 
 // RoundTrip implements http.RoundTripper.
@@ -170,6 +178,7 @@ func (pt *ProxyTransport) proxyFunc(req *http.Request) (*url.URL, error) {
 	pt.mu.RLock()
 	mode := pt.mode
 	u := pt.url
+	systemProxy := pt.systemProxy
 	pt.mu.RUnlock()
 
 	switch mode {
@@ -181,7 +190,11 @@ func (pt *ProxyTransport) proxyFunc(req *http.Request) (*url.URL, error) {
 		}
 		return nil, nil
 	default: // "system"
-		return http.ProxyFromEnvironment(req)
+		if systemProxy != nil {
+			return systemProxy(req.URL)
+		}
+
+		return nil, nil
 	}
 }
 

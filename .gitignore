@@ -20,9 +20,6 @@ Thumbs.db
 *.test
 *.prof
 
-# Go testing
-*test.go
-
 # Frontend cache
 .vite/
 *.local
@@ -31,8 +28,5 @@ Thumbs.db
 /frontend/vendor
 
 # Other
-.agents/
-.claude/
 AGENTS.md
 CLAUDE.md
-.zread/

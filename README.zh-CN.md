@@ -23,7 +23,7 @@ InvestGo 主要把 Wails 用作 Go 后端和 Vue 前端的轻量桌面容器，�
 - 行情数据：东方财富、Yahoo Finance、新浪财经、雪球、腾讯财经、Alpha Vantage、Twelve Data、Finnhub、Polygon。
 - 汇率数据：Frankfurter。
 - macOS 打包：Shell 脚本以及 `swift`、`sips`、`iconutil`、`hdiutil`、`ditto`。
-- Windows 构建：PowerShell 脚本以及 `go`、`pnpm`（或 `npm`）、Microsoft Edge WebView2 Runtime。
+- Windows 构建：PowerShell 脚本以及 `go`、`pnpm`、Microsoft Edge WebView2 Runtime。
 
 ## 架构
 
@@ -70,8 +70,6 @@ winget install Microsoft.EdgeWebView2Runtime
 ```bash
 pnpm install
 ```
-
-> 如果更习惯 npm，将以下命令中的 `pnpm` 替换为 `npm` 即可。
 
 运行前端开发服务器：
 
@@ -128,9 +126,9 @@ scripts\build-windows-amd64.bat
 
 这个 `.bat` 包装脚本会用 `-ExecutionPolicy Bypass` 启动当前 PowerShell 构建进程，并在构建失败时暂停窗口，方便看到缺少依赖或脚本错误，避免窗口立刻关闭。
 
-macOS 构建脚本会用 Swift/AppKit 生成 `build/appicon.png`，执行 `pnpm build`，并输出 `build/bin/investgo-darwin-aarch64` 或 `build/bin/investgo-darwin-x86_64`。
-Windows 构建脚本会在缺少 `build/appicon.png` 时复制 `frontend/src/assets/appicon.png`，执行 `pnpm build`，并输出 `build/bin/investgo-windows-amd64.exe`。只有在把 `ICON_SOURCE` 覆盖为 SVG 文件时才需要 ImageMagick。
-如果缺少 `pnpm`（或 `npm`）、`go` 或可选的 `magick`，Windows 构建脚本会打印对应的 `winget install ...` 安装命令。
+macOS 构建脚本会把 `scripts/appicon.png` 复制到 `build/appicon.png`，执行 `pnpm build`，并输出 `build/bin/investgo-darwin-aarch64` 或 `build/bin/investgo-darwin-x86_64`。
+Windows 构建脚本同样会把 `scripts/appicon.png` 复制到 `build/appicon.png`，执行 `pnpm build`，并输出 `build/bin/investgo-windows-amd64.exe`。只有在把 `ICON_SOURCE` 覆盖为 SVG 文件时才需要 ImageMagick。
+如果缺少 `pnpm`、`go` 或可选的 `magick`，Windows 构建脚本会打印对应的 `winget install ...` 安装命令。
 
 构建脚本支持的环境变量：
 

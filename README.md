@@ -23,7 +23,7 @@ InvestGo uses Wails mainly as a lightweight desktop container for a Go backend a
 - Market data: EastMoney, Yahoo Finance, Sina Finance, Xueqiu, Tencent Finance, Alpha Vantage, Twelve Data, Finnhub, Polygon.
 - FX data: Frankfurter.
 - macOS packaging: shell scripts plus `swift`, `sips`, `iconutil`, `hdiutil`, and `ditto`.
-- Windows build: PowerShell script plus `go`, `pnpm` (or `npm`), and Microsoft Edge WebView2 Runtime.
+- Windows build: PowerShell script plus `go`, `pnpm`, and Microsoft Edge WebView2 Runtime.
 
 ## Architecture
 
@@ -70,8 +70,6 @@ Install dependencies:
 ```bash
 pnpm install
 ```
-
-> If you prefer npm, replace `pnpm` with `npm` in the commands below.
 
 Run the frontend dev server:
 
@@ -128,9 +126,9 @@ scripts\build-windows-amd64.bat
 
 The `.bat` wrapper runs the PowerShell build with `-ExecutionPolicy Bypass` for this process and pauses when the build fails, which makes missing prerequisites or script errors visible instead of closing the window immediately.
 
-The macOS build scripts render `build/appicon.png` with Swift/AppKit, run `pnpm build`, and output `build/bin/investgo-darwin-aarch64` or `build/bin/investgo-darwin-x86_64`.
-The Windows build script copies `frontend/src/assets/appicon.png` to `build/appicon.png` when missing, runs `pnpm build`, and outputs `build/bin/investgo-windows-amd64.exe`. ImageMagick is only needed if `ICON_SOURCE` is overridden to point at an SVG file.
-If `pnpm` (or `npm`), `go`, or optional `magick` are missing, the Windows build script prints the matching `winget install ...` command.
+The macOS build scripts copy `scripts/appicon.png` to `build/appicon.png`, run `pnpm build`, and output `build/bin/investgo-darwin-aarch64` or `build/bin/investgo-darwin-x86_64`.
+The Windows build script also copies `scripts/appicon.png` to `build/appicon.png`, runs `pnpm build`, and outputs `build/bin/investgo-windows-amd64.exe`. ImageMagick is only needed if `ICON_SOURCE` is overridden to point at an SVG file.
+If `pnpm`, `go`, or optional `magick` are missing, the Windows build script prints the matching `winget install ...` command.
 
 Build script environment variables:
 

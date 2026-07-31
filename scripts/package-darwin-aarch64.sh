@@ -34,7 +34,7 @@ ICON_SOURCE="${ICON_SOURCE:-$BUILD_DIR/appicon.png}"
 ICONSET_DIR="$BUILD_DIR/InvestGo.iconset"
 ICNS_FILE="$BUILD_DIR/InvestGo.icns"
 ICNS_RENDER_SCRIPT="$ROOT_DIR/scripts/render-icns.swift"
-PLIST_TEMPLATE="$BUILD_DIR/Info.plist.template"
+PLIST_TEMPLATE="${PLIST_TEMPLATE:-$ROOT_DIR/scripts/Info.plist.template}"
 STAGING_DIR="$BUILD_DIR/dmg-staging"
 DMG_PATH="$BUILD_DIR/bin/investgo-$VERSION-darwin-$DARWIN_PLATFORM_NAME.dmg"
 
@@ -232,7 +232,7 @@ create_dmg() {
 }
 
 if [[ "$SKIP_APP_BUILD" != "1" ]]; then
-  require_command npm
+  require_command pnpm
   require_command go
   require_command sips
   require_command iconutil

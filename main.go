@@ -80,8 +80,8 @@ func main() {
 	}
 
 	// The Store is now loaded — sync the proxy transport with the persisted
-	// settings. ApplySystemProxy sets process-wide env vars so that
-	// http.ProxyFromEnvironment works correctly for "system" mode.
+	// settings. ApplySystemProxy populates the process environment before the
+	// transport snapshots it for "system" mode.
 	snapshot := appStore.Snapshot()
 	proxyMode := snapshot.Settings.ProxyMode
 	proxyURL := snapshot.Settings.ProxyURL
@@ -92,6 +92,7 @@ func main() {
 		logs.Info("backend", "proxy", fmt.Sprintf("custom proxy: %s", proxyURL))
 	}
 	proxyTransport.Update(proxyMode, proxyURL)
+	appStore.StartInitialFXFetch()
 
 	hotService := hot.NewHotService(httpClient, logs.NewSlogLogger("hot", slog.LevelInfo), registry)
 

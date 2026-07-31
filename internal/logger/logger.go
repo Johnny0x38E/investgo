@@ -83,6 +83,7 @@ func (b *LogBook) ConfigureFile(path string) error {
 	}
 	b.file = file
 	b.filePath = path
+
 	return nil
 }
 
@@ -97,6 +98,7 @@ func (b *LogBook) Close() error {
 
 	err := b.file.Close()
 	b.file = nil
+
 	return err
 }
 
@@ -127,6 +129,7 @@ func (b *LogBook) Entries(limit int) []DeveloperLogEntry {
 	for idx := total - 1; idx >= 0 && len(result) < limit; idx-- {
 		result = append(result, b.entries[idx])
 	}
+
 	return result
 }
 
@@ -151,6 +154,7 @@ func (b *LogBook) Clear() error {
 		return err
 	}
 	_, err := b.file.Seek(0, io.SeekStart)
+
 	return err
 }
 
@@ -162,6 +166,7 @@ func (b *LogBook) EnableConsole(writer io.Writer) {
 
 	b.mu.Lock()
 	defer b.mu.Unlock()
+
 	b.console = writer
 }
 
@@ -317,6 +322,7 @@ func (h *logBookHandler) Handle(_ context.Context, record slog.Record) error {
 	}
 
 	h.book.Log(h.source, "wails", slogLevelToDeveloperLevel(record.Level), message)
+
 	return nil
 }
 
@@ -331,6 +337,7 @@ func (h *logBookHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 func (h *logBookHandler) WithGroup(name string) slog.Handler {
 	next := *h
 	next.groups = append(append([]string(nil), h.groups...), name)
+
 	return &next
 }
 
@@ -409,5 +416,6 @@ func defaultString(value, fallback string) string {
 	if value == "" {
 		return fallback
 	}
+
 	return value
 }
