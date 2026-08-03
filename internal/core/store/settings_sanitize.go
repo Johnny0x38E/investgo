@@ -108,6 +108,7 @@ func sanitiseSettings(
 			return core.AppSettings{}, errors.New("Polygon API key is required")
 		}
 	}
+
 	switch settings.FontPreset {
 	case "", "system":
 		settings.FontPreset = "system"
@@ -115,6 +116,7 @@ func sanitiseSettings(
 	default:
 		return core.AppSettings{}, errors.New("Font preset must be one of: system / reading / compact")
 	}
+
 	switch settings.ThemeMode {
 	case "", "system":
 		settings.ThemeMode = "system"
@@ -122,6 +124,7 @@ func sanitiseSettings(
 	default:
 		return core.AppSettings{}, errors.New("Theme mode must be one of: system / light / dark")
 	}
+
 	switch settings.ColorTheme {
 	case "", "blue":
 		settings.ColorTheme = "blue"
@@ -129,6 +132,7 @@ func sanitiseSettings(
 	default:
 		return core.AppSettings{}, errors.New("Color theme must be one of: blue / graphite / forest / sunset / rose / violet / amber / ocean / mint / coral / indigo")
 	}
+
 	switch settings.AmountDisplay {
 	case "", "full":
 		settings.AmountDisplay = "full"
@@ -136,6 +140,7 @@ func sanitiseSettings(
 	default:
 		return core.AppSettings{}, errors.New("Amount display must be one of: full / compact")
 	}
+
 	switch settings.CurrencyDisplay {
 	case "", "symbol":
 		settings.CurrencyDisplay = "symbol"
@@ -143,6 +148,7 @@ func sanitiseSettings(
 	default:
 		return core.AppSettings{}, errors.New("Currency display must be one of: symbol / code")
 	}
+
 	switch settings.PriceColorScheme {
 	case "", "cn":
 		settings.PriceColorScheme = "cn"
@@ -150,6 +156,7 @@ func sanitiseSettings(
 	default:
 		return core.AppSettings{}, errors.New("Price color scheme must be one of: cn / intl")
 	}
+
 	switch settings.Locale {
 	case "", "system":
 		settings.Locale = "system"
@@ -157,6 +164,7 @@ func sanitiseSettings(
 	default:
 		return core.AppSettings{}, errors.New("Locale must be one of: system / zh-CN / en-US")
 	}
+
 	switch settings.ProxyMode {
 	case "":
 		settings.ProxyMode = "system"
@@ -177,6 +185,7 @@ func sanitiseSettings(
 	default:
 		return core.AppSettings{}, errors.New("Proxy mode must be one of: none / system / custom")
 	}
+
 	switch settings.DashboardCurrency {
 	case "", "CNY":
 		settings.DashboardCurrency = "CNY"
@@ -184,6 +193,7 @@ func sanitiseSettings(
 	default:
 		return core.AppSettings{}, errors.New("Dashboard currency must be one of: CNY / HKD / USD")
 	}
+
 	return settings, nil
 }
 

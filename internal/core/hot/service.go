@@ -97,6 +97,7 @@ func (s *HotService) List(
 			category == core.HotCategoryCNETF,
 			category == core.HotCategoryHK:
 			response, err = s.listConfiguredCategory(ctx, category, sortBy, page, pageSize, options)
+
 		case category == core.HotCategoryHKETF,
 			isUSHotCategory(category):
 			response, err = s.listFromPool(ctx, category, sortBy, page, pageSize, options)

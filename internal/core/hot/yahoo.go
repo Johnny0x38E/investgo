@@ -178,7 +178,7 @@ func fetchYahooSearchFromHost(
 	if err != nil {
 		return yahooSearchResponse{}, err
 	}
-	defer response.Body.Close()
+	defer response.Body.Close() // nolint:errcheck
 
 	payload, err := io.ReadAll(response.Body)
 	if err != nil {

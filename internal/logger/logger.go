@@ -79,7 +79,7 @@ func (b *LogBook) ConfigureFile(path string) error {
 	defer b.mu.Unlock()
 
 	if b.file != nil {
-		_ = b.file.Close()
+		_ = b.file.Close() // nolint:errcheck
 	}
 	b.file = file
 	b.filePath = path
@@ -170,6 +170,29 @@ func (b *LogBook) EnableConsole(writer io.Writer) {
 	b.console = writer
 }
 
+func (b *LogBook) appendEntryLocked(entry DeveloperLogEntry) {
+	// In-memory logs use a fixed-length circular overwrite strategy to avoid unbounded growth.
+	if len(b.entries) == b.maxEntries {
+		copy(b.entries, b.entries[1:])
+		b.entries[len(b.entries)-1] = entry
+	} else {
+		b.entries = append(b.entries, entry)
+	}
+}
+
+func writeDeveloperLogEntry(writer io.Writer, entry DeveloperLogEntry) error {
+	_, err := fmt.Fprintf(
+		writer,
+		"%s [%s] %s/%s %s\n",
+		entry.Timestamp.Format(time.RFC3339),
+		strings.ToUpper(string(entry.Level)),
+		entry.Source,
+		entry.Scope,
+		entry.Message,
+	)
+	return err
+}
+
 // Log writes a development log entry and synchronizes to memory, file, and terminal output.
 func (b *LogBook) Log(source, scope string, level DeveloperLogLevel, message string) {
 	if b == nil {
@@ -193,36 +216,35 @@ func (b *LogBook) Log(source, scope string, level DeveloperLogLevel, message str
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	// In-memory logs use a fixed-length circular overwrite strategy to avoid unbounded growth.
-	if len(b.entries) == b.maxEntries {
-		copy(b.entries, b.entries[1:])
-		b.entries[len(b.entries)-1] = entry
-	} else {
-		b.entries = append(b.entries, entry)
-	}
+	b.appendEntryLocked(entry)
 
+	var fileFailure *DeveloperLogEntry
 	if b.file != nil {
-		_, _ = fmt.Fprintf(
-			b.file,
-			"%s [%s] %s/%s %s\n",
-			entry.Timestamp.Format(time.RFC3339),
-			strings.ToUpper(string(entry.Level)),
-			entry.Source,
-			entry.Scope,
-			entry.Message,
-		)
+		if err := writeDeveloperLogEntry(b.file, entry); err != nil {
+			failedFile := b.file
+			b.file = nil
+			failureMessage := fmt.Sprintf("file logging disabled after write failure: %v", err)
+			if closeErr := failedFile.Close(); closeErr != nil {
+				failureMessage += fmt.Sprintf("; close failed: %v", closeErr)
+			}
+			failure := DeveloperLogEntry{
+				ID:        fmt.Sprintf("log-%06d", b.sequence.Add(1)),
+				Source:    "backend",
+				Scope:     "logger",
+				Level:     DeveloperLogError,
+				Message:   failureMessage,
+				Timestamp: time.Now(),
+			}
+			b.appendEntryLocked(failure)
+			fileFailure = &failure
+		}
 	}
 
 	if b.console != nil {
-		_, _ = fmt.Fprintf(
-			b.console,
-			"%s [%s] %s/%s %s\n",
-			entry.Timestamp.Format(time.RFC3339),
-			strings.ToUpper(string(entry.Level)),
-			entry.Source,
-			entry.Scope,
-			entry.Message,
-		)
+		_ = writeDeveloperLogEntry(b.console, entry) //nolint:errcheck // Console output is best-effort and has no recoverable failure path.
+		if fileFailure != nil {
+			_ = writeDeveloperLogEntry(b.console, *fileFailure) //nolint:errcheck // Best-effort fallback after the file sink fails.
+		}
 	}
 }
 

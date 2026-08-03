@@ -161,7 +161,7 @@ func fetchFinnhubQuote(
 	if err != nil {
 		return core.Quote{}, fmt.Errorf("Finnhub quote request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint:errcheck
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return core.Quote{}, err
@@ -224,7 +224,7 @@ func fetchFinnhubHistory(
 	if err != nil {
 		return nil, fmt.Errorf("Finnhub history request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint:errcheck
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err

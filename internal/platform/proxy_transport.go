@@ -3,9 +3,11 @@ package platform
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -33,9 +35,11 @@ type ProxyTransport struct {
 
 // NewProxyTransport builds a ProxyTransport initialised to the given mode/URL.
 // Pass mode "system", "custom", or "none".
-func NewProxyTransport(mode, rawURL string) *ProxyTransport {
+func NewProxyTransport(mode, rawURL string) (*ProxyTransport, error) {
 	pt := &ProxyTransport{}
-	pt.updateConfigLocked(mode, rawURL)
+	if err := pt.updateConfigLocked(mode, rawURL); err != nil {
+		return nil, err
+	}
 
 	dialer := &net.Dialer{
 		Timeout:   10 * time.Second,
@@ -63,7 +67,7 @@ func NewProxyTransport(mode, rawURL string) *ProxyTransport {
 		// bypasses Go's built-in HTTP/2 negotiation. HTTP/1.1 is
 		// sufficient for every upstream API this app communicates with.
 	}
-	return pt
+	return pt, nil
 }
 
 // tlsHandshakeConcurrency limits how many utls TLS handshakes run at once.
@@ -122,18 +126,18 @@ func chromeTLSDialer(dialer *net.Dialer) func(ctx context.Context, network, addr
 
 		spec, specErr := newChromeSpec()
 		if specErr != nil {
-			rawConn.Close()
+			rawConn.Close() // nolint:errcheck
 			return nil, specErr
 		}
 
 		tlsConn := utls.UClient(rawConn, &utls.Config{ServerName: host}, utls.HelloCustom)
 		if err := tlsConn.ApplyPreset(&spec); err != nil {
-			rawConn.Close()
+			rawConn.Close() // nolint:errcheck
 			return nil, err
 		}
 
 		if err := tlsConn.HandshakeContext(ctx); err != nil {
-			rawConn.Close()
+			rawConn.Close() // nolint:errcheck
 			return nil, err
 		}
 
@@ -143,25 +147,49 @@ func chromeTLSDialer(dialer *net.Dialer) func(ctx context.Context, network, addr
 
 // Update changes the proxy configuration at runtime and closes idle
 // connections so that subsequent requests use the new settings.
-func (pt *ProxyTransport) Update(mode, rawURL string) {
+func (pt *ProxyTransport) Update(mode, rawURL string) error {
 	pt.mu.Lock()
-	pt.updateConfigLocked(mode, rawURL)
+	err := pt.updateConfigLocked(mode, rawURL)
 	pt.mu.Unlock()
+	if err != nil {
+		return err
+	}
 	pt.inner.CloseIdleConnections()
+	return nil
 }
 
-func (pt *ProxyTransport) updateConfigLocked(mode, rawURL string) {
+func (pt *ProxyTransport) updateConfigLocked(mode, rawURL string) error {
+	var customURL *url.URL
+	var systemProxy func(*url.URL) (*url.URL, error)
+
+	switch mode {
+	case "custom":
+		rawURL = strings.TrimSpace(rawURL)
+		if rawURL == "" {
+			return fmt.Errorf("custom proxy URL is required")
+		}
+		parsed, err := url.Parse(rawURL)
+		if err != nil {
+			return fmt.Errorf("parse custom proxy URL: %w", err)
+		}
+		if parsed.Scheme == "" || parsed.Host == "" {
+			return fmt.Errorf("custom proxy URL must include a scheme and host")
+		}
+		customURL = parsed
+
+	case "system":
+		systemProxy = environmentProxyFunc()
+
+	case "none":
+
+	default:
+		return fmt.Errorf("unsupported proxy mode: %s", mode)
+	}
+
 	pt.mode = mode
-	pt.url = nil
-	pt.systemProxy = nil
-
-	if mode == "custom" && rawURL != "" {
-		pt.url, _ = url.Parse(rawURL)
-	}
-
-	if mode == "system" {
-		pt.systemProxy = environmentProxyFunc()
-	}
+	pt.url = customURL
+	pt.systemProxy = systemProxy
+	return nil
 }
 
 func environmentProxyFunc() func(*url.URL) (*url.URL, error) {

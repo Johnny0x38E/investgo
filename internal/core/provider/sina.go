@@ -104,20 +104,22 @@ func (p *SinaQuoteProvider) Fetch(ctx context.Context, items []core.WatchlistIte
 }
 
 func ResolveSinaQuoteCode(target core.QuoteTarget) (string, error) {
-	switch {
-	case strings.HasSuffix(target.Key, ".SH"):
-		return "sh" + strings.TrimSuffix(target.Key, ".SH"), nil
-	case strings.HasSuffix(target.Key, ".SZ"):
-		return "sz" + strings.TrimSuffix(target.Key, ".SZ"), nil
-	case strings.HasSuffix(target.Key, ".BJ"):
-		return "bj" + strings.TrimSuffix(target.Key, ".BJ"), nil
-	case strings.HasSuffix(target.Key, ".HK"):
-		return "rt_hk" + strings.TrimSuffix(target.Key, ".HK"), nil
-	case target.Market == "US-STOCK" || target.Market == "US-ETF":
-		return "gb_" + strings.ToLower(target.DisplaySymbol), nil
-	default:
-		return "", fmt.Errorf("Sina does not support item: %s", target.DisplaySymbol)
+	if code, ok := strings.CutSuffix(target.Key, ".SH"); ok {
+		return "sh" + code, nil
 	}
+	if code, ok := strings.CutSuffix(target.Key, ".SZ"); ok {
+		return "sz" + code, nil
+	}
+	if code, ok := strings.CutSuffix(target.Key, ".BJ"); ok {
+		return "bj" + code, nil
+	}
+	if code, ok := strings.CutSuffix(target.Key, ".HK"); ok {
+		return "rt_hk" + code, nil
+	}
+	if target.Market == "US-STOCK" || target.Market == "US-ETF" {
+		return "gb_" + strings.ToLower(target.DisplaySymbol), nil
+	}
+	return "", fmt.Errorf("Sina does not support item: %s", target.DisplaySymbol)
 }
 
 func ParseSinaQuoteLine(line string) (string, []string, bool) {

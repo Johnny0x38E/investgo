@@ -260,7 +260,7 @@ func (p *TencentHistoryProvider) fetchHistoryWithCode(
 	if err != nil {
 		return core.HistorySeries{}, fmt.Errorf("Tencent history request failed for %s: %w", code, err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint:errcheck
 	if resp.StatusCode != http.StatusOK {
 		return core.HistorySeries{}, fmt.Errorf("Tencent history request failed for %s: status %d", code, resp.StatusCode)
 	}
@@ -365,39 +365,45 @@ func buildTencentQuote(item core.WatchlistItem, target core.QuoteTarget, fields 
 func resolveTencentQuoteCode(target core.QuoteTarget) (string, error) {
 	switch target.Market {
 	case "CN-A", "CN-GEM", "CN-STAR", "CN-ETF":
-		if strings.HasSuffix(target.DisplaySymbol, ".SH") {
-			return "sh" + strings.TrimSuffix(target.DisplaySymbol, ".SH"), nil
+		if code, ok := strings.CutSuffix(target.DisplaySymbol, ".SH"); ok {
+			return "sh" + code, nil
 		}
-		if strings.HasSuffix(target.DisplaySymbol, ".SZ") {
-			return "sz" + strings.TrimSuffix(target.DisplaySymbol, ".SZ"), nil
+		if code, ok := strings.CutSuffix(target.DisplaySymbol, ".SZ"); ok {
+			return "sz" + code, nil
 		}
+
 	case "HK-MAIN", "HK-GEM", "HK-ETF":
-		if strings.HasSuffix(target.DisplaySymbol, ".HK") {
-			return "hk" + strings.TrimSuffix(target.DisplaySymbol, ".HK"), nil
+		if code, ok := strings.CutSuffix(target.DisplaySymbol, ".HK"); ok {
+			return "hk" + code, nil
 		}
+
 	case "US-STOCK", "US-ETF":
 		return "us" + strings.ReplaceAll(target.DisplaySymbol, "-", "."), nil
 	}
+
 	return "", fmt.Errorf("Tencent does not support item: %s", target.DisplaySymbol)
 }
 
 func resolveTencentHistoryCodes(target core.QuoteTarget) ([]string, error) {
 	switch target.Market {
 	case "CN-A", "CN-GEM", "CN-STAR", "CN-ETF":
-		if strings.HasSuffix(target.DisplaySymbol, ".SH") {
-			return []string{"sh" + strings.TrimSuffix(target.DisplaySymbol, ".SH")}, nil
+		if code, ok := strings.CutSuffix(target.DisplaySymbol, ".SH"); ok {
+			return []string{"sh" + code}, nil
 		}
-		if strings.HasSuffix(target.DisplaySymbol, ".SZ") {
-			return []string{"sz" + strings.TrimSuffix(target.DisplaySymbol, ".SZ")}, nil
+		if code, ok := strings.CutSuffix(target.DisplaySymbol, ".SZ"); ok {
+			return []string{"sz" + code}, nil
 		}
+
 	case "HK-MAIN", "HK-GEM", "HK-ETF":
-		if strings.HasSuffix(target.DisplaySymbol, ".HK") {
-			return []string{"hk" + strings.TrimSuffix(target.DisplaySymbol, ".HK")}, nil
+		if code, ok := strings.CutSuffix(target.DisplaySymbol, ".HK"); ok {
+			return []string{"hk" + code}, nil
 		}
+
 	case "US-STOCK", "US-ETF":
 		symbol := strings.ReplaceAll(target.DisplaySymbol, "-", ".")
 		return []string{"us" + symbol + ".OQ", "us" + symbol + ".N"}, nil
 	}
+
 	return nil, fmt.Errorf("Tencent does not support market: %s", target.DisplaySymbol)
 }
 
@@ -406,8 +412,10 @@ func resolveTencentHistoryParams(interval core.HistoryInterval) (period, begin, 
 	switch interval {
 	case core.HistoryRange1w, core.HistoryRange1mo, core.HistoryRange1y:
 		return "day", now.AddDate(-1, 0, 0).Format(time.DateOnly), now.Format(time.DateOnly), "500", "qfq", nil
+
 	case core.HistoryRange3y, core.HistoryRangeAll:
 		return "week", now.AddDate(-5, 0, 0).Format(time.DateOnly), now.Format(time.DateOnly), "500", "qfq", nil
+
 	default:
 		return "", "", "", "", "", fmt.Errorf("Tencent does not support history interval: %s", interval)
 	}

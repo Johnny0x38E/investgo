@@ -100,7 +100,7 @@ func (p *XueqiuQuoteProvider) Fetch(ctx context.Context, items []core.WatchlistI
 		}
 
 		body, err := io.ReadAll(response.Body)
-		response.Body.Close()
+		response.Body.Close() // nolint:errcheck
 		if response.StatusCode != http.StatusOK {
 			problems = append(problems, fmt.Sprintf("Xueqiu quote request failed: status %d", response.StatusCode))
 			continue
@@ -169,18 +169,20 @@ func derefFloat64(p *float64) float64 {
 }
 
 func resolveXueqiuQuoteSymbol(target core.QuoteTarget) (string, error) {
-	switch {
-	case strings.HasSuffix(target.Key, ".SH"):
-		return "SH" + strings.TrimSuffix(target.Key, ".SH"), nil
-	case strings.HasSuffix(target.Key, ".SZ"):
-		return "SZ" + strings.TrimSuffix(target.Key, ".SZ"), nil
-	case strings.HasSuffix(target.Key, ".BJ"):
-		return "", fmt.Errorf("Xueqiu does not support item: %s", target.DisplaySymbol)
-	case strings.HasSuffix(target.Key, ".HK"):
-		return "HK" + strings.TrimSuffix(target.Key, ".HK"), nil
-	case target.Market == "US-STOCK" || target.Market == "US-ETF":
-		return target.DisplaySymbol, nil
-	default:
+	if code, ok := strings.CutSuffix(target.Key, ".SH"); ok {
+		return "SH" + code, nil
+	}
+	if code, ok := strings.CutSuffix(target.Key, ".SZ"); ok {
+		return "SZ" + code, nil
+	}
+	if strings.HasSuffix(target.Key, ".BJ") {
 		return "", fmt.Errorf("Xueqiu does not support item: %s", target.DisplaySymbol)
 	}
+	if code, ok := strings.CutSuffix(target.Key, ".HK"); ok {
+		return "HK" + code, nil
+	}
+	if target.Market == "US-STOCK" || target.Market == "US-ETF" {
+		return target.DisplaySymbol, nil
+	}
+	return "", fmt.Errorf("Xueqiu does not support item: %s", target.DisplaySymbol)
 }

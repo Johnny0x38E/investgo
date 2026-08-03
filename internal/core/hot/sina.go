@@ -94,7 +94,7 @@ func (s *HotService) listSina(
 	if err != nil {
 		return core.HotListResponse{}, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint:errcheck
 
 	if resp.StatusCode != http.StatusOK {
 		return core.HotListResponse{}, fmt.Errorf("Sina hot request failed: status %d", resp.StatusCode)
@@ -162,7 +162,7 @@ func (s *HotService) fetchSinaCount(ctx context.Context, node string) (int, erro
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint:errcheck
 
 	if resp.StatusCode != http.StatusOK {
 		return 0, fmt.Errorf("Sina count request failed: status %d", resp.StatusCode)

@@ -115,7 +115,7 @@ func (s *HotService) listEastMoney(
 	if err != nil {
 		return core.HotListResponse{}, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint:errcheck
 
 	if resp.StatusCode != http.StatusOK {
 		return core.HotListResponse{}, fmt.Errorf("EastMoney hot request failed: status %d", resp.StatusCode)
@@ -190,9 +190,11 @@ func resolveEastMoneyHotSymbol(code string, marketID int, category core.HotCateg
 		case 0:
 			return strings.ToUpper(code + ".SZ")
 		}
+
 	case core.HotCategoryHK:
 		return strings.ToUpper(code + ".HK")
 	}
+
 	return ""
 }
 
@@ -220,6 +222,7 @@ func normaliseEastMoneyCode(code string, marketID int) string {
 		if len(code) < 5 && core.IsDigits(code) {
 			return strings.Repeat("0", 5-len(code)) + code
 		}
+
 	case 0, 1:
 		if len(code) < 6 && core.IsDigits(code) {
 			return strings.Repeat("0", 6-len(code)) + code
@@ -259,7 +262,7 @@ func fetchEastMoneySuggest(
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -316,16 +319,19 @@ func eastMoneySuggestToSeed(item eastMoneySuggestItem, category core.HotCategory
 			return hotSeed{}, false
 		}
 		return hotSeed{Symbol: strings.ToUpper(code) + ".SH", Name: name, Market: "CN-A", Currency: "CNY"}, true
+
 	case "0": // Shenzhen
 		if !isCNHotCategory(category) {
 			return hotSeed{}, false
 		}
 		return hotSeed{Symbol: strings.ToUpper(code) + ".SZ", Name: name, Market: "CN-A", Currency: "CNY"}, true
+
 	case "128": // Hong Kong
 		if !isHKHotCategory(category) {
 			return hotSeed{}, false
 		}
 		return hotSeed{Symbol: strings.ToUpper(code) + ".HK", Name: name, Market: "HK-MAIN", Currency: "HKD"}, true
+
 	default:
 		return hotSeed{}, false
 	}

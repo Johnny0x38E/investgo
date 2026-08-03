@@ -3,6 +3,7 @@ package platform
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
@@ -33,8 +34,9 @@ func ApplySystemProxy(logs *logger.LogBook) {
 	settings, exceptions := parseScutilProxy(out)
 	if len(exceptions) > 0 && os.Getenv("NO_PROXY") == "" && os.Getenv("no_proxy") == "" {
 		noProxy := strings.Join(exceptions, ",")
-		_ = os.Setenv("NO_PROXY", noProxy)
-		logs.Info("backend", "proxy", "NO_PROXY set from system exceptions: "+noProxy)
+		if setProxyEnvironment(logs, "NO_PROXY", noProxy) {
+			logs.Info("backend", "proxy", "NO_PROXY set from system exceptions: "+noProxy)
+		}
 	}
 
 	applyEntry := func(hostKey, portKey, enableKey, defaultPort string) bool {
@@ -50,8 +52,11 @@ func ApplySystemProxy(logs *logger.LogBook) {
 			port = defaultPort
 		}
 		proxyURL := "http://" + host + ":" + port
-		_ = os.Setenv("HTTPS_PROXY", proxyURL)
-		_ = os.Setenv("HTTP_PROXY", proxyURL)
+		httpsSet := setProxyEnvironment(logs, "HTTPS_PROXY", proxyURL)
+		httpSet := setProxyEnvironment(logs, "HTTP_PROXY", proxyURL)
+		if !httpsSet || !httpSet {
+			return false
+		}
 		logs.Info("backend", "proxy", "system proxy applied: "+proxyURL)
 		return true
 	}
@@ -61,6 +66,14 @@ func ApplySystemProxy(logs *logger.LogBook) {
 	}
 
 	applyEntry("HTTPProxy", "HTTPPort", "HTTPEnable", "8080")
+}
+
+func setProxyEnvironment(logs *logger.LogBook, key, value string) bool {
+	if err := os.Setenv(key, value); err != nil {
+		logs.Warn("backend", "proxy", fmt.Sprintf("failed to set %s: %v", key, err))
+		return false
+	}
+	return true
 }
 
 // parseScutilProxy parses the output of scutil --proxy into a key-value mapping and an exception list.

@@ -47,14 +47,17 @@ func main() {
 	if err := logs.ConfigureFile(defaultLogPath()); err != nil {
 		log.Printf("configure log file: %v", err)
 	}
-	defer func() { _ = logs.Close() }()
+	defer func() { _ = logs.Close() }() // nolint:errcheck
 
 	logs.Info("backend", "app", "starting InvestGo")
 
 	// Bootstrap the shared HTTP transport with the "system" default so that
 	// HTTP clients are available before the Store is initialised. The transport
 	// will be updated to the actual persisted setting once the Store is ready.
-	proxyTransport := platform.NewProxyTransport("system", "")
+	proxyTransport, err := platform.NewProxyTransport("system", "")
+	if err != nil {
+		log.Fatalf("initialise proxy transport: %v", err)
+	}
 	httpClient := platform.NewHTTPClient(proxyTransport)
 
 	var appStore *store.Store
@@ -66,7 +69,7 @@ func main() {
 	}
 	registry := marketdata.DefaultRegistry(httpClient, currentSettings)
 
-	appStore, err := store.NewStore(
+	appStore, err = store.NewStore(
 		defaultStatePath(),
 		registry.QuoteProviders(),
 		registry.QuoteSourceOptions(),
@@ -91,7 +94,9 @@ func main() {
 	} else if proxyMode == "custom" && proxyURL != "" {
 		logs.Info("backend", "proxy", fmt.Sprintf("custom proxy: %s", proxyURL))
 	}
-	proxyTransport.Update(proxyMode, proxyURL)
+	if err := proxyTransport.Update(proxyMode, proxyURL); err != nil {
+		log.Fatalf("configure proxy transport: %v", err)
+	}
 	appStore.StartInitialFXFetch()
 
 	hotService := hot.NewHotService(httpClient, logs.NewSlogLogger("hot", slog.LevelInfo), registry)

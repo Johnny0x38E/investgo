@@ -123,8 +123,8 @@ func primeYahooSession(ctx context.Context, client *http.Client) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-	_, _ = io.Copy(io.Discard, resp.Body)
+	defer resp.Body.Close()               // nolint:errcheck
+	_, _ = io.Copy(io.Discard, resp.Body) //nolint:errcheck // Best-effort drain enables connection reuse; cookies are already stored from the headers.
 	return nil
 }
 
@@ -220,7 +220,7 @@ func fetchYahooChartFromHost(
 	if err != nil {
 		return yahooChartResponse{}, err
 	}
-	defer response.Body.Close()
+	defer response.Body.Close() // nolint:errcheck
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
@@ -451,8 +451,8 @@ func resolveYahooSymbol(item core.WatchlistItem) (string, error) {
 
 	switch target.Market {
 	case "CN-A", "CN-GEM", "CN-STAR", "CN-ETF":
-		if strings.HasSuffix(target.DisplaySymbol, ".SH") {
-			return strings.TrimSuffix(target.DisplaySymbol, ".SH") + ".SS", nil
+		if code, ok := strings.CutSuffix(target.DisplaySymbol, ".SH"); ok {
+			return code + ".SS", nil
 		}
 		if strings.HasSuffix(target.DisplaySymbol, ".SZ") {
 			return target.DisplaySymbol, nil

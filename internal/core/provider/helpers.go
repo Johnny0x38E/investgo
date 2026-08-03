@@ -149,7 +149,7 @@ func FetchTextWithHeaders(
 	if err != nil {
 		return "", err
 	}
-	defer response.Body.Close()
+	defer response.Body.Close() // nolint:errcheck
 
 	if response.StatusCode != http.StatusOK {
 		return "", errors.New("unexpected status " + strconv.Itoa(response.StatusCode))

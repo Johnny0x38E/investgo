@@ -1,20 +1,21 @@
 {
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "typecheck": "vue-tsc --noEmit"
-  },
-  "dependencies": {
-    "@primeuix/themes": "^2.0.3",
-    "chart.js": "^4.5.1",
-    "primeicons": "^7.0.0",
-    "primevue": "^4.5.4",
-    "vue": "^3.5.32"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.5",
-    "typescript": "^6.0.2",
-    "vite": "^8.0.7",
-    "vue-tsc": "^3.2.6"
-  }
+    "packageManager": "pnpm@11.17.0",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "typecheck": "vue-tsc --noEmit"
+    },
+    "dependencies": {
+        "@primeuix/themes": "^2.0.3",
+        "chart.js": "^4.5.1",
+        "primeicons": "^7.0.0",
+        "primevue": "^4.5.4",
+        "vue": "^3.5.32"
+    },
+    "devDependencies": {
+        "@vitejs/plugin-vue": "^6.0.5",
+        "typescript": "^6.0.2",
+        "vite": "^8.0.7",
+        "vue-tsc": "^3.2.6"
+    }
 }

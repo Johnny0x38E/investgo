@@ -282,7 +282,7 @@ func (p *EastMoneyQuoteProvider) fetchUSQuoteBySecID(ctx context.Context, target
 	if err != nil {
 		return core.Quote{}, err
 	}
-	defer response.Body.Close()
+	defer response.Body.Close() // nolint:errcheck
 	if response.StatusCode != http.StatusOK {
 		return core.Quote{}, fmt.Errorf("EastMoney quote request failed: status %d", response.StatusCode)
 	}
@@ -389,7 +389,7 @@ func (p *EastMoneyQuoteProvider) fetchDiffBatch(ctx context.Context, secids []st
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
+	defer response.Body.Close() // nolint:errcheck
 
 	if response.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("EastMoney quote request failed: status %d", response.StatusCode)
@@ -420,20 +420,23 @@ func ResolveAllEastMoneySecIDs(target core.QuoteTarget) ([]string, error) {
 
 	switch market {
 	case "CN-A", "CN-GEM", "CN-STAR", "CN-ETF":
-		if strings.HasSuffix(symbol, ".SH") {
-			return []string{"1." + strings.TrimSuffix(symbol, ".SH")}, nil
+		if code, ok := strings.CutSuffix(symbol, ".SH"); ok {
+			return []string{"1." + code}, nil
 		}
-		if strings.HasSuffix(symbol, ".SZ") {
-			return []string{"0." + strings.TrimSuffix(symbol, ".SZ")}, nil
+		if code, ok := strings.CutSuffix(symbol, ".SZ"); ok {
+			return []string{"0." + code}, nil
 		}
 		return nil, fmt.Errorf("A-share / ETF symbol format is invalid: %s", symbol)
+
 	case "CN-BJ":
 		return nil, fmt.Errorf("Realtime quotes are not supported for Beijing Exchange symbols in EastMoney: %s", symbol)
+
 	case "HK-MAIN", "HK-GEM", "HK-ETF":
-		if strings.HasSuffix(symbol, ".HK") {
-			return []string{"116." + strings.TrimSuffix(symbol, ".HK")}, nil
+		if code, ok := strings.CutSuffix(symbol, ".HK"); ok {
+			return []string{"116." + code}, nil
 		}
 		return nil, fmt.Errorf("Hong Kong symbol format is invalid: %s", symbol)
+
 	case "US-STOCK", "US-ETF":
 		var ticker string
 		if IsLetters(symbol) {
@@ -445,6 +448,7 @@ func ResolveAllEastMoneySecIDs(target core.QuoteTarget) ([]string, error) {
 		}
 		// 105=NASDAQ, 106=NYSE, 107=NYSE Arca — request all three to cover every exchange
 		return []string{"105." + ticker, "106." + ticker, "107." + ticker}, nil
+
 	default:
 		return nil, fmt.Errorf("Market type is unsupported: %s", market)
 	}
@@ -556,7 +560,7 @@ func (p *EastMoneyChartProvider) fetchWithSecID(
 	if err != nil {
 		return core.HistorySeries{}, fmt.Errorf("EastMoney history request failed for %s: %w", secid, err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint:errcheck
 
 	if resp.StatusCode != http.StatusOK {
 		return core.HistorySeries{}, fmt.Errorf("EastMoney history request failed for %s: status %d", secid, resp.StatusCode)
@@ -678,6 +682,7 @@ func NormaliseEastMoneyCode(code string, marketID int) string {
 		if len(code) < 5 && core.IsDigits(code) {
 			return strings.Repeat("0", 5-len(code)) + code
 		}
+
 	case 0, 1:
 		if len(code) < 6 && core.IsDigits(code) {
 			return strings.Repeat("0", 6-len(code)) + code

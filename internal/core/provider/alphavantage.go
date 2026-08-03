@@ -151,7 +151,7 @@ func fetchAlphaVantageQuote(
 	if err != nil {
 		return core.Quote{}, fmt.Errorf("Alpha Vantage quote request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint:errcheck
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return core.Quote{}, err
@@ -212,13 +212,16 @@ func fetchAlphaVantageHistory(
 		params.Set("interval", "60min")
 		params.Set("outputsize", "full")
 		seriesKey = "Time Series (60min)"
+
 	case core.HistoryRange1w, core.HistoryRange1mo, core.HistoryRange1y:
 		params.Set("function", "TIME_SERIES_DAILY")
 		params.Set("outputsize", "full")
 		seriesKey = "Time Series (Daily)"
+
 	case core.HistoryRange3y:
 		params.Set("function", "TIME_SERIES_WEEKLY")
 		seriesKey = "Weekly Time Series"
+
 	case core.HistoryRangeAll:
 		params.Set("function", "TIME_SERIES_MONTHLY")
 		seriesKey = "Monthly Time Series"
@@ -233,7 +236,7 @@ func fetchAlphaVantageHistory(
 	if err != nil {
 		return nil, "", fmt.Errorf("Alpha Vantage history request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint:errcheck
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, "", err

@@ -181,7 +181,7 @@ func fetchTwelveDataQuote(
 	if err != nil {
 		return core.Quote{}, fmt.Errorf("Twelve Data quote request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint:errcheck
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return core.Quote{}, err
@@ -237,7 +237,7 @@ func fetchTwelveDataHistory(
 	if err != nil {
 		return nil, "", fmt.Errorf("Twelve Data history request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint:errcheck
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, "", err

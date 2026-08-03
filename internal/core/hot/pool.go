@@ -171,7 +171,7 @@ func (s *HotService) fetchUSPoolQuotesEastMoney(ctx context.Context, seeds []hot
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
+	defer response.Body.Close() // nolint:errcheck
 	if response.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("EastMoney hot request failed: status %d", response.StatusCode)
 	}
@@ -306,7 +306,7 @@ func (s *HotService) fetchEastMoneyHotDiffBatch(ctx context.Context, secids []st
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
+	defer response.Body.Close() // nolint:errcheck
 
 	payload, err := io.ReadAll(response.Body)
 	if err != nil {

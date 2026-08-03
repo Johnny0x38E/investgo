@@ -72,7 +72,7 @@ func (s *HotService) listXueqiu(
 	if err != nil {
 		return core.HotListResponse{}, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint:errcheck
 
 	if resp.StatusCode != http.StatusOK {
 		return core.HotListResponse{}, fmt.Errorf("Xueqiu screener request failed: status %d", resp.StatusCode)
@@ -184,6 +184,7 @@ func convertXueqiuSymbol(raw string, category core.HotCategory) string {
 	switch category {
 	case core.HotCategoryHK, core.HotCategoryHKETF:
 		return raw + ".HK"
+
 	case core.HotCategoryCNA, core.HotCategoryCNETF:
 		if len(raw) > 2 {
 			prefix := strings.ToUpper(raw[:2])

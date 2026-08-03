@@ -188,7 +188,7 @@ func fetchPolygonQuote(
 	if err != nil {
 		return core.Quote{}, fmt.Errorf("Polygon quote request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint:errcheck
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return core.Quote{}, err
@@ -278,7 +278,7 @@ func fetchPolygonHistory(
 	if err != nil {
 		return nil, fmt.Errorf("Polygon history request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint:errcheck
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -343,8 +343,10 @@ func polygonTimestamp(value int64) time.Time {
 	switch {
 	case value > 1_000_000_000_000_000:
 		return time.Unix(0, value)
+
 	case value > 1_000_000_000_000:
 		return time.UnixMilli(value)
+
 	default:
 		return time.Unix(value, 0)
 	}

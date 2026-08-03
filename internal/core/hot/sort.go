@@ -14,12 +14,16 @@ func sortHotItems(items []core.HotItem, sortBy core.HotSort) {
 		switch sortBy {
 		case core.HotSortGainers:
 			return items[i].ChangePercent > items[j].ChangePercent
+
 		case core.HotSortLosers:
 			return items[i].ChangePercent < items[j].ChangePercent
+
 		case core.HotSortMarketCap:
 			return items[i].MarketCap > items[j].MarketCap
+
 		case core.HotSortPrice:
 			return items[i].CurrentPrice > items[j].CurrentPrice
+
 		default:
 			return items[i].Volume > items[j].Volume
 		}

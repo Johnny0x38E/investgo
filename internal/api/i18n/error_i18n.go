@@ -202,10 +202,10 @@ func localizeSingleError(message string) string {
 	}
 
 	for _, entry := range localizedPrefixMessages {
-		if !strings.HasPrefix(message, entry.prefix) {
+		suffix, ok := strings.CutPrefix(message, entry.prefix)
+		if !ok {
 			continue
 		}
-		suffix := strings.TrimPrefix(message, entry.prefix)
 		if entry.recursive {
 			suffix = localizeSingleError(suffix)
 		}
