@@ -95,6 +95,10 @@ export function getColorThemeOptions(): OptionItem<AppSettings['colorTheme']>[] 
         { label: translate('options.colorTheme.rose'), value: 'rose' },
         { label: translate('options.colorTheme.violet'), value: 'violet' },
         { label: translate('options.colorTheme.amber'), value: 'amber' },
+        { label: translate('options.colorTheme.ocean'), value: 'ocean' },
+        { label: translate('options.colorTheme.mint'), value: 'mint' },
+        { label: translate('options.colorTheme.coral'), value: 'coral' },
+        { label: translate('options.colorTheme.indigo'), value: 'indigo' },
     ];
 }
 
@@ -107,6 +111,10 @@ export const COLOR_THEME_SWATCHES: Record<ColorTheme, string> = {
     rose: '#b84c6e',
     violet: '#6b4fc8',
     amber: '#a87928',
+    ocean: '#2c7f99',
+    mint: '#4d9a7d',
+    coral: '#cf6b5d',
+    indigo: '#5b68bf',
 };
 
 export function getAmountDisplayOptions(): OptionItem<AppSettings['amountDisplay']>[] {

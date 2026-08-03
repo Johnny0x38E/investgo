@@ -28,17 +28,17 @@ type PolygonHistoryProvider struct {
 }
 
 type polygonSnapshotResponse struct {
-	Status string             `json:"status"`
-	Ticker *polygonTicker     `json:"ticker"`
+	Status string         `json:"status"`
+	Ticker *polygonTicker `json:"ticker"`
 }
 
 type polygonTicker struct {
-	Ticker    string             `json:"ticker"`
-	Name      string             `json:"name"`
-	LastTrade *polygonLastTrade  `json:"lastTrade"`
-	Min       *polygonOHLCV      `json:"min"`
-	Day       *polygonOHLCV      `json:"day"`
-	PrevDay   *polygonPrevDay    `json:"prevDay"`
+	Ticker    string            `json:"ticker"`
+	Name      string            `json:"name"`
+	LastTrade *polygonLastTrade `json:"lastTrade"`
+	Min       *polygonOHLCV     `json:"min"`
+	Day       *polygonOHLCV     `json:"day"`
+	PrevDay   *polygonPrevDay   `json:"prevDay"`
 }
 
 type polygonLastTrade struct {

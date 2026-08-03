@@ -260,7 +260,6 @@ func chunkSecIDs(secids []string, batchSize int) [][]string {
 		if len(current) >= batchSize || (len(current) > 0 && nextLen > eastMoneyHotMaxSecIDChars) {
 			chunks = append(chunks, current)
 			current = make([]string, 0, min(batchSize, len(secids)))
-			currentLen = 0
 			nextLen = encodedSecIDQueryLength(0, 0, secid)
 		}
 		current = append(current, secid)

@@ -123,8 +123,16 @@ func decodeJSON(request *http.Request, target any) error {
 
 // writeJSON writes a JSON response with the given status code.
 func writeJSON(writer http.ResponseWriter, status int, payload any) {
+	encoded, err := json.Marshal(payload)
+	if err != nil {
+		http.Error(writer, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
 	writer.WriteHeader(status)
-	_ = json.NewEncoder(writer).Encode(payload)
+	if _, err := writer.Write(append(encoded, '\n')); err != nil {
+		return
+	}
 }
 
 // writeError encodes errors into a consistent JSON shape with a localized user message.
@@ -269,7 +277,7 @@ func localizeQuoteSourceName(locale, name string) string {
 }
 
 func localizeQuoteSourceDescription(locale, sourceID, fallback string) string {
-	if !(strings.EqualFold(locale, "zh-CN") || strings.HasPrefix(strings.ToLower(locale), "zh")) {
+	if !strings.EqualFold(locale, "zh-CN") && !strings.HasPrefix(strings.ToLower(locale), "zh") {
 		return fallback
 	}
 	switch strings.ToLower(strings.TrimSpace(sourceID)) {

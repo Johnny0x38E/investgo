@@ -347,7 +347,6 @@ func ChunkSecIDs(secids []string, batchSize int, maxChars int) [][]string {
 		if len(current) >= batchSize || (len(current) > 0 && nextLen > maxChars) {
 			chunks = append(chunks, current)
 			current = make([]string, 0, min(batchSize, len(secids)))
-			currentLen = 0
 			nextLen = len(secid)
 		}
 		current = append(current, secid)

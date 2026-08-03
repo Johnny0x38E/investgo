@@ -1,32 +1,18 @@
-# Dependencies
+.DS_Store
+Thumbs.db
 /node_modules
-
-# Build outputs
 /build
 /frontend/dist
-
-# IDE
+/frontend/vendor
 .zed/
 .idea/
 .vscode/
 .codegraph/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs & Profiling
 *.log
 *.test
+*_test.go
 *.prof
-
-# Frontend cache
 .vite/
 *.local
-
-# Vendor (deprecated)
-/frontend/vendor
-
-# Other
 AGENTS.md
 CLAUDE.md

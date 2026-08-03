@@ -8,7 +8,8 @@ export type CardTone = 'neutral' | 'rise' | 'fall' | 'warn';
 export type DeveloperLogLevel = 'debug' | 'info' | 'warn' | 'error';
 export type DeveloperLogSource = 'backend' | 'frontend' | 'system';
 export type ThemeMode = 'system' | 'light' | 'dark';
-export type ColorTheme = 'blue' | 'graphite' | 'forest' | 'sunset' | 'rose' | 'violet' | 'amber';
+export type ColorTheme =
+    'blue' | 'graphite' | 'forest' | 'sunset' | 'rose' | 'violet' | 'amber' | 'ocean' | 'mint' | 'coral' | 'indigo';
 
 // Unified market types conforming to exchange conventions
 export type MarketType =

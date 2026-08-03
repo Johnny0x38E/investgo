@@ -358,10 +358,14 @@ func (p *EastMoneyQuoteProvider) fetchDiffBatchAdaptive(ctx context.Context, sec
 		return nil, errs.JoinProblems([]string{leftErr.Error(), rightErr.Error()})
 	}
 	if leftErr != nil {
-		return append([]EastMoneyQuoteDataDiff(nil), right...), nil
+		// Keep the successful half so one bad sub-batch does not discard all quotes;
+		// Fetch reports any symbols missing from the partial result.
+		return append([]EastMoneyQuoteDataDiff(nil), right...), nil //nolint:nilerr
 	}
 	if rightErr != nil {
-		return append([]EastMoneyQuoteDataDiff(nil), left...), nil
+		// Keep the successful half so one bad sub-batch does not discard all quotes;
+		// Fetch reports any symbols missing from the partial result.
+		return append([]EastMoneyQuoteDataDiff(nil), left...), nil //nolint:nilerr
 	}
 	return append(left, right...), nil
 }

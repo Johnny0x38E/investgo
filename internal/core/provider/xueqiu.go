@@ -21,9 +21,9 @@ type XueqiuQuoteProvider struct {
 }
 
 type xueqiuQuoteResponse struct {
-	Data            []xueqiuQuoteItem `json:"data"`
-	ErrorCode       int               `json:"error_code"`
-	ErrorDescription string           `json:"error_description"`
+	Data             []xueqiuQuoteItem `json:"data"`
+	ErrorCode        int               `json:"error_code"`
+	ErrorDescription string            `json:"error_description"`
 }
 
 type xueqiuQuoteItem struct {

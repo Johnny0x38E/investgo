@@ -54,6 +54,19 @@ func parseBoolQuery(raw string) bool {
 	}
 }
 
+func parseOptionalIntQuery(request *http.Request, key string) (int, error) {
+	raw := strings.TrimSpace(request.URL.Query().Get(key))
+	if raw == "" {
+		return 0, nil
+	}
+
+	value, err := strconv.Atoi(raw)
+	if err != nil {
+		return 0, &apiError{message: "Invalid " + key + " query parameter"}
+	}
+	return value, nil
+}
+
 // handleState returns the full state snapshot currently required by the frontend.
 func (h *Handler) handleState(writer http.ResponseWriter, request *http.Request) {
 	writeJSON(writer, http.StatusOK, localizeSnapshot(h.store.Snapshot(), requestLocale(request)))
@@ -61,7 +74,11 @@ func (h *Handler) handleState(writer http.ResponseWriter, request *http.Request)
 
 // handleLogs returns the developer log snapshot.
 func (h *Handler) handleLogs(writer http.ResponseWriter, request *http.Request) {
-	limit, _ := strconv.Atoi(strings.TrimSpace(request.URL.Query().Get("limit")))
+	limit, err := parseOptionalIntQuery(request, "limit")
+	if err != nil {
+		writeError(writer, request, http.StatusBadRequest, err)
+		return
+	}
 	if h.logs == nil {
 		writeJSON(writer, http.StatusOK, logger.DeveloperLogSnapshot{
 			Entries:     []logger.DeveloperLogEntry{},
@@ -112,8 +129,16 @@ func (h *Handler) handleHot(writer http.ResponseWriter, request *http.Request) {
 	category := core.HotCategory(strings.TrimSpace(request.URL.Query().Get("category")))
 	sortBy := core.HotSort(strings.TrimSpace(request.URL.Query().Get("sort")))
 	keyword := strings.TrimSpace(request.URL.Query().Get("q"))
-	page, _ := strconv.Atoi(strings.TrimSpace(request.URL.Query().Get("page")))
-	pageSize, _ := strconv.Atoi(strings.TrimSpace(request.URL.Query().Get("pageSize")))
+	page, err := parseOptionalIntQuery(request, "page")
+	if err != nil {
+		writeError(writer, request, http.StatusBadRequest, err)
+		return
+	}
+	pageSize, err := parseOptionalIntQuery(request, "pageSize")
+	if err != nil {
+		writeError(writer, request, http.StatusBadRequest, err)
+		return
+	}
 	options := hot.HotListOptions{}
 	if h.store != nil {
 		settings := h.store.CurrentSettings()

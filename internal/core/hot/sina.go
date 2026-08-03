@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -25,6 +26,17 @@ type sinaHotItem struct {
 	ChangePercent float64 `json:"changepercent"`
 	Volume        float64 `json:"volume"`
 	MktCap        float64 `json:"mktcap"`
+}
+
+func parseSinaTrade(raw string) (float64, error) {
+	value, err := strconv.ParseFloat(strings.TrimSpace(raw), 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid Sina trade price %q: %w", raw, err)
+	}
+	if math.IsNaN(value) || math.IsInf(value, 0) {
+		return 0, fmt.Errorf("invalid Sina trade price %q: non-finite value", raw)
+	}
+	return value, nil
 }
 
 // listSina fetches a hot list page from Sina Finance.
@@ -104,7 +116,11 @@ func (s *HotService) listSina(
 		if symbol == "" {
 			continue
 		}
-		price, _ := strconv.ParseFloat(raw.Trade, 64)
+		price, err := parseSinaTrade(raw.Trade)
+		if err != nil {
+			s.log.Warn("hot list: skipping Sina item with invalid price", "symbol", symbol, "error", err)
+			continue
+		}
 		items = append(items, core.HotItem{
 			Symbol:        symbol,
 			Name:          raw.Name,

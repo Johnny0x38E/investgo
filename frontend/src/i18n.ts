@@ -261,6 +261,10 @@ const messages: Record<SupportedLocale, TranslationTree> = {
                 rose: '玫瑰粉',
                 violet: '幽紫',
                 amber: '琥珀金',
+                ocean: '海洋蓝',
+                mint: '薄荷绿',
+                coral: '珊瑚橙',
+                indigo: '靛青蓝',
             },
             amountDisplay: {
                 full: '完整数值',
@@ -806,6 +810,10 @@ const messages: Record<SupportedLocale, TranslationTree> = {
                 rose: 'Rose',
                 violet: 'Violet',
                 amber: 'Amber',
+                ocean: 'Ocean',
+                mint: 'Mint',
+                coral: 'Coral',
+                indigo: 'Indigo',
             },
             amountDisplay: {
                 full: 'Full Value',
@@ -829,8 +837,8 @@ const messages: Record<SupportedLocale, TranslationTree> = {
                 below: 'Price below threshold',
             },
             hotMarket: {
-                cn: 'China',
-                hk: 'Hong Kong',
+                cn: 'CN',
+                hk: 'HK',
                 us: 'US',
             },
             hotCategory: {

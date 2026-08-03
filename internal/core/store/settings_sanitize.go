@@ -125,9 +125,9 @@ func sanitiseSettings(
 	switch settings.ColorTheme {
 	case "", "blue":
 		settings.ColorTheme = "blue"
-	case "graphite", "forest", "sunset", "rose", "violet", "amber":
+	case "graphite", "forest", "sunset", "rose", "violet", "amber", "ocean", "mint", "coral", "indigo":
 	default:
-		return core.AppSettings{}, errors.New("Color theme must be one of: blue / graphite / forest / sunset / rose / violet / amber")
+		return core.AppSettings{}, errors.New("Color theme must be one of: blue / graphite / forest / sunset / rose / violet / amber / ocean / mint / coral / indigo")
 	}
 	switch settings.AmountDisplay {
 	case "", "full":

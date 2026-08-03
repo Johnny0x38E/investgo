@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -45,27 +46,64 @@ func (r *tencentKlineRow) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("tencentKlineRow: expected at least 6 elements, got %d", len(elems))
 	}
 	r.Date = strings.Trim(string(elems[0]), `"`)
-	r.Open = tencentParseRawFloat(elems[1])
-	r.Close = tencentParseRawFloat(elems[2])
-	r.High = tencentParseRawFloat(elems[3])
-	r.Low = tencentParseRawFloat(elems[4])
-	r.Volume = tencentParseRawFloat(elems[5])
+
+	fields := []struct {
+		name   string
+		raw    json.RawMessage
+		target *float64
+	}{
+		{name: "open", raw: elems[1], target: &r.Open},
+		{name: "close", raw: elems[2], target: &r.Close},
+		{name: "high", raw: elems[3], target: &r.High},
+		{name: "low", raw: elems[4], target: &r.Low},
+		{name: "volume", raw: elems[5], target: &r.Volume},
+	}
+	for _, field := range fields {
+		value, err := tencentParseRawFloat(field.raw)
+		if err != nil {
+			return fmt.Errorf("tencentKlineRow: invalid %s: %w", field.name, err)
+		}
+		*field.target = value
+	}
 	return nil
 }
 
 // tencentParseRawFloat parses a JSON value that may be either a bare number or a quoted string.
-func tencentParseRawFloat(raw json.RawMessage) float64 {
+func tencentParseRawFloat(raw json.RawMessage) (float64, error) {
+	clean := strings.TrimSpace(string(raw))
+	if clean == "null" {
+		return 0, nil
+	}
+
 	var n json.Number
 	if err := json.Unmarshal(raw, &n); err == nil {
-		f, _ := n.Float64()
-		return f
+		value, err := n.Float64()
+		if err != nil {
+			return 0, fmt.Errorf("invalid numeric value %s: %w", clean, err)
+		}
+		if math.IsNaN(value) || math.IsInf(value, 0) {
+			return 0, fmt.Errorf("invalid numeric value %s: non-finite value", clean)
+		}
+		return value, nil
 	}
+
 	var s string
 	if err := json.Unmarshal(raw, &s); err == nil {
-		f, _ := strconv.ParseFloat(s, 64)
-		return f
+		s = strings.TrimSpace(s)
+		if s == "" || s == "-" {
+			return 0, nil
+		}
+		value, err := strconv.ParseFloat(s, 64)
+		if err != nil {
+			return 0, fmt.Errorf("invalid numeric value %q: %w", s, err)
+		}
+		if math.IsNaN(value) || math.IsInf(value, 0) {
+			return 0, fmt.Errorf("invalid numeric value %q: non-finite value", s)
+		}
+		return value, nil
 	}
-	return 0
+
+	return 0, fmt.Errorf("invalid numeric value %s", clean)
 }
 
 // tencentKlinePayload is the per-symbol data block within tencentFQKlineResponse.

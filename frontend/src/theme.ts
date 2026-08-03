@@ -11,6 +11,10 @@ const themeSeeds: Record<ColorTheme, string> = {
     rose: '#b84c6e',
     violet: '#6b4fc8',
     amber: '#a87928',
+    ocean: '#2c7f99',
+    mint: '#4d9a7d',
+    coral: '#cf6b5d',
+    indigo: '#5b68bf',
 };
 
 export const investGoPreset = definePreset(Aura, {
