@@ -85,9 +85,11 @@ func main() {
 	// The Store is now loaded — sync the proxy transport with the persisted
 	// settings. ApplySystemProxy populates the process environment before the
 	// transport snapshots it for "system" mode.
-	snapshot := appStore.Snapshot()
-	proxyMode := snapshot.Settings.ProxyMode
-	proxyURL := snapshot.Settings.ProxyURL
+	// Only read persisted settings here. Building a full snapshot before the
+	// asynchronous FX fetch would cache dashboard values without current rates.
+	settings := appStore.CurrentSettings()
+	proxyMode := settings.ProxyMode
+	proxyURL := settings.ProxyURL
 	logs.Info("backend", "proxy", fmt.Sprintf("proxy mode: %s", proxyMode))
 	if proxyMode == "system" {
 		platform.ApplySystemProxy(logs)
@@ -135,7 +137,7 @@ func main() {
 		},
 	})
 
-	useNativeTitleBar := snapshot.Settings.UseNativeTitleBar
+	useNativeTitleBar := settings.UseNativeTitleBar
 	windowOptions := platform.BuildMainWindowOptions(useNativeTitleBar)
 	windowOptions.KeyBindings = map[string]func(window application.Window){
 		"F12": func(window application.Window) {

@@ -2,6 +2,7 @@
     import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import Chart from 'primevue/chart';
     import Button from 'primevue/button';
+    import Message from 'primevue/message';
     import Skeleton from 'primevue/skeleton';
 
     import DataFreshnessMeta from '../DataFreshnessMeta.vue';
@@ -16,6 +17,8 @@
         itemCount: number;
         livePriceCount: number;
         generatedAt: string;
+        marketDataLoading: boolean;
+        marketDataError: string;
     }>();
 
     defineEmits<{
@@ -334,8 +337,16 @@
     });
 
     watch(
-        () => props.generatedAt,
-        () => {
+        () => [props.generatedAt, props.marketDataLoading] as const,
+        ([, marketDataLoading]) => {
+            if (marketDataLoading) {
+                inflightController?.abort(new ApiAbortError('aborted'));
+                inflightController = null;
+                analytics.value = null;
+                loading.value = true;
+                error.value = '';
+                return;
+            }
             void loadOverview();
         },
         { immediate: true },
@@ -406,7 +417,17 @@
             </div>
         </div>
 
-        <SummaryStrip :dashboard="dashboard" :item-count="itemCount" :live-price-count="livePriceCount" />
+        <Message v-if="marketDataError" severity="warn" :closable="false" class="market-data-message">
+            <span class="market-data-message-text">{{ marketDataError }}</span>
+            <Button size="small" text icon="pi pi-refresh" :label="t('common.refresh')" @click="$emit('refresh')" />
+        </Message>
+
+        <SummaryStrip
+            :dashboard="dashboard"
+            :item-count="itemCount"
+            :live-price-count="livePriceCount"
+            :loading="marketDataLoading"
+        />
 
         <div v-if="loading" class="overview-loading-grid">
             <div class="overview-card">
@@ -520,6 +541,21 @@
 </template>
 
 <style scoped>
+    .market-data-message {
+        margin: -8px 0 0;
+    }
+
+    .market-data-message :deep(.p-message-content) {
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .market-data-message-text {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
     .overview-module {
         min-height: 0;
         min-width: 0;

@@ -115,11 +115,14 @@ func (s *Store) StartInitialFXFetch() {
 			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			defer cancel()
 
-			s.fxRates.Fetch(ctx)
+			fetchErr := s.fxRates.Fetch(ctx)
 
 			s.mu.Lock()
 
-			if fxErr := s.fxRates.LastError(); fxErr != "" {
+			if fetchErr != nil {
+				s.runtime.LastFxError = fetchErr.Error()
+				s.logWarn("fx-rates", fetchErr.Error())
+			} else if fxErr := s.fxRates.LastError(); fxErr != "" {
 				s.runtime.LastFxError = fxErr
 				s.logWarn("fx-rates", fxErr)
 			} else if validAt := s.fxRates.ValidAt(); !validAt.IsZero() {
@@ -127,6 +130,12 @@ func (s *Store) StartInitialFXFetch() {
 				s.runtime.LastFxRefreshAt = ptrTime(validAt)
 				s.logInfo("fx-rates", fmt.Sprintf("FX rates ready (%d currencies)", s.fxRates.CurrencyCount()))
 			}
+
+			// main.Snapshot() may have populated the derived caches before this
+			// asynchronous fetch completes. FX rates affect dashboard totals and
+			// runtime metadata, so those cached responses must be rebuilt.
+			s.snapshotCache.Store(nil)
+			s.overviewCache.Clear()
 
 			s.mu.Unlock()
 		}()

@@ -1,5 +1,8 @@
 <script setup lang="ts">
     import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+    import Button from 'primevue/button';
+    import Message from 'primevue/message';
+    import ProgressSpinner from 'primevue/progressspinner';
 
     import { api } from './api';
     import AppShell from './components/AppShell.vue';
@@ -46,6 +49,10 @@
     const generatedAt = ref('');
     const statusText = ref(translate('app.loading'));
     const statusTone = ref<StatusTone>('success');
+    const localStateLoading = ref(true);
+    const localStateError = ref('');
+    const marketDataLoading = ref(true);
+    const marketDataError = ref('');
     const search = ref('');
     const selectedItemId = ref('');
     const activeModule = ref<ModuleKey>('overview');
@@ -187,8 +194,10 @@
     onMounted(async () => {
         installClientLogCapture();
         matchMediaList.addEventListener('change', syncThemeMode);
-        await loadState();
-        scheduleAutoRefresh();
+        if (await loadLocalState()) {
+            scheduleAutoRefresh();
+            void loadInitialMarketData();
+        }
     });
 
     onBeforeUnmount(() => {
@@ -257,18 +266,49 @@
         }
     }
 
-    // Fetch the full backend snapshot for initial load and manual refresh flows.
-    async function loadState(silent = false): Promise<void> {
-        if (!silent) {
-            setStatus(translate('app.loadingDashboard'), 'success');
-        }
+    // Load the local snapshot first so the workspace can open quickly without exposing
+    // market-dependent overview values until the first live refresh completes.
+    async function loadLocalState(): Promise<boolean> {
+        localStateLoading.value = true;
+        localStateError.value = '';
+        setStatus(translate('app.loadingDashboard'), 'success');
 
         try {
             const snapshot = await api<StateSnapshot>('/api/state');
             applySnapshot(snapshot);
             setStatus(translate('app.dashboardLoaded'), 'success');
+            return true;
         } catch (error) {
-            setStatus(error instanceof Error ? error.message : translate('app.loadFailed'), 'error');
+            localStateError.value = error instanceof Error ? error.message : translate('app.loadFailed');
+            setStatus(localStateError.value, 'error');
+            return false;
+        } finally {
+            localStateLoading.value = false;
+        }
+    }
+
+    // The initial live refresh runs after the local workspace is visible. Summary and
+    // overview analytics remain in their loading states until this request succeeds.
+    async function loadInitialMarketData(): Promise<void> {
+        if (autoRefreshInFlight) {
+            return;
+        }
+
+        marketDataLoading.value = true;
+        marketDataError.value = '';
+        autoRefreshInFlight = true;
+        try {
+            setStatus(translate('app.syncingQuotes'), 'success');
+            await refreshQuotes(true, false, true);
+        } finally {
+            autoRefreshInFlight = false;
+        }
+    }
+
+    async function retryLocalStateLoad(): Promise<void> {
+        if (await loadLocalState()) {
+            scheduleAutoRefresh();
+            void loadInitialMarketData();
         }
     }
 
@@ -292,7 +332,8 @@
     }
 
     // Refresh live quotes and optionally reload the currently selected chart range.
-    async function refreshQuotes(silent = false, refreshHistory = true, force = false): Promise<void> {
+    async function refreshQuotes(silent = false, refreshHistory = true, force = false): Promise<boolean> {
+        marketDataError.value = '';
         try {
             if (!silent) {
                 setStatus(translate('app.syncingQuotes'), 'success');
@@ -308,20 +349,27 @@
                 // chart overlays aligned with the latest live quote.
                 await loadHistory(true, true);
             }
-            if (snapshot.runtime.lastQuoteError) {
-                setStatus(snapshot.runtime.lastQuoteError, 'error');
-            } else if (snapshot.runtime.lastFxError) {
-                setStatus(
-                    translate('app.quotesSyncedFxFailed', {
-                        error: snapshot.runtime.lastFxError,
-                    }),
-                    'warn',
-                );
-            } else if (!silent) {
+            const quoteError = snapshot.runtime.lastQuoteError;
+            const fxError = snapshot.runtime.lastFxError;
+            if (quoteError || fxError) {
+                const errors = [
+                    quoteError,
+                    fxError ? translate('app.quotesSyncedFxFailed', { error: fxError }) : '',
+                ].filter(Boolean);
+                marketDataError.value = errors.join('\n');
+                setStatus(marketDataError.value, quoteError ? 'error' : 'warn');
+                return false;
+            }
+
+            marketDataLoading.value = false;
+            if (!silent) {
                 setStatus(translate('app.quotesSynced'), 'success');
             }
+            return true;
         } catch (error) {
-            setStatus(error instanceof Error ? error.message : translate('app.refreshFailed'), 'error');
+            marketDataError.value = error instanceof Error ? error.message : translate('app.marketDataRetry');
+            setStatus(marketDataError.value, 'error');
+            return false;
         }
     }
 
@@ -471,7 +519,31 @@
     }
 </script>
 <template>
+    <div v-if="localStateLoading" class="app-startup-state" role="status" aria-live="polite">
+        <div class="app-startup-card">
+            <ProgressSpinner style="width: 48px; height: 48px" stroke-width="4" />
+            <strong class="app-startup-title">{{ translate('app.startupLoading') }}</strong>
+            <span class="app-startup-detail">{{ statusText }}</span>
+        </div>
+    </div>
+
+    <div v-else-if="localStateError" class="app-startup-state" role="alert">
+        <div class="app-startup-card app-startup-error-card">
+            <Message severity="error" :closable="false" class="app-startup-message">
+                <strong>{{ translate('app.startupLoadFailed') }}</strong>
+                <span>{{ localStateError }}</span>
+            </Message>
+            <Button
+                icon="pi pi-refresh"
+                :label="translate('app.retryStartupLoad')"
+                :loading="localStateLoading"
+                @click="retryLocalStateLoad"
+            />
+        </div>
+    </div>
+
     <AppShell
+        v-else
         :active-module="activeModule"
         :items="items"
         :selected-item-id="selectedItemId"
@@ -492,6 +564,8 @@
             :live-price-count="runtime.livePriceCount"
             :runtime="runtime"
             :generated-at="generatedAt"
+            :market-data-loading="marketDataLoading"
+            :market-data-error="marketDataError"
             :selected-item="selectedItem"
             :history-interval="historyInterval"
             :history-series="historySeries"
@@ -580,3 +654,59 @@
         />
     </AppShell>
 </template>
+
+<style scoped>
+    .app-startup-state {
+        width: 100%;
+        height: 100%;
+        min-height: 100%;
+        box-sizing: border-box;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: linear-gradient(180deg, var(--app-bg), var(--app-bg-bottom));
+    }
+
+    .app-startup-card {
+        width: min(420px, 100%);
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+        padding: 32px 28px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-panel);
+        background: var(--panel-bg);
+        box-shadow: var(--shadow);
+        text-align: center;
+    }
+
+    .app-startup-title {
+        color: var(--ink);
+        font: 600 16px/1.2 var(--font-display);
+    }
+
+    .app-startup-detail {
+        max-width: 100%;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+        white-space: pre-line;
+    }
+
+    .app-startup-error-card {
+        align-items: stretch;
+    }
+
+    .app-startup-message {
+        margin: 0;
+    }
+
+    .app-startup-message :deep(.p-message-text) {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+    }
+</style>

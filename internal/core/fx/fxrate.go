@@ -3,6 +3,7 @@ package fx
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,11 +19,12 @@ const frankfurterAPI = "https://api.frankfurter.dev/v1/latest"
 // Uses Frankfurter API (European Central Bank data), cached for at least 2 hours.
 type FxRates struct {
 	mu        sync.RWMutex
-	fetchMu   sync.Mutex         // prevents concurrent in-flight fetches
 	rates     map[string]float64 // foreign currency -> CNY
 	validAt   time.Time
 	lastError string // error message from the most recent fetch failure
 	client    *http.Client
+	fetching  bool
+	fetchDone chan struct{}
 }
 
 // NewFxRates creates FX rate service, initialized with only CNY=1.0.
@@ -52,6 +54,10 @@ func NewFxRatesWithRates(rates map[string]float64) *FxRates {
 func (f *FxRates) IsStale() bool {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
+	return f.isStaleLocked()
+}
+
+func (f *FxRates) isStaleLocked() bool {
 	return f.validAt.IsZero() || time.Since(f.validAt) > 2*time.Hour
 }
 
@@ -85,32 +91,81 @@ type frankfurterResponse struct {
 
 // Fetch fetches FX rates of various currencies against CNY from the Frankfurter API.
 // Fetches foreign currency rates with CNY as base, then takes reciprocals to get "foreign currency → CNY" mapping.
-// Clears lastError on success, records error message on failure.
-func (f *FxRates) Fetch(ctx context.Context) {
-	// Only one goroutine fetches at a time; concurrent callers return immediately.
-	if !f.fetchMu.TryLock() {
-		return
+// Concurrent callers share one in-flight request and receive the same success or error result.
+func (f *FxRates) Fetch(ctx context.Context) error {
+	if ctx == nil {
+		ctx = context.Background()
 	}
-	defer f.fetchMu.Unlock()
 
+	for {
+		f.mu.Lock()
+		if !f.isStaleLocked() {
+			f.mu.Unlock()
+			return nil
+		}
+		if f.fetching {
+			done := f.fetchDone
+			f.mu.Unlock()
+
+			select {
+			case <-done:
+				f.mu.RLock()
+				fresh := !f.isStaleLocked()
+				lastError := f.lastError
+				f.mu.RUnlock()
+
+				if fresh {
+					return nil
+				}
+				if lastError != "" {
+					return errors.New(lastError)
+				}
+				// The completed caller should always record either fresh rates or an
+				// error. Loop defensively if a future implementation changes that.
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+			continue
+		}
+
+		f.fetching = true
+		f.fetchDone = make(chan struct{})
+		done := f.fetchDone
+		f.mu.Unlock()
+
+		err := f.fetchOnce(ctx)
+
+		f.mu.Lock()
+		f.fetching = false
+		close(done)
+		f.mu.Unlock()
+
+		return err
+	}
+}
+
+func (f *FxRates) fetchOnce(ctx context.Context) error {
 	url := frankfurterAPI + "?from=CNY"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		f.setError(fmt.Sprintf("Failed to create FX request: %v", err))
-		return
+		message := fmt.Sprintf("Failed to create FX request: %v", err)
+		f.setError(message)
+		return errors.New(message)
 	}
 
 	resp, err := f.client.Do(req)
 	if err != nil {
-		f.setError(fmt.Sprintf("FX service is unreachable: %v", err))
-		return
+		message := fmt.Sprintf("FX service is unreachable: %v", err)
+		f.setError(message)
+		return errors.New(message)
 	}
 	defer resp.Body.Close() // nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		f.setError(fmt.Sprintf("Failed to read FX response: %v", err))
-		return
+		message := fmt.Sprintf("Failed to read FX response: %v", err)
+		f.setError(message)
+		return errors.New(message)
 	}
 
 	if resp.StatusCode != http.StatusOK {
@@ -118,18 +173,21 @@ func (f *FxRates) Fetch(ctx context.Context) {
 		if len(detail) > 200 {
 			detail = detail[:200]
 		}
-		f.setError(fmt.Sprintf("FX service returned %d: %s", resp.StatusCode, detail))
-		return
+		message := fmt.Sprintf("FX service returned %d: %s", resp.StatusCode, detail)
+		f.setError(message)
+		return errors.New(message)
 	}
 
 	var data frankfurterResponse
 	if err := json.Unmarshal(body, &data); err != nil {
-		f.setError(fmt.Sprintf("Failed to decode FX data: %v", err))
-		return
+		message := fmt.Sprintf("Failed to decode FX data: %v", err)
+		f.setError(message)
+		return errors.New(message)
 	}
 	if data.Base != "CNY" || len(data.Rates) == 0 {
-		f.setError("FX payload is invalid")
-		return
+		message := "FX payload is invalid"
+		f.setError(message)
+		return errors.New(message)
 	}
 
 	newRates := make(map[string]float64, len(data.Rates)+1)
@@ -146,6 +204,7 @@ func (f *FxRates) Fetch(ctx context.Context) {
 	f.validAt = time.Now()
 	f.lastError = ""
 	f.mu.Unlock()
+	return nil
 }
 
 func (f *FxRates) setError(msg string) {

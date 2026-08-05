@@ -2,6 +2,7 @@
 Thumbs.db
 /node_modules
 /build
+/docs
 /frontend/dist
 /frontend/vendor
 .zed/

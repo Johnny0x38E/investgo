@@ -1,5 +1,6 @@
 <script setup lang="ts">
     import { computed } from 'vue';
+    import Skeleton from 'primevue/skeleton';
 
     import { formatMoney, formatPercent } from '../format';
     import { useI18n } from '../i18n';
@@ -9,6 +10,7 @@
         dashboard: DashboardSummary | null;
         itemCount: number;
         livePriceCount: number;
+        loading: boolean;
     }>();
 
     const { t } = useI18n();
@@ -61,18 +63,24 @@
 </script>
 
 <template>
-    <section class="summary-strip">
+    <section class="summary-strip" :aria-busy="loading">
         <article v-for="card in cards" :key="card.label" class="summary-card">
             <span class="summary-label">{{ card.label }}</span>
-            <strong class="summary-value" :class="card.tone !== 'neutral' ? `tone-${card.tone}` : ''">
-                <span v-if="card.currency" class="summary-currency">{{ card.currency }}</span>
-                <span class="summary-number">{{ card.value }}</span>
-            </strong>
-            <span
-                class="summary-sub"
-                :class="card.tone === 'rise' || card.tone === 'fall' ? `tone-${card.tone}` : ''"
-                >{{ card.sub }}</span
-            >
+            <template v-if="loading">
+                <Skeleton width="72%" height="1.15rem" />
+                <Skeleton width="48%" height="0.7rem" />
+            </template>
+            <template v-else>
+                <strong class="summary-value" :class="card.tone !== 'neutral' ? `tone-${card.tone}` : ''">
+                    <span v-if="card.currency" class="summary-currency">{{ card.currency }}</span>
+                    <span class="summary-number">{{ card.value }}</span>
+                </strong>
+                <span
+                    class="summary-sub"
+                    :class="card.tone === 'rise' || card.tone === 'fall' ? `tone-${card.tone}` : ''"
+                    >{{ card.sub }}</span
+                >
+            </template>
         </article>
     </section>
 </template>

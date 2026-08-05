@@ -16,6 +16,7 @@ type quoteRefreshResult struct {
 	quotes      map[string]core.Quote
 	problems    []string
 	fxFetched   bool
+	fxError     string
 }
 
 // Refresh refreshes real-time quotes and alert status, but does not touch historical trend cache.
@@ -57,21 +58,20 @@ func (s *Store) Refresh(ctx context.Context, force bool) (core.StateSnapshot, er
 		s.runtime.LastQuoteRefreshAt = ptrTime(time.Now())
 	}
 
-	if fetchErr := errs.JoinProblems(result.problems); fetchErr != nil {
+	fetchErr := errs.JoinProblems(result.problems)
+	if fetchErr != nil {
 		s.runtime.LastQuoteError = fetchErr.Error()
 		s.logWarn("quotes", fmt.Sprintf("quote refresh failed: %v", fetchErr))
 	}
 
 	// Update FX rate runtime status.
-	if result.fxFetched {
-		if fxErr := s.fxRates.LastError(); fxErr != "" {
-			s.runtime.LastFxError = fxErr
-			s.logWarn("fx-rates", fxErr)
-		} else {
-			s.runtime.LastFxError = ""
-			s.runtime.LastFxRefreshAt = ptrTime(s.fxRates.ValidAt())
-			s.logInfo("fx-rates", fmt.Sprintf("FX rates refreshed for %d currencies", s.fxRates.CurrencyCount()))
-		}
+	if result.fxError != "" {
+		s.runtime.LastFxError = result.fxError
+		s.logWarn("fx-rates", result.fxError)
+	} else if result.fxFetched {
+		s.runtime.LastFxError = ""
+		s.runtime.LastFxRefreshAt = ptrTime(s.fxRates.ValidAt())
+		s.logInfo("fx-rates", fmt.Sprintf("FX rates refreshed for %d currencies", s.fxRates.CurrencyCount()))
 	}
 
 	s.evaluateAlertsLocked()
@@ -85,7 +85,9 @@ func (s *Store) Refresh(ctx context.Context, force bool) (core.StateSnapshot, er
 	// and live prices are re-fetched on startup, so refresh must not touch disk.
 
 	snapshot := s.snapshotLocked()
-	s.refreshCache.Set("all", cloneStateSnapshot(snapshot), s.quoteRefreshTTLLocked())
+	if fetchErr == nil && result.fxError == "" {
+		s.refreshCache.Set("all", cloneStateSnapshot(snapshot), s.quoteRefreshTTLLocked())
+	}
 	return snapshot, nil
 }
 
@@ -126,20 +128,19 @@ func (s *Store) RefreshItem(ctx context.Context, itemID string, force bool) (cor
 		}
 	}
 
-	if fetchErr := errs.JoinProblems(result.problems); fetchErr != nil {
+	fetchErr := errs.JoinProblems(result.problems)
+	if fetchErr != nil {
 		s.runtime.LastQuoteError = fetchErr.Error()
 		s.logWarn("quotes", fmt.Sprintf("quote refresh failed: %v", fetchErr))
 	}
 
-	if result.fxFetched {
-		if fxErr := s.fxRates.LastError(); fxErr != "" {
-			s.runtime.LastFxError = fxErr
-			s.logWarn("fx-rates", fxErr)
-		} else {
-			s.runtime.LastFxError = ""
-			s.runtime.LastFxRefreshAt = ptrTime(s.fxRates.ValidAt())
-			s.logInfo("fx-rates", fmt.Sprintf("FX rates refreshed for %d currencies", s.fxRates.CurrencyCount()))
-		}
+	if result.fxError != "" {
+		s.runtime.LastFxError = result.fxError
+		s.logWarn("fx-rates", result.fxError)
+	} else if result.fxFetched {
+		s.runtime.LastFxError = ""
+		s.runtime.LastFxRefreshAt = ptrTime(s.fxRates.ValidAt())
+		s.logInfo("fx-rates", fmt.Sprintf("FX rates refreshed for %d currencies", s.fxRates.CurrencyCount()))
 	}
 
 	s.evaluateAlertsLocked()
@@ -149,7 +150,9 @@ func (s *Store) RefreshItem(ctx context.Context, itemID string, force bool) (cor
 	// remains the on-disk state and prices are re-fetched on next startup.
 
 	snapshot := s.snapshotLocked()
-	s.itemRefreshCache.Set(itemID, cloneStateSnapshot(snapshot), s.quoteRefreshTTLLocked())
+	if fetchErr == nil && result.fxError == "" {
+		s.itemRefreshCache.Set(itemID, cloneStateSnapshot(snapshot), s.quoteRefreshTTLLocked())
+	}
 	return snapshot, nil
 }
 
@@ -194,8 +197,11 @@ func (s *Store) refreshQuotesForItems(ctx context.Context, items []core.Watchlis
 
 	// Refresh FX opportunistically alongside quote requests so derived dashboard values stay aligned after quote updates.
 	if s.fxRates.IsStale() {
-		s.fxRates.Fetch(ctx)
-		result.fxFetched = true
+		if err := s.fxRates.Fetch(ctx); err != nil {
+			result.fxError = err.Error()
+		} else {
+			result.fxFetched = true
+		}
 	}
 
 	if len(batchList) == 0 {

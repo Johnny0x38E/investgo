@@ -27,6 +27,8 @@
         livePriceCount: number;
         runtime: StateSnapshot['runtime'];
         generatedAt: string;
+        marketDataLoading: boolean;
+        marketDataError: string;
         selectedItem: WatchlistItem | null;
         historyInterval: HistoryInterval;
         historySeries: HistorySeries | null;
@@ -83,6 +85,8 @@
         :item-count="itemCount"
         :live-price-count="livePriceCount"
         :generated-at="generatedAt"
+        :market-data-loading="marketDataLoading"
+        :market-data-error="marketDataError"
         @refresh="$emit('refresh')"
     />
 
