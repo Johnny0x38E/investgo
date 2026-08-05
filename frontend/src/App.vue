@@ -299,7 +299,10 @@
         autoRefreshInFlight = true;
         try {
             setStatus(translate('app.syncingQuotes'), 'success');
-            await refreshQuotes(true, false, true);
+            const synced = await refreshQuotes(true, false, true);
+            if (synced) {
+                setStatus(translate('app.quotesSynced'), 'success');
+            }
         } finally {
             autoRefreshInFlight = false;
         }

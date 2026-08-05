@@ -7,7 +7,14 @@
     import DataFreshnessMeta from '../DataFreshnessMeta.vue';
     import { ApiAbortError, api } from '../../api';
     import { getHotCategoryOptions } from '../../constants';
-    import { formatDateTime, formatMoney, formatPercent, formatUnitPrice } from '../../format';
+    import {
+        formatCurrencyAmount,
+        formatCurrencyCode,
+        formatDateTime,
+        formatMoney,
+        formatPercent,
+        formatUnitPrice,
+    } from '../../format';
     import { useI18n } from '../../i18n';
     import type { HotCategory, HotItem, HotListResponse, HotMarketGroup } from '../../types';
 
@@ -458,7 +465,7 @@
                         <td>
                             <div class="value-stack">
                                 <strong>{{ formatUnitPrice(item.currentPrice, item.currency) }}</strong>
-                                <span>{{ item.currency }}</span>
+                                <span>{{ formatCurrencyCode(item.currency) }}</span>
                             </div>
                         </td>
                         <td>
@@ -470,13 +477,13 @@
                                     >{{ formatPercent(item.changePercent) }}</strong
                                 >
                                 <span :class="item.change > 0 ? 'tone-rise' : item.change < 0 ? 'tone-fall' : ''">{{
-                                    formatMoney(item.change, true)
+                                    formatCurrencyAmount(item.change, item.currency, true)
                                 }}</span>
                             </div>
                         </td>
                         <td>
                             <div class="value-stack">
-                                <strong>{{ formatMoney(item.marketCap) }}</strong>
+                                <strong>{{ formatCurrencyAmount(item.marketCap, item.currency) }}</strong>
                                 <span>{{ t('hot.totalMarketCap') }}</span>
                             </div>
                         </td>
@@ -649,7 +656,7 @@
     }
 
     .hot-table {
-        min-width: 780px;
+        min-width: 900px;
     }
 
     .hot-feedback,
@@ -691,25 +698,25 @@
 
     .hot-table th:nth-child(2),
     .hot-table td:nth-child(2) {
-        width: 102px;
+        width: 124px;
     }
 
     .hot-table th:nth-child(3),
     .hot-table td:nth-child(3) {
-        width: 106px;
+        width: 124px;
     }
 
     .hot-table th:nth-child(4),
     .hot-table td:nth-child(4) {
-        width: 108px;
+        width: 136px;
     }
 
     .hot-table th.hot-table-sticky-volume,
     .hot-table td.hot-table-sticky-volume {
         right: 88px;
-        width: 108px;
-        min-width: 108px;
-        max-width: 108px;
+        width: 124px;
+        min-width: 124px;
+        max-width: 124px;
     }
 
     .hot-table th.hot-table-sticky-actions,

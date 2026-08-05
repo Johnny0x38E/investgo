@@ -10,6 +10,16 @@ const currencySymbolMap: Record<string, string> = {
     USD: '$',
 };
 
+const currencyAliasMap: Record<string, string> = {
+    $: 'USD',
+    US$: 'USD',
+    HK$: 'HKD',
+    HKD$: 'HKD',
+    RMB: 'CNY',
+    '¥': 'CNY',
+    '￥': 'CNY',
+};
+
 // Formatter cache: keyed by a string describing the options
 const formatterCache = new Map<string, Intl.NumberFormat>();
 
@@ -85,16 +95,40 @@ export function formatPercent(value: number): string {
     return `${prefix}${formatNumber(amount, 2)}%`;
 }
 
+function normalizeCurrencyCode(currency: string | null | undefined): string {
+    const normalized = String(currency ?? '')
+        .trim()
+        .toUpperCase();
+    return currencyAliasMap[normalized] || normalized;
+}
+
+function formatWithCurrency(value: string, currency: string | null | undefined): string {
+    const normalizedCurrency = normalizeCurrencyCode(currency);
+    if (!normalizedCurrency) {
+        return value;
+    }
+    if (settings.currencyDisplay === 'code') {
+        return `${normalizedCurrency} ${value}`;
+    }
+    const symbol = currencySymbolMap[normalizedCurrency] || '';
+    return symbol ? `${symbol} ${value}` : value;
+}
+
+// Return a canonical currency code for data that may come from a provider with different casing or spacing.
+export function formatCurrencyCode(currency: string | null | undefined): string {
+    return normalizeCurrencyCode(currency);
+}
+
+// Format a compact/full monetary amount with the configured symbol or currency code.
+export function formatCurrencyAmount(value: number, currency: string | null | undefined, signed = false): string {
+    return formatWithCurrency(formatMoney(value, signed), currency);
+}
+
 // formatUnitPrice formats a price/amount in the given currency.
 // Pass maxFractionDigits > 2 (e.g. 4) when the stored value may have more decimal places
 // that should be shown in full (e.g. cost-price, DCA buy-price).
-export function formatUnitPrice(value: number, currency: string, maxFractionDigits = 2): string {
-    const numeric = formatFlexNumber(value, 2, maxFractionDigits);
-    if (settings.currencyDisplay === 'code') {
-        return `${currency} ${numeric}`;
-    }
-    const symbol = currencySymbolMap[currency] || '';
-    return symbol ? `${symbol} ${numeric}` : numeric;
+export function formatUnitPrice(value: number, currency: string | null | undefined, maxFractionDigits = 2): string {
+    return formatWithCurrency(formatFlexNumber(value, 2, maxFractionDigits), currency);
 }
 
 // formatShares formats a share / unit count with at most 4 decimal places,

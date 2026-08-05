@@ -341,7 +341,7 @@ func buildTencentQuote(item core.WatchlistItem, target core.QuoteTarget, fields 
 	quote := BuildQuote(name, current, previous, open, high, low, updatedAt, "Tencent Finance")
 	quote.Symbol = target.DisplaySymbol
 	quote.Market = target.Market
-	quote.Currency = FirstNonEmpty(PartsAt(fields, 35), item.Currency, target.Currency)
+	quote.Currency = FirstNonEmpty(PartsAt(fields, tencentCurrencyFieldIndex(target.Market)), item.Currency, target.Currency)
 	quote.Change = ParseFloat(PartsAt(fields, 31))
 	quote.ChangePercent = ParseFloat(PartsAt(fields, 32))
 
@@ -360,6 +360,18 @@ func buildTencentQuote(item core.WatchlistItem, target core.QuoteTarget, fields 
 	}
 
 	return quote, quote.CurrentPrice > 0
+}
+
+func tencentCurrencyFieldIndex(market string) int {
+	switch market {
+	case "HK-MAIN", "HK-GEM", "HK-ETF":
+		return 75
+	case "US-STOCK", "US-ETF":
+		return 35
+	default:
+		// Tencent's mainland quote layout places the currency at field 82.
+		return 82
+	}
 }
 
 func resolveTencentQuoteCode(target core.QuoteTarget) (string, error) {
