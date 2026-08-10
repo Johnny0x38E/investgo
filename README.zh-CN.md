@@ -4,13 +4,7 @@
 
 <h1 align="center">InvestGo</h1>
 
-<div align="center">
-  <a href="./README.md">English</a> |
-  <a href="./README.zh-CN.md">简体中文</a> |
-  <a href="./LICENSE">许可证</a>
-</div>
-
----
+[English](./README.md) | [简体中文](./README.zh-CN.md) | [License](./LICENSE)
 
 面向自选、持仓、组合分析、行情数据与价格提醒的轻量桌面投资工作台。
 

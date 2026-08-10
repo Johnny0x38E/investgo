@@ -4,13 +4,7 @@
 
 <h1 align="center">InvestGo</h1>
 
-<div align="center">
-  <a href="./README.md">English</a> |
-  <a href="./README.zh-CN.md">简体中文</a> |
-  <a href="./LICENSE">License</a>
-</div>
-
----
+[English](./README.md) | [简体中文](./README.zh-CN.md) | [License](./LICENSE)
 
 A lightweight desktop investment workbench for watchlists, holdings, portfolio analytics, market data, and price alerts.
 
