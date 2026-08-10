@@ -8,12 +8,12 @@ Thumbs.db
 .zed/
 .idea/
 .vscode/
-.codegraph/
 *.log
 *.test
 *_test.go
 *.prof
 .vite/
 *.local
+.agents/
 AGENTS.md
 CLAUDE.md
