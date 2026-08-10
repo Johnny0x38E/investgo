@@ -10,11 +10,9 @@
   <a href="./LICENSE">License</a>
 </div>
 
-<p align="center">
-  A lightweight desktop investment workbench for watchlists, holdings, portfolio analytics, market data, and price alerts.
-</p>
-
 ---
+
+A lightweight desktop investment workbench for watchlists, holdings, portfolio analytics, market data, and price alerts.
 
 ![Light](assets/light.png)
 
