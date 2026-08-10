@@ -1,233 +1,87 @@
-# InvestGo
+<div align="center">
+  <img src="scripts/icon/appicon.png" alt="InvestGo icon" width="128" />
+</div>
 
-[English](./README.md) | [简体中文](./README.zh-CN.md) | [License](./LICENSE)
+<h1 align="center">InvestGo</h1>
 
-InvestGo is a Wails desktop investment tracker for watchlists, holdings, portfolio analytics, hot lists, historical charts and price alerts.
+<div align="center">
+  <a href="./README.md">English</a> |
+  <a href="./README.zh-CN.md">简体中文</a> |
+  <a href="./LICENSE">License</a>
+</div>
 
-InvestGo uses Wails mainly as a lightweight desktop container for a Go backend and Vue frontend. The packaged desktop app does not need to ship its own Chromium and Node.js runtime like Electron. For this project shape, Wails can usually deliver a much smaller app bundle, lower idle memory usage, and faster startup than an equivalent Electron app, while still providing native windowing, embedded assets, lifecycle hooks, DevTools support, and platform integration.
+<p align="center">
+  A lightweight desktop investment workbench for watchlists, holdings, portfolio analytics, market data, and price alerts.
+</p>
 
-> - Electron has enabled many excellent cross-platform desktop applications, but it has also made repeatedly bundling the browser runtime a common overhead on many everyday devices. We need more lightweight cross-platform desktop solutions, reusing the system WebView as much as possible and keeping the native backend lean.
-> - This project currently targets Wails v3 alpha.54. Wails v3 is still an alpha release, so official APIs, runtime behaviour, and build details may change in future Wails releases.
-> - InvestGo is primarily a personal-use and learning project. It is open-sourced for reference, but long-term maintenance, compatibility, and feature roadmap are not guaranteed.
+---
 
-## Screenshots
+![Light](assets/light.png)
 
-| Light                      | Dark                     |
-| -------------------------- | ------------------------ |
-| ![Light](assets/light.png) | ![Dark](assets/dark.png) |
+![Dark](assets/dark.png)
 
-## Tech Stack
+## Tech stack
 
-- Backend: Go 1.24, Wails v3 alpha.54, standard HTTP handlers.
-- Frontend: Vue 3, TypeScript, PrimeVue 4, Vite 8, Chart.js 4.
-- Market data: EastMoney, Yahoo Finance, Sina Finance, Xueqiu, Tencent Finance, Alpha Vantage, Twelve Data, Finnhub, Polygon.
-- FX data: Frankfurter.
-- macOS packaging: shell scripts plus `swift`, `sips`, `iconutil`, `hdiutil`, and `ditto`.
-- Windows build: PowerShell script plus `go`, `pnpm`, and Microsoft Edge WebView2 Runtime.
+- Go 1.24 and Wails v3 alpha.54
+- Vue 3, TypeScript, PrimeVue, Vite, and Chart.js
+- Multiple market-data providers with Frankfurter for FX rates
 
-## Architecture
+## Quick start
 
-The repository is not a monorepo. The Go module root is the repository root, and the frontend lives in `frontend/`.
-
-- `main.go` embeds `frontend/dist` and `build/appicon.png`, creates the Wails v3 application, wires platform settings, and serves one HTTP mux.
-- `/api/*` routes are handled by `internal/api`. The frontend talks to the backend with normal `fetch()` calls from `frontend/src/api.ts`; it does not use Wails JS bindings for app data.
-- `internal/core/store` owns persisted state, runtime status, quote refreshes, history cache, overview analytics, alert evaluation, and JSON storage.
-- `internal/core/marketdata` registers quote and history providers and builds the history router.
-- `internal/core/provider` contains provider implementations.
-- `internal/core/hot` owns hot-list pools, caching, enrichment, and sorting.
-- `internal/platform` isolates desktop platform seams such as proxy detection and window options.
-- `internal/logger` stores backend and frontend developer logs.
-
-Persisted state defaults to:
-
-- macOS: `~/Library/Application Support/investgo/state.json`
-- Windows: `%AppData%\investgo\state.json`
-
-Developer logs default to:
-
-- macOS: `~/Library/Application Support/investgo/logs/app.log`
-- Windows: `%AppData%\investgo\logs\app.log`
-
-## Development
-
-Prerequisites:
-
-- Node.js 20+
-- Go 1.24+
-- macOS 13+ on Apple Silicon or Intel for macOS build and packaging scripts
-- Windows 11 x64 plus Microsoft Edge WebView2 Runtime for Windows desktop runtime
-
-Windows prerequisites can be installed with:
-
-```powershell
-winget install OpenJS.NodeJS.LTS
-winget install GoLang.Go
-winget install Microsoft.EdgeWebView2Runtime
-```
-
-Install dependencies:
+Requirements: Node.js 20+, pnpm 11+, Go 1.24+. macOS builds require macOS 13+; Windows builds require WebView2 Runtime.
 
 ```bash
 pnpm install
-```
-
-Run the frontend dev server:
-
-```bash
 pnpm dev
 ```
 
-The dev server runs on port 5173. It does not provide the Wails runtime, so `frontend/src/wails-runtime.ts` must remain nullable-safe.
-
-Run checks:
+Run checks and build the frontend:
 
 ```bash
 pnpm typecheck
 env GOCACHE=/tmp/go-build-cache go test ./...
-```
-
-Build the frontend bundle:
-
-```bash
 pnpm build
 ```
 
-Build the desktop binary:
+## Build and package
 
 macOS Apple Silicon:
 
 ```bash
 ./scripts/build-darwin-aarch64.sh
-VERSION=1.0.0 ./scripts/build-darwin-aarch64.sh
-./scripts/build-darwin-aarch64.sh --dev
+VERSION=1.0.0 ./scripts/package-darwin-aarch64.sh
 ```
 
 macOS Intel:
 
 ```bash
 ./scripts/build-darwin-x86_64.sh
-VERSION=1.0.0 ./scripts/build-darwin-x86_64.sh
-./scripts/build-darwin-x86_64.sh --dev
+VERSION=1.0.0 ./scripts/package-darwin-x86_64.sh
 ```
 
-Windows 11 x64 from PowerShell:
+Windows 11 x64 (PowerShell):
 
 ```powershell
 .\scripts\build-windows-amd64.ps1
-$env:VERSION="1.0.0"; .\scripts\build-windows-amd64.ps1
-.\scripts\build-windows-amd64.ps1 -Dev
 ```
 
-Windows 11 x64 from Command Prompt or Explorer:
+Use `--dev` with the macOS scripts when Web Inspector support is needed.
 
-```bat
-scripts\build-windows-amd64.bat
-```
+Build outputs are written to `build/bin/`. Windows currently produces a runnable `.exe`; an installer is not included yet.
 
-The `.bat` wrapper runs the PowerShell build with `-ExecutionPolicy Bypass` for this process and pauses when the build fails, which makes missing prerequisites or script errors visible instead of closing the window immediately.
+## Notes
 
-The macOS build scripts copy `scripts/icon/appicon.png` to `build/appicon.png`, run `pnpm build`, and output `build/bin/investgo-darwin-aarch64` or `build/bin/investgo-darwin-x86_64`.
-The Windows build script also copies `scripts/icon/appicon.png` to `build/appicon.png`, runs `pnpm build`, and outputs `build/bin/investgo-windows-amd64.exe`. ImageMagick is only needed if `ICON_SOURCE` is overridden to point at an SVG file.
-If `pnpm`, `go`, or optional `magick` are missing, the Windows build script prints the matching `winget install ...` command.
+- Wails v3 is still in alpha, so APIs and packaging details may change.
+- Public macOS builds are unsigned. If macOS blocks a trusted app, first try **Open Anyway** in System Settings > Privacy & Security. If it still cannot open, run:
 
-Build script environment variables:
+    ```bash
+    xattr -dr com.apple.quarantine /Applications/InvestGo.app
+    ```
 
-- `VERSION`
-- `APP_VERSION`
-- `OUTPUT_FILE`
-- `ICON_SOURCE` (Windows)
-- `APP_ICON_OUTPUT_FILE` (Windows)
-- `ICON_SIZE` (Windows)
-- `DARWIN_GOARCH` (macOS)
-- `DARWIN_PLATFORM_NAME` (macOS)
-- `MACOS_MIN_VERSION`
-- `GOCACHE`
-- `MACOSX_DEPLOYMENT_TARGET`
-- `CGO_CFLAGS`
-- `CGO_LDFLAGS`
+    Use `sudo xattr -dr com.apple.quarantine /Applications/InvestGo.app` if permission is denied, and only run this for an app you trust.
 
-## Package
-
-Windows installer packaging is not implemented yet. The Windows script currently produces a runnable `.exe`; a proper installer still needs Windows-specific resource metadata, WebView2 handling, signing, and installer scripting.
-
-Package the app bundle and DMG:
-
-macOS Apple Silicon:
-
-```bash
-./scripts/package-darwin-aarch64.sh
-VERSION=1.0.0 ./scripts/package-darwin-aarch64.sh
-./scripts/package-darwin-aarch64.sh --dev
-```
-
-macOS Intel:
-
-```bash
-./scripts/package-darwin-x86_64.sh
-VERSION=1.0.0 ./scripts/package-darwin-x86_64.sh
-./scripts/package-darwin-x86_64.sh --dev
-```
-
-Outputs:
-
-- `build/macos/InvestGo.app`
-- `build/bin/investgo-<version>-darwin-aarch64.dmg`
-- `build/bin/investgo-<version>-darwin-x86_64.dmg`
-
-Unsigned macOS builds:
-
-The public macOS artifacts are not currently Developer ID signed or notarized. After downloading a DMG or app bundle, macOS Gatekeeper may block launch, or show messages such as "InvestGo is damaged and can't be opened." For a build you trust, either use System Settings > Privacy & Security > Open Anyway after the first failed launch, or remove the quarantine flag manually:
-
-```bash
-# If the app has already been copied to /Applications:
-xattr -dr com.apple.quarantine /Applications/InvestGo.app
-
-# If macOS requires elevated permissions for the copied app:
-sudo xattr -dr com.apple.quarantine /Applications/InvestGo.app
-```
-
-You can also clear the downloaded DMG before mounting it:
-
-```bash
-xattr -d com.apple.quarantine ~/Downloads/investgo-<version>-darwin-aarch64.dmg
-xattr -d com.apple.quarantine ~/Downloads/investgo-<version>-darwin-x86_64.dmg
-```
-
-Do this only for artifacts you built yourself or downloaded from a source you trust. Disabling Gatekeeper globally is not recommended.
-
-Packaging script environment variables:
-
-- `APP_NAME`
-- `BINARY_NAME`
-- `VERSION`
-- `APP_ID`
-- `MACOS_MIN_VERSION`
-- `DARWIN_PLATFORM_NAME`
-- `DARWIN_BUILD_SCRIPT`
-- `VOLUME_NAME`
-- `ICON_SOURCE`
-- `APPLE_SIGN_IDENTITY`
-- `NOTARYTOOL_PROFILE`
-- `SKIP_APP_BUILD`
-- `SKIP_DMG_CREATE`
-
-## Runtime Notes
-
-- `--dev` enables terminal logging and F12 Web Inspector support at build time. F12 still requires the in-app `developerMode` setting to be enabled.
-- Version is injected with `-X main.appVersion=$APP_VERSION`. Without `VERSION` or `APP_VERSION`, the app reports `dev`.
-- Proxy mode can be `none`, `system`, or `custom`. System proxy detection currently probes `scutil --proxy` only on macOS.
-- Windows builds require WebView2 Runtime on the target machine. Windows 11 usually has it installed, but clean systems should verify it explicitly.
-- The Windows build does not yet embed a `.ico`, version resource, or application manifest into the executable.
-- Frontend visible copy is bilingual. User-facing text changes should update both `zh-CN` and `en-US` entries in `frontend/src/i18n.ts`.
-- There are no frontend tests. Use `pnpm typecheck` for frontend validation and Go tests under `internal/**` for backend validation.
-
-## Disclaimer
-
-1. Any investment losses or gains resulting from the use of this software.
-2. The accuracy, timeliness, or completeness of the data provided.
-3. Data interruptions or errors caused by network failures, data source changes, or other technical issues.
-4. Any outcomes from investment decisions based on information from this software.
+- This is primarily a personal-use and learning project. Market data may be delayed, incomplete, or unavailable, and the app does not provide investment advice.
 
 ## License
 
-This project is open-sourced under the [MIT License](./LICENSE).
+[MIT License](./LICENSE)
