@@ -5,7 +5,7 @@
     import InputNumber from 'primevue/inputnumber';
     import Select from 'primevue/select';
     import ToggleSwitch from 'primevue/toggleswitch';
-    import appMark from '../../assets/app-mark.svg';
+    import appMark from '../../assets/app-mark.png';
     import { api } from '../../api';
 
     import {

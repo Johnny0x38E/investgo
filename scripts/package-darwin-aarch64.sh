@@ -32,8 +32,8 @@ APP_EXECUTABLE="$APP_CONTENTS_DIR/MacOS/$BINARY_NAME"
 APP_RESOURCES_DIR="$APP_CONTENTS_DIR/Resources"
 ICON_SOURCE="${ICON_SOURCE:-$BUILD_DIR/appicon.png}"
 ICONSET_DIR="$BUILD_DIR/InvestGo.iconset"
+ICONSET_SOURCE_DIR="${ICONSET_SOURCE_DIR:-}"
 ICNS_FILE="$BUILD_DIR/InvestGo.icns"
-ICNS_RENDER_SCRIPT="$ROOT_DIR/scripts/render-icns.swift"
 PLIST_TEMPLATE="${PLIST_TEMPLATE:-$ROOT_DIR/scripts/Info.plist.template}"
 STAGING_DIR="$BUILD_DIR/dmg-staging"
 DMG_PATH="$BUILD_DIR/bin/investgo-$VERSION-darwin-$DARWIN_PLATFORM_NAME.dmg"
@@ -106,24 +106,42 @@ generate_icns() {
   local size
   local retina_size
 
-  if [[ -f "$ICNS_RENDER_SCRIPT" ]] && command -v swift >/dev/null 2>&1; then
-    export CLANG_MODULE_CACHE_PATH="${CLANG_MODULE_CACHE_PATH:-${TMPDIR:-/tmp}/swift-module-cache}"
-    swift "$ICNS_RENDER_SCRIPT" "$ICON_SOURCE" "$ICNS_FILE"
-    if [[ -s "$ICNS_FILE" ]]; then
-      return
-    fi
-  fi
-
   rm -f "$ICNS_FILE"
   rm -rf "$ICONSET_DIR"
   mkdir -p "$ICONSET_DIR"
 
-  for size in 16 32 128 256 512; do
-    retina_size=$((size * 2))
-    sips -z "$size" "$size" "$ICON_SOURCE" --out "$ICONSET_DIR/icon_${size}x${size}.png" >/dev/null
-    sips -z "$retina_size" "$retina_size" "$ICON_SOURCE" --out "$ICONSET_DIR/icon_${size}x${size}@2x.png" >/dev/null
-  done
-  cp "$ICON_SOURCE" "$ICONSET_DIR/icon_512x512@2x.png"
+  if [[ -n "$ICONSET_SOURCE_DIR" ]]; then
+    if [[ ! -d "$ICONSET_SOURCE_DIR" ]]; then
+      printf 'Missing macOS icon set: %s\n' "$ICONSET_SOURCE_DIR" >&2
+      exit 1
+    fi
+
+    # An explicitly supplied AppIcon set takes precedence. This is useful
+    # when the artwork has been authored independently at every size.
+
+    for size in 16 32 128 256 512; do
+      if [[ ! -f "$ICONSET_SOURCE_DIR/Icon-mac-$size.png" || ! -f "$ICONSET_SOURCE_DIR/Icon-mac-$size@2x.png" ]]; then
+        printf 'Incomplete macOS icon set: %s (missing %sx%s representation)\n' \
+          "$ICONSET_SOURCE_DIR" "$size" "$size" >&2
+        exit 1
+      fi
+
+      cp "$ICONSET_SOURCE_DIR/Icon-mac-$size.png" \
+        "$ICONSET_DIR/icon_${size}x${size}.png"
+      cp "$ICONSET_SOURCE_DIR/Icon-mac-$size@2x.png" \
+        "$ICONSET_DIR/icon_${size}x${size}@2x.png"
+    done
+  else
+    # The normal path starts with one transparent-corner master and creates
+    # all ten required macOS representations with the same geometry.
+    for size in 16 32 128 256 512; do
+      retina_size=$((size * 2))
+      sips -z "$size" "$size" "$ICON_SOURCE" \
+        --out "$ICONSET_DIR/icon_${size}x${size}.png" >/dev/null
+      sips -z "$retina_size" "$retina_size" "$ICON_SOURCE" \
+        --out "$ICONSET_DIR/icon_${size}x${size}@2x.png" >/dev/null
+    done
+  fi
 
   iconutil --convert icns --output "$ICNS_FILE" "$ICONSET_DIR"
 

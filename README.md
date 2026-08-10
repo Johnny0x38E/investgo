@@ -126,8 +126,8 @@ scripts\build-windows-amd64.bat
 
 The `.bat` wrapper runs the PowerShell build with `-ExecutionPolicy Bypass` for this process and pauses when the build fails, which makes missing prerequisites or script errors visible instead of closing the window immediately.
 
-The macOS build scripts copy `scripts/appicon.png` to `build/appicon.png`, run `pnpm build`, and output `build/bin/investgo-darwin-aarch64` or `build/bin/investgo-darwin-x86_64`.
-The Windows build script also copies `scripts/appicon.png` to `build/appicon.png`, runs `pnpm build`, and outputs `build/bin/investgo-windows-amd64.exe`. ImageMagick is only needed if `ICON_SOURCE` is overridden to point at an SVG file.
+The macOS build scripts copy `scripts/icon/appicon.png` to `build/appicon.png`, run `pnpm build`, and output `build/bin/investgo-darwin-aarch64` or `build/bin/investgo-darwin-x86_64`.
+The Windows build script also copies `scripts/icon/appicon.png` to `build/appicon.png`, runs `pnpm build`, and outputs `build/bin/investgo-windows-amd64.exe`. ImageMagick is only needed if `ICON_SOURCE` is overridden to point at an SVG file.
 If `pnpm`, `go`, or optional `magick` are missing, the Windows build script prints the matching `winget install ...` command.
 
 Build script environment variables:

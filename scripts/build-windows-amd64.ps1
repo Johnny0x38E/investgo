@@ -40,7 +40,7 @@ if ([string]::IsNullOrWhiteSpace($OutputFile)) {
     $OutputFile = Join-Path $RootDir "build/bin/investgo-windows-amd64.exe"
 }
 if ([string]::IsNullOrWhiteSpace($IconSource)) {
-    $IconSource = Join-Path $RootDir "scripts/appicon.png"
+    $IconSource = Join-Path $RootDir "scripts/icon/appicon.png"
 }
 if ([string]::IsNullOrWhiteSpace($AppIconOutputFile)) {
     $AppIconOutputFile = Join-Path $RootDir "build/appicon.png"

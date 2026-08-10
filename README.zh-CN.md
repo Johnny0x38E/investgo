@@ -126,8 +126,8 @@ scripts\build-windows-amd64.bat
 
 这个 `.bat` 包装脚本会用 `-ExecutionPolicy Bypass` 启动当前 PowerShell 构建进程，并在构建失败时暂停窗口，方便看到缺少依赖或脚本错误，避免窗口立刻关闭。
 
-macOS 构建脚本会把 `scripts/appicon.png` 复制到 `build/appicon.png`，执行 `pnpm build`，并输出 `build/bin/investgo-darwin-aarch64` 或 `build/bin/investgo-darwin-x86_64`。
-Windows 构建脚本同样会把 `scripts/appicon.png` 复制到 `build/appicon.png`，执行 `pnpm build`，并输出 `build/bin/investgo-windows-amd64.exe`。只有在把 `ICON_SOURCE` 覆盖为 SVG 文件时才需要 ImageMagick。
+macOS 构建脚本会把 `scripts/icon/appicon.png` 复制到 `build/appicon.png`，执行 `pnpm build`，并输出 `build/bin/investgo-darwin-aarch64` 或 `build/bin/investgo-darwin-x86_64`。
+Windows 构建脚本同样会把 `scripts/icon/appicon.png` 复制到 `build/appicon.png`，执行 `pnpm build`，并输出 `build/bin/investgo-windows-amd64.exe`。只有在把 `ICON_SOURCE` 覆盖为 SVG 文件时才需要 ImageMagick。
 如果缺少 `pnpm`、`go` 或可选的 `magick`，Windows 构建脚本会打印对应的 `winget install ...` 安装命令。
 
 构建脚本支持的环境变量：

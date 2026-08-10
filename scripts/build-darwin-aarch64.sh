@@ -53,7 +53,7 @@ done
 mkdir -p "$(dirname "$OUTPUT_FILE")"
 cd "$ROOT_DIR"
 
-"$ROOT_DIR/scripts/render-app-icon.sh"
+"$ROOT_DIR/scripts/icon/process/render-app-icon.sh"
 
 pnpm build
 
