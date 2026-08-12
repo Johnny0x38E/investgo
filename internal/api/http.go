@@ -242,6 +242,7 @@ func localizeQuoteSourceSummary(locale, summary string) string {
 		"Alpha Vantage",
 		"Twelve Data",
 		"Finnhub",
+		"Tiingo",
 		"Polygon",
 	}
 	for _, name := range replacements {
@@ -269,6 +270,8 @@ func localizeQuoteSourceName(locale, name string) string {
 			return "Twelve Data"
 		case "Finnhub":
 			return "Finnhub"
+		case "Tiingo":
+			return "Tiingo"
 		case "Polygon":
 			return "Polygon"
 		}
@@ -297,6 +300,8 @@ func localizeQuoteSourceDescription(locale, sourceID, fallback string) string {
 		return "较稳定的美股与美股 ETF API 型数据源，适合统一实时和历史链路。"
 	case "finnhub":
 		return "面向美股与 ETF 的 API 数据源，适合统一接入实时价格和 K 线历史。"
+	case "tiingo":
+		return "提供美股与 ETF 的批量 IEX 报价和较完整的日线历史，适合作为免费 API 型美股行情源。"
 	case "polygon":
 		return "Polygon.io（Massive）提供的美股与 ETF API 数据源，适合高质量实时与历史链路。"
 	default:

@@ -526,7 +526,7 @@ func (s *HotService) fetchPoolQuotesWithProvider(ctx context.Context, seeds []ho
 	}
 
 	quotes, err := qp.Fetch(ctx, items)
-	if err != nil {
+	if err != nil && len(quotes) == 0 {
 		return nil, err
 	}
 

@@ -149,7 +149,7 @@
 
                             <p
                                 v-if="
-                                    ['alpha-vantage', 'twelve-data', 'finnhub', 'polygon'].includes(
+                                    ['alpha-vantage', 'twelve-data', 'finnhub', 'tiingo', 'polygon'].includes(
                                         settingsDraft.usQuoteSource,
                                     )
                                 "
@@ -184,6 +184,17 @@
                                 <span>{{ t('settings.labels.finnhubApiKey') }}</span>
                                 <InputText
                                     v-model.trim="settingsDraft.finnhubApiKey"
+                                    type="password"
+                                    autocomplete="new-password"
+                                    class="w-full"
+                                />
+                                <small class="settings-note">{{ t('settings.labels.apiKeyHelp') }}</small>
+                            </label>
+
+                            <label v-if="settingsDraft.usQuoteSource === 'tiingo'" class="full-span">
+                                <span>{{ t('settings.labels.tiingoApiKey') }}</span>
+                                <InputText
+                                    v-model.trim="settingsDraft.tiingoApiKey"
                                     type="password"
                                     autocomplete="new-password"
                                     class="w-full"

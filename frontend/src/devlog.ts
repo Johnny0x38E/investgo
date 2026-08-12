@@ -145,7 +145,7 @@ function formatValue(value: unknown): string {
 export function redactSensitiveText(message: string): string {
     return message
         .replace(
-            /(alphaVantageApiKey|twelveDataApiKey|finnhubApiKey|polygonApiKey)\s*[:=]\s*["']?[^"'\s,;]+["']?/gi,
+            /(alphaVantageApiKey|twelveDataApiKey|finnhubApiKey|tiingoApiKey|polygonApiKey)\s*[:=]\s*["']?[^"'\s,;]+["']?/gi,
             '$1: ***',
         )
         .replace(/([?&](?:apikey|api_key|key)=)[^&\s]+/gi, '$1***')

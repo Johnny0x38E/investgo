@@ -79,6 +79,7 @@ func seedState() persistedState {
 			AlphaVantageAPIKey: "",
 			TwelveDataAPIKey:   "",
 			FinnhubAPIKey:      "",
+			TiingoAPIKey:       "",
 			PolygonAPIKey:      "",
 			DeveloperMode:      false,
 			DashboardCurrency:  "CNY",

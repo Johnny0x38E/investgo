@@ -12,7 +12,7 @@ import (
 )
 
 var sensitiveLogPatterns = []*regexp.Regexp{
-	regexp.MustCompile(`(?i)(alphaVantageApiKey|twelveDataApiKey)\s*[:=]\s*["']?[^"'\s,;]+["']?`),
+	regexp.MustCompile(`(?i)(alphaVantageApiKey|twelveDataApiKey|finnhubApiKey|tiingoApiKey|polygonApiKey)\s*[:=]\s*["']?[^"'\s,;]+["']?`),
 	regexp.MustCompile(`(?i)(apikey|api_key|key)=([^&\s]+)`),
 }
 

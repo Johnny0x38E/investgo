@@ -127,6 +127,7 @@ export interface AppSettings {
     alphaVantageApiKey: string;
     twelveDataApiKey: string;
     finnhubApiKey: string;
+    tiingoApiKey: string;
     polygonApiKey: string;
     developerMode: boolean;
     dashboardCurrency: string;

@@ -27,6 +27,7 @@ export const defaultSettings: AppSettings = {
     alphaVantageApiKey: '',
     twelveDataApiKey: '',
     finnhubApiKey: '',
+    tiingoApiKey: '',
     polygonApiKey: '',
     developerMode: false,
     dashboardCurrency: 'CNY',
@@ -52,6 +53,7 @@ export function normaliseSettings(input: Partial<AppSettings> | null | undefined
         alphaVantageApiKey: input?.alphaVantageApiKey ?? defaultSettings.alphaVantageApiKey,
         twelveDataApiKey: input?.twelveDataApiKey ?? defaultSettings.twelveDataApiKey,
         finnhubApiKey: input?.finnhubApiKey ?? defaultSettings.finnhubApiKey,
+        tiingoApiKey: input?.tiingoApiKey ?? defaultSettings.tiingoApiKey,
         polygonApiKey: input?.polygonApiKey ?? defaultSettings.polygonApiKey,
         developerMode: input?.developerMode ?? defaultSettings.developerMode,
         dashboardCurrency: input?.dashboardCurrency ?? defaultSettings.dashboardCurrency,
@@ -155,17 +157,15 @@ export function mapItemToForm(item: WatchlistItem): ItemFormModel {
         tagsText: item.tags.join(', '),
         thesis: item.thesis,
         currentPrice: item.currentPrice,
-        dcaEntries: (item.dcaEntries ?? []).map(
-            (e): DCAEntryRow => ({
-                id: e.id,
-                date: isoDateToInputValue(e.date),
-                amount: e.amount,
-                shares: e.shares,
-                price: e.price && e.price > 0 ? e.price : null,
-                fee: e.fee && e.fee > 0 ? e.fee : null,
-                note: e.note ?? '',
-            }),
-        ),
+        dcaEntries: (item.dcaEntries ?? []).map((e): DCAEntryRow => ({
+            id: e.id,
+            date: isoDateToInputValue(e.date),
+            amount: e.amount,
+            shares: e.shares,
+            price: e.price && e.price > 0 ? e.price : null,
+            fee: e.fee && e.fee > 0 ? e.fee : null,
+            note: e.note ?? '',
+        })),
     };
 }
 
@@ -206,17 +206,15 @@ export function serialiseItemForm(form: ItemFormModel): Omit<
             .filter(Boolean),
         dcaEntries: form.dcaEntries
             .filter((e) => (e.amount ?? 0) > 0 && (e.shares ?? 0) > 0)
-            .map(
-                (e): DCAEntry => ({
-                    id: e.id.startsWith('tmp-') ? '' : e.id,
-                    date: e.date ? new Date(e.date + 'T00:00:00Z').toISOString() : new Date().toISOString(),
-                    amount: e.amount ?? 0,
-                    shares: e.shares ?? 0,
-                    price: e.price && e.price > 0 ? e.price : undefined,
-                    fee: e.fee && e.fee > 0 ? e.fee : undefined,
-                    note: e.note || undefined,
-                }),
-            ),
+            .map((e): DCAEntry => ({
+                id: e.id.startsWith('tmp-') ? '' : e.id,
+                date: e.date ? new Date(e.date + 'T00:00:00Z').toISOString() : new Date().toISOString(),
+                amount: e.amount ?? 0,
+                shares: e.shares ?? 0,
+                price: e.price && e.price > 0 ? e.price : undefined,
+                fee: e.fee && e.fee > 0 ? e.fee : undefined,
+                note: e.note || undefined,
+            })),
     };
 }
 

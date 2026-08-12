@@ -21,6 +21,23 @@ type DataSource struct {
 	history core.HistoryProvider
 }
 
+// NewDataSource constructs a DataSource for registration (including tests).
+func NewDataSource(
+	id, name, desc string,
+	markets []string,
+	quote core.QuoteProvider,
+	history core.HistoryProvider,
+) *DataSource {
+	return &DataSource{
+		id:      id,
+		name:    name,
+		desc:    desc,
+		markets: append([]string(nil), markets...),
+		quote:   quote,
+		history: history,
+	}
+}
+
 // QuoteProvider returns the real-time quote provider, or nil if this source
 // does not support live quotes.
 func (ds *DataSource) QuoteProvider() core.QuoteProvider { return ds.quote }
@@ -213,6 +230,15 @@ func DefaultRegistry(client *http.Client, settings func() core.AppSettings) *Reg
 		markets: []string{"US-STOCK", "US-ETF"},
 		quote:   provider.NewFinnhubQuoteProvider(client, settings),
 		history: provider.NewFinnhubHistoryProvider(client, settings),
+	})
+
+	r.Register(&DataSource{
+		id:      "tiingo",
+		name:    "Tiingo",
+		desc:    "API-based US stock and ETF source with batch IEX quotes and strong end-of-day history.",
+		markets: []string{"US-STOCK", "US-ETF"},
+		quote:   provider.NewTiingoQuoteProvider(client, settings),
+		history: provider.NewTiingoHistoryProvider(client, settings),
 	})
 
 	r.Register(&DataSource{

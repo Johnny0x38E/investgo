@@ -45,12 +45,7 @@ func paginateHotItems(total, page, pageSize int) (start, end int) {
 	if start >= total {
 		return total, total
 	}
-
-	end = start + pageSize
-	if end > total {
-		end = total
-	}
-	return start, end
+	return start, min(start+pageSize, total)
 }
 
 // filterHotSeeds filters the hotSeed list by keyword, matching items whose name or symbol contains the keyword.
@@ -107,13 +102,6 @@ func mergeHotSeeds(base, extra []hotSeed) []hotSeed {
 		merged = append(merged, seed)
 	}
 	return merged
-}
-
-func maxInt(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }
 
 func ptrTime(value time.Time) *time.Time {

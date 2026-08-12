@@ -131,6 +131,7 @@ type AppSettings struct {
 	AlphaVantageAPIKey string `json:"alphaVantageApiKey"`
 	TwelveDataAPIKey   string `json:"twelveDataApiKey"`
 	FinnhubAPIKey      string `json:"finnhubApiKey"`
+	TiingoAPIKey       string `json:"tiingoApiKey"`
 	PolygonAPIKey      string `json:"polygonApiKey"`
 	DeveloperMode      bool   `json:"developerMode"`
 	DashboardCurrency  string `json:"dashboardCurrency"`

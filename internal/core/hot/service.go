@@ -14,7 +14,6 @@ import (
 
 const (
 	hotDefaultPageSize = 20
-	hotSearchFetchSize = 200
 	defaultHotCacheTTL = 60 * time.Second
 )
 
@@ -36,6 +35,13 @@ type HotService struct {
 	registry      *marketdata.Registry
 	searchCache   *ttlcache.TTL[string, []core.HotItem]
 	responseCache *ttlcache.TTL[string, core.HotListResponse]
+	rankCache     *ttlcache.TTL[string, []core.HotItem]
+
+	// rankMembershipFn overrides ranking adapters in tests.
+	rankMembershipFn func(ctx context.Context, sourceID string, category core.HotCategory, sortBy core.HotSort, page int, pageSize int) (MembershipPage, error)
+
+	// poolQuoteFn overrides full-pool quote fetching in tests.
+	poolQuoteFn func(ctx context.Context, seeds []hotSeed, sourceID string) ([]core.HotItem, error)
 }
 
 // NewHotService creates a hot list service.
@@ -52,24 +58,31 @@ func NewHotService(client *http.Client, logger *slog.Logger, registry *marketdat
 		registry:      registry,
 		searchCache:   ttlcache.NewTTL[string, []core.HotItem](),
 		responseCache: ttlcache.NewTTL[string, core.HotListResponse](),
+		rankCache:     ttlcache.NewTTL[string, []core.HotItem](),
 	}
 }
 
 // List returns the hot list for the given category and sort order.
+//
+// Browse flow:
+//  1. Normalize inputs and consult the short-TTL response cache.
+//  2. Search path keeps dedicated adapters (keyword → seeds → quotes).
+//  3. Browse path is membership → (optional) quote overlay:
+//     - ranking categories (CN-A / CN-ETF / HK): upstream rank page + overlay
+//     - pool categories (US indices / HK-ETF): long-TTL full-pool rank cache + page refresh
 func (s *HotService) List(
 	ctx context.Context,
 	category core.HotCategory,
 	sortBy core.HotSort,
 	keyword string,
-	page int,
-	pageSize int,
+	page, pageSize int,
 	options HotListOptions,
 ) (core.HotListResponse, error) {
 	category = normaliseHotCategory(category)
 	sortBy = normaliseHotSort(sortBy)
 	keyword = normaliseHotKeyword(keyword)
 	options = normaliseHotListOptions(options)
-	page = maxInt(page, 1)
+	page = max(page, 1)
 	if pageSize <= 0 {
 		pageSize = hotDefaultPageSize
 	}
@@ -91,19 +104,10 @@ func (s *HotService) List(
 		searchCtx, cancel := context.WithTimeout(ctx, hotSearchTimeout)
 		defer cancel()
 		response, err = s.search(searchCtx, category, sortBy, keyword, page, pageSize, options)
+	} else if isPoolCategory(category) {
+		response, err = s.browsePoolCategory(ctx, category, sortBy, page, pageSize, options)
 	} else {
-		switch {
-		case category == core.HotCategoryCNA,
-			category == core.HotCategoryCNETF,
-			category == core.HotCategoryHK:
-			response, err = s.listConfiguredCategory(ctx, category, sortBy, page, pageSize, options)
-
-		case category == core.HotCategoryHKETF,
-			isUSHotCategory(category):
-			response, err = s.listFromPool(ctx, category, sortBy, page, pageSize, options)
-		default:
-			err = fmt.Errorf("Hot category is unsupported: %s", category)
-		}
+		response, err = s.browseRankingCategory(ctx, category, sortBy, page, pageSize, options)
 	}
 	if err != nil {
 		return core.HotListResponse{}, err
@@ -123,8 +127,7 @@ func (s *HotService) search(
 	category core.HotCategory,
 	sortBy core.HotSort,
 	keyword string,
-	page int,
-	pageSize int,
+	page, pageSize int,
 	options HotListOptions,
 ) (core.HotListResponse, error) {
 	if category == core.HotCategoryUSETF {
@@ -164,8 +167,7 @@ func (s *HotService) searchUSETFs(
 	ctx context.Context,
 	sortBy core.HotSort,
 	keyword string,
-	page int,
-	pageSize int,
+	page, pageSize int,
 	options HotListOptions,
 ) (core.HotListResponse, error) {
 	seeds := filterHotSeeds(normalizedUSHotSeeds(core.HotCategoryUSETF, hotConstituents[core.HotCategoryUSETF]), keyword)
@@ -175,11 +177,7 @@ func (s *HotService) searchUSETFs(
 		seeds = mergeHotSeeds(seeds, remoteSeeds)
 	}
 
-	// Trim the merged seed list before quoting: a broad keyword can produce far
-	// more matches than we have quote-budget for, and the UI paginates anyway.
-	if len(seeds) > hotSearchMaxSeeds {
-		seeds = seeds[:hotSearchMaxSeeds]
-	}
+	seeds = seeds[:min(len(seeds), hotSearchMaxSeeds)]
 
 	items, err := s.loadHotItemsForSeeds(ctx, seeds, options)
 	if err != nil {
@@ -209,8 +207,7 @@ func (s *HotService) searchUSStocks(
 	category core.HotCategory,
 	sortBy core.HotSort,
 	keyword string,
-	page int,
-	pageSize int,
+	page, pageSize int,
 	options HotListOptions,
 ) (core.HotListResponse, error) {
 	pool := normalizedUSHotSeeds(category, hotConstituents[category])
@@ -227,9 +224,7 @@ func (s *HotService) searchUSStocks(
 	// Trim the merged seed list before quoting: a broad keyword can match far
 	// more symbols than we have quote-budget for, and pagination handles the
 	// overflow on the UI side anyway.
-	if len(seeds) > hotSearchMaxSeeds {
-		seeds = seeds[:hotSearchMaxSeeds]
-	}
+	seeds = seeds[:min(len(seeds), hotSearchMaxSeeds)]
 
 	if len(seeds) == 0 {
 		return core.HotListResponse{
@@ -271,8 +266,7 @@ func (s *HotService) searchCNHK(
 	category core.HotCategory,
 	sortBy core.HotSort,
 	keyword string,
-	page int,
-	pageSize int,
+	page, pageSize int,
 	options HotListOptions,
 ) (core.HotListResponse, error) {
 	// Call EastMoney suggest API — single lightweight request, returns only matches.
@@ -293,9 +287,7 @@ func (s *HotService) searchCNHK(
 
 	// Cap the seed list before quote fetch so a broad keyword does not turn
 	// into an unbounded fan-out of quote requests.
-	if len(seeds) > hotSearchMaxSeeds {
-		seeds = seeds[:hotSearchMaxSeeds]
-	}
+	seeds = seeds[:min(len(seeds), hotSearchMaxSeeds)]
 
 	if len(seeds) == 0 {
 		return core.HotListResponse{
@@ -330,89 +322,12 @@ func (s *HotService) searchCNHK(
 	}, nil
 }
 
-// listFromPool returns paginated hot list results using the predefined data pool + real-time quotes.
-func (s *HotService) listFromPool(
-	ctx context.Context,
-	category core.HotCategory,
-	sortBy core.HotSort,
-	page int,
-	pageSize int,
-	options HotListOptions,
-) (core.HotListResponse, error) {
-	items, err := s.loadPoolItems(ctx, category, sortBy, options)
-	if err != nil {
-		return core.HotListResponse{}, err
-	}
-
-	start, end := paginateHotItems(len(items), page, pageSize)
-	return core.HotListResponse{
-		Category:    category,
-		Sort:        sortBy,
-		Page:        page,
-		PageSize:    pageSize,
-		Total:       len(items),
-		HasMore:     end < len(items),
-		Items:       items[start:end],
-		GeneratedAt: time.Now(),
-	}, nil
-}
-
-func (s *HotService) listConfiguredCategory(
-	ctx context.Context,
-	category core.HotCategory,
-	sortBy core.HotSort,
-	page int,
-	pageSize int,
-	options HotListOptions,
-) (core.HotListResponse, error) {
-	sourceID := resolveHotQuoteSource(category, options)
-
-	if sourceID == "yahoo" {
-		return core.HotListResponse{}, fmt.Errorf("Yahoo hot list is unsupported for category: %s", category)
-	}
-
-	if sourceSupportsCategoryList(sourceID, category) {
-		return s.listCategoryBySource(ctx, sourceID, category, sortBy, page, pageSize)
-	}
-
-	return s.listConfiguredCategoryWithOverlay(ctx, category, sortBy, page, pageSize, options)
-}
-
-func (s *HotService) listConfiguredCategoryWithOverlay(
-	ctx context.Context,
-	category core.HotCategory,
-	sortBy core.HotSort,
-	page int,
-	pageSize int,
-	options HotListOptions,
-) (core.HotListResponse, error) {
-	baseSource := membershipSourceForCategory(category)
-	if baseSource == "" {
-		return core.HotListResponse{}, fmt.Errorf("Hot quote source is unsupported: %s", resolveHotQuoteSource(category, options))
-	}
-
-	response, err := s.listCategoryBySource(ctx, baseSource, category, sortBy, page, pageSize)
-	if err != nil {
-		return core.HotListResponse{}, err
-	}
-
-	items, err := s.applyConfiguredQuotes(ctx, category, response.Items, options)
-	if err != nil {
-		return core.HotListResponse{}, err
-	}
-	sortHotItems(items, sortBy)
-	response.Items = items
-	response.GeneratedAt = time.Now()
-	return response, nil
-}
-
 func (s *HotService) listCategoryBySource(
 	ctx context.Context,
 	sourceID string,
 	category core.HotCategory,
 	sortBy core.HotSort,
-	page int,
-	pageSize int,
+	page, pageSize int,
 ) (core.HotListResponse, error) {
 	switch sourceID {
 	case "eastmoney":
@@ -426,32 +341,6 @@ func (s *HotService) listCategoryBySource(
 	}
 }
 
-// loadPoolItems loads instruments from the predefined data pool and fetches real-time quotes.
-func (s *HotService) loadPoolItems(
-	ctx context.Context,
-	category core.HotCategory,
-	sortBy core.HotSort,
-	options HotListOptions,
-) ([]core.HotItem, error) {
-	var pool []hotSeed
-	if category == core.HotCategoryHKETF {
-		pool = hkETFConstituents
-	} else {
-		pool = normalizedUSHotSeeds(category, hotConstituents[category])
-	}
-	if len(pool) == 0 {
-		return nil, fmt.Errorf("No available hot pool for category: %s", category)
-	}
-
-	items, err := s.loadHotItemsForSeeds(ctx, pool, options)
-	if err != nil {
-		return nil, err
-	}
-
-	sortHotItems(items, sortBy)
-	return items, nil
-}
-
 // loadHotItemsForSeeds fetches real-time quotes for the given hotSeed list and returns only rows backed by live data.
 func (s *HotService) loadHotItemsForSeeds(ctx context.Context, seeds []hotSeed, options HotListOptions) ([]core.HotItem, error) {
 	if len(seeds) == 0 {
@@ -460,7 +349,6 @@ func (s *HotService) loadHotItemsForSeeds(ctx context.Context, seeds []hotSeed, 
 
 	category := categoryForHotSeeds(seeds)
 	sourceID := effectivePoolQuoteSource(category, resolveHotQuoteSource(category, options))
-	// return s.fetchPoolQuotes(ctx, seeds, sourceID)
 	items, err := s.fetchPoolQuotes(ctx, seeds, sourceID)
 	if err != nil {
 		return nil, err

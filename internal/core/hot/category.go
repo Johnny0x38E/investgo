@@ -45,6 +45,8 @@ func normaliseHotQuoteSourceID(sourceID string) string {
 		return "twelve-data"
 	case "finnhub":
 		return "finnhub"
+	case "tiingo":
+		return "tiingo"
 	case "polygon":
 		return "polygon"
 	case "sina":
@@ -74,32 +76,24 @@ func resolveHotQuoteSource(category core.HotCategory, options HotListOptions) st
 // effectivePoolQuoteSource applies per-category overrides for pool quote sources.
 // For HK ETF, EastMoney push2 is unreliable; fall back to Tencent when the
 // configured source is the eastmoney default and the user hasn't changed it.
+// For US pools, API-key sources with tight per-symbol quotas cannot quote a
+// full index/ETF constituent set, so fall back to Sina's batch US quotes.
 func effectivePoolQuoteSource(category core.HotCategory, sourceID string) string {
 	if category == core.HotCategoryHKETF && sourceID == "eastmoney" {
 		return "tencent"
 	}
+	if isUSHotCategory(category) && isConstrainedUSPoolSource(sourceID) {
+		return "sina"
+	}
 	return sourceID
 }
 
-func membershipSourceForCategory(category core.HotCategory) string {
-	switch category {
-	case core.HotCategoryCNA, core.HotCategoryCNETF:
-		return "sina"
-	case core.HotCategoryHK, core.HotCategoryHKETF:
-		return "xueqiu"
-	default:
-		return ""
-	}
-}
-
-func sourceSupportsCategoryList(sourceID string, category core.HotCategory) bool {
-	switch sourceID {
-	case "eastmoney":
-		return category == core.HotCategoryCNA || category == core.HotCategoryHK
-	case "sina":
-		return category == core.HotCategoryCNA || category == core.HotCategoryCNETF
-	case "xueqiu":
-		return category == core.HotCategoryCNA || category == core.HotCategoryCNETF || category == core.HotCategoryHK || category == core.HotCategoryHKETF
+// isConstrainedUSPoolSource reports quote sources that are unsuitable for
+// full-pool US hot lists (hundreds of symbols per refresh).
+func isConstrainedUSPoolSource(sourceID string) bool {
+	switch strings.ToLower(strings.TrimSpace(sourceID)) {
+	case "tiingo", "finnhub", "alpha-vantage", "twelve-data", "polygon":
+		return true
 	default:
 		return false
 	}

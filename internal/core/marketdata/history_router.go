@@ -139,7 +139,7 @@ func (r *HistoryRouter) preferredSourceID(market string, settings core.AppSettin
 func defaultHistoryChain(market string) []string {
 	switch historyMarketGroup(market) {
 	case "us":
-		return []string{"yahoo", "tencent", "finnhub", "polygon", "alpha-vantage", "twelve-data", "eastmoney"}
+		return []string{"yahoo", "tencent", "tiingo", "finnhub", "polygon", "alpha-vantage", "twelve-data", "eastmoney"}
 	default:
 		return []string{"tencent", "yahoo", "eastmoney"}
 	}

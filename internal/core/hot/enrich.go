@@ -9,40 +9,6 @@ import (
 	"investgo/internal/core/provider"
 )
 
-// applyConfiguredQuotes re-fetches quotes for all items using the source configured in options,
-// overlaying the quote data on the existing hot items.
-// If the items already use the configured source, or the source is the default "eastmoney",
-// the items are returned as-is without an additional network call.
-func (s *HotService) applyConfiguredQuotes(
-	ctx context.Context,
-	category core.HotCategory,
-	items []core.HotItem,
-	options HotListOptions,
-) ([]core.HotItem, error) {
-	sourceID := resolveHotQuoteSource(category, options)
-
-	// EastMoney is the default membership source — no overlay needed.
-	if sourceID == "eastmoney" {
-		return cloneHotItems(items), nil
-	}
-
-	// Look up the provider from the registry.
-	var qp core.QuoteProvider
-	if s.registry != nil {
-		qp = s.registry.QuoteProvider(sourceID)
-	}
-
-	if qp != nil && hotItemsAlreadyUseSource(items, qp.Name()) {
-		return cloneHotItems(items), nil
-	}
-
-	if qp == nil {
-		return nil, fmt.Errorf("hot quote source is unsupported: %s", sourceID)
-	}
-
-	return s.applyProviderQuotes(ctx, items, qp)
-}
-
 // applyProviderQuotes fetches live quotes for the given items via qp and returns a new slice
 // with price/volume/market-cap fields overwritten. Items for which the provider returns no quote
 // are dropped. Returns an error if the provider returns no quotes at all.
@@ -112,6 +78,7 @@ func hotItemsAlreadyUseSource(items []core.HotItem, source string) bool {
 	if len(items) == 0 {
 		return true
 	}
+	source = strings.TrimSpace(source)
 	for _, item := range items {
 		if strings.TrimSpace(item.QuoteSource) != source {
 			return false

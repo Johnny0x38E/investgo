@@ -64,6 +64,9 @@ func sanitiseSettings(
 	if input.FinnhubAPIKey != "" || strings.TrimSpace(current.FinnhubAPIKey) != "" {
 		settings.FinnhubAPIKey = strings.TrimSpace(input.FinnhubAPIKey)
 	}
+	if input.TiingoAPIKey != "" || strings.TrimSpace(current.TiingoAPIKey) != "" {
+		settings.TiingoAPIKey = strings.TrimSpace(input.TiingoAPIKey)
+	}
 	if input.PolygonAPIKey != "" || strings.TrimSpace(current.PolygonAPIKey) != "" {
 		settings.PolygonAPIKey = strings.TrimSpace(input.PolygonAPIKey)
 	}
@@ -102,6 +105,10 @@ func sanitiseSettings(
 	case "finnhub":
 		if settings.FinnhubAPIKey == "" {
 			return core.AppSettings{}, errors.New("Finnhub API key is required")
+		}
+	case "tiingo":
+		if settings.TiingoAPIKey == "" {
+			return core.AppSettings{}, errors.New("Tiingo API key is required")
 		}
 	case "polygon":
 		if settings.PolygonAPIKey == "" {

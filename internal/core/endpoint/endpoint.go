@@ -26,6 +26,8 @@ const (
 	TwelveDataTimeSeriesAPI = "https://api.twelvedata.com/time_series"
 	FinnhubQuoteAPI         = "https://finnhub.io/api/v1/quote"
 	FinnhubCandleAPI        = "https://finnhub.io/api/v1/stock/candle"
+	TiingoIEXAPI            = "https://api.tiingo.com/iex"
+	TiingoDailyAPIPrefix    = "https://api.tiingo.com/tiingo/daily/"
 	PolygonSnapshotAPI      = "https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers"
 	PolygonAggsAPI          = "https://api.polygon.io/v2/aggs/ticker"
 	YahooFinanceDomain      = "finance.yahoo.com"

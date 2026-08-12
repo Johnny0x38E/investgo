@@ -27,6 +27,7 @@ var localizedExactMessages = map[string]string{
 	"Alpha Vantage API key is required":                      "使用 Alpha Vantage 时必须填写 API key",
 	"Twelve Data API key is required":                        "使用 Twelve Data 时必须填写 API key",
 	"Finnhub API key is required":                            "使用 Finnhub 时必须填写 API key",
+	"Tiingo API key is required":                             "使用 Tiingo 时必须填写 API key",
 	"Polygon API key is required":                            "使用 Polygon 时必须填写 API key",
 	"Font preset must be one of: system / reading / compact": "字体预设仅支持 system / reading / compact",
 	"Theme mode must be one of: system / light / dark":       "外观模式仅支持 system / light / dark",
