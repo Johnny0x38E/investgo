@@ -33,10 +33,10 @@ var hotConstituents = map[core.HotCategory][]hotSeed{
 		"ZBRA", "ZBH", "ZTS",
 	),
 	core.HotCategoryUSNasdaq: usStockSeeds(
-		"ADBE", "AMD", "ABNB", "ALNY", "GOOGL", "GOOG", "AMZN", "AEP", "AMGN", "ADI", "AAPL", "AMAT", "APP", "ARM", "ASML", "TEAM", "ADSK", "ADP", "AXON", "BKR", "BKNG", "AVGO", "CDNS", "CHTR",
+		"ADBE", "AMD", "ABNB", "ALNY", "CBRS", "GOOGL", "GOOG", "AMZN", "AEP", "AMGN", "ADI", "AAPL", "AMAT", "APP", "ARM", "ASML", "TEAM", "ADSK", "ADP", "AXON", "BKR", "BKNG", "AVGO", "CDNS", "CHTR",
 		"CTAS", "CSCO", "CCEP", "CTSH", "CMCSA", "CEG", "CPRT", "CSGP", "COST", "CRWD", "CSX", "DDOG", "DXCM", "FANG", "DASH", "EA", "EXC", "FAST", "FER", "FTNT", "GEHC", "GILD", "HON", "IDXX",
 		"INSM", "INTC", "INTU", "ISRG", "KDP", "KLAC", "KHC", "LRCX", "LIN", "MAR", "MRVL", "MELI", "META", "MCHP", "MU", "MSFT", "MSTR", "MDLZ", "MPWR", "MNST", "NFLX", "NVDA", "NXPI", "ORLY",
-		"ODFL", "PCAR", "PLTR", "PANW", "PAYX", "PYPL", "PDD", "PEP", "QCOM", "REGN", "ROP", "ROST", "STX", "SHOP", "SBUX", "SNPS", "TMUS", "TTWO", "TSLA", "TXN", "TRI", "VRSK", "VRTX", "WMT",
+		"ODFL", "PCAR", "PLTR", "PANW", "PAYX", "PYPL", "PDD", "PEP", "QCOM", "REGN", "ROP", "ROST", "STX", "SHOP", "SBUX", "SNPS", "SPCX", "TMUS", "TTWO", "TSLA", "TXN", "TRI", "VRSK", "VRTX", "WMT",
 		"WBD", "WDC", "WDAY", "XEL", "ZS",
 	),
 	core.HotCategoryUSDow: usStockSeeds(
@@ -183,6 +183,7 @@ var usEquitySeedNames = map[string]string{
 	"CVNA":  "Carvana",
 	"CVS":   "CVS Health",
 	"CVX":   "Chevron",
+	"CBRS":  "Cerebras Systems",
 	"DAL":   "Delta Air Lines",
 	"DASH":  "DoorDash",
 	"DD":    "DuPont",
@@ -482,6 +483,7 @@ var usEquitySeedNames = map[string]string{
 	"SYF":   "Synchrony Financial",
 	"SYK":   "Stryker Corporation",
 	"SYY":   "Sysco",
+	"SPCX":  "SpaceX",
 	"TAP":   "Molson Coors Beverage Company",
 	"TDG":   "TransDigm Group",
 	"TDY":   "Teledyne Technologies",
