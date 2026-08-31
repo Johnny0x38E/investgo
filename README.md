@@ -20,7 +20,7 @@ A lightweight desktop investment workbench for watchlists, holdings, portfolio a
 
 ## Quick start
 
-Requirements: Node.js 20+, pnpm 11+, Go 1.24+. macOS builds require macOS 13+; Windows builds require WebView2 Runtime.
+Requirements: Node.js 22.13+, pnpm 11+, Go 1.24+. macOS builds require macOS 13+; Windows builds require WebView2 Runtime.
 
 ```bash
 pnpm install

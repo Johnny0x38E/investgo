@@ -20,7 +20,7 @@
 
 ## 快速开始
 
-前置要求：Node.js 20+、pnpm 11+、Go 1.24+。macOS 构建需要 macOS 13+；Windows 构建需要 WebView2 Runtime。
+前置要求：Node.js 22.13+、pnpm 11+、Go 1.24+。macOS 构建需要 macOS 13+；Windows 构建需要 WebView2 Runtime。
 
 ```bash
 pnpm install
