@@ -237,7 +237,7 @@ create_dmg() {
   rm -rf "$STAGING_DIR"
   rm -f "$DMG_PATH"
 
-  mkdir -p "$STAGING_DIR"
+  mkdir -p "$STAGING_DIR" "$(dirname "$DMG_PATH")"
   ditto "$APP_DIR" "$STAGING_DIR/$APP_NAME.app"
   ln -s /Applications "$STAGING_DIR/Applications"
 
