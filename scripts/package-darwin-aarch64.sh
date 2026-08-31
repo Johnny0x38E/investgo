@@ -191,6 +191,9 @@ notarize_dmg_if_configured() {
 build_app_bundle() {
   local build_args=()
 
+  mkdir -p "$BUILD_DIR"
+  "$ROOT_DIR/scripts/icon/process/render-app-icon.sh"
+
   if [[ ! -f "$ICON_SOURCE" ]]; then
     printf 'Missing icon source image: %s\n' "$ICON_SOURCE" >&2
     exit 1
