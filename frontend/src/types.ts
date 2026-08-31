@@ -361,3 +361,63 @@ export interface HotListResponse {
     cacheExpiresAt?: string;
     generatedAt: string;
 }
+
+export type AssetClass = 'equity' | 'etf' | 'crypto';
+export type PoolType = 'builtin' | 'index' | 'custom';
+export type PoolMemberSource = 'builtin' | 'user';
+export type PoolMemberStatus = 'active' | 'excluded';
+
+export interface Instrument {
+    id: string;
+    assetClass: AssetClass;
+    symbol: string;
+    name: string;
+    market: string;
+    exchange: string;
+    baseAsset?: string;
+    quoteCurrency: string;
+    status: 'active' | 'inactive' | 'delisted';
+    updatedAt: string;
+}
+
+export interface InstrumentPool {
+    id: string;
+    name: string;
+    market: string;
+    assetClass: AssetClass;
+    type: PoolType;
+    dataVersion: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface PoolMember {
+    poolId: string;
+    instrument: Instrument;
+    source: PoolMemberSource;
+    status: PoolMemberStatus;
+    updatedAt: string;
+}
+
+export interface PageResponse<T> {
+    items: T[];
+    page: number;
+    pageSize: number;
+    total: number;
+    hasMore: boolean;
+}
+
+export interface AddPoolMemberRequest {
+    assetClass: AssetClass;
+    symbol: string;
+    name: string;
+    market: string;
+    exchange?: string;
+    baseAsset?: string;
+    quoteCurrency?: string;
+}
+
+export interface UpdatePoolMemberRequest {
+    symbol?: string;
+    name?: string;
+}

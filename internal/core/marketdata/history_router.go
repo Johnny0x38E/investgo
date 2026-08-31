@@ -3,6 +3,7 @@ package marketdata
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strings"
 
 	"investgo/internal/core"
@@ -42,9 +43,7 @@ type HistoryRouter struct {
 //     Pass store.CurrentSettings after the Store has been initialised.
 func NewHistoryRouter(providers map[string]core.HistoryProvider, settings func() core.AppSettings) *HistoryRouter {
 	out := make(map[string]core.HistoryProvider, len(providers))
-	for k, v := range providers {
-		out[k] = v
-	}
+	maps.Copy(out, providers)
 	return &HistoryRouter{providers: out, settings: settings}
 }
 

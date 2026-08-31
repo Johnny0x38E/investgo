@@ -315,24 +315,41 @@ func eastMoneySuggestToSeed(item eastMoneySuggestItem, category core.HotCategory
 
 	switch item.MktNum {
 	case "1": // Shanghai
-		if !isCNHotCategory(category) {
-			return hotSeed{}, false
+		if isCNHotCategory(category) && eastMoneySuggestMatchesCategory(item.SecurityTypeName, category) {
+			market := "CN-A"
+			if category == core.HotCategoryCNETF {
+				market = "CN-ETF"
+			}
+			return hotSeed{Symbol: strings.ToUpper(code) + ".SH", Name: name, Market: market, Currency: "CNY"}, true
 		}
-		return hotSeed{Symbol: strings.ToUpper(code) + ".SH", Name: name, Market: "CN-A", Currency: "CNY"}, true
-
 	case "0": // Shenzhen
-		if !isCNHotCategory(category) {
-			return hotSeed{}, false
+		if isCNHotCategory(category) && eastMoneySuggestMatchesCategory(item.SecurityTypeName, category) {
+			market := "CN-A"
+			if category == core.HotCategoryCNETF {
+				market = "CN-ETF"
+			}
+			return hotSeed{Symbol: strings.ToUpper(code) + ".SZ", Name: name, Market: market, Currency: "CNY"}, true
 		}
-		return hotSeed{Symbol: strings.ToUpper(code) + ".SZ", Name: name, Market: "CN-A", Currency: "CNY"}, true
-
 	case "128": // Hong Kong
-		if !isHKHotCategory(category) {
-			return hotSeed{}, false
+		if isHKHotCategory(category) && eastMoneySuggestMatchesCategory(item.SecurityTypeName, category) {
+			market := "HK-MAIN"
+			if category == core.HotCategoryHKETF {
+				market = "HK-ETF"
+			}
+			return hotSeed{Symbol: strings.ToUpper(code) + ".HK", Name: name, Market: market, Currency: "HKD"}, true
 		}
-		return hotSeed{Symbol: strings.ToUpper(code) + ".HK", Name: name, Market: "HK-MAIN", Currency: "HKD"}, true
+	}
+	return hotSeed{}, false
+}
 
+func eastMoneySuggestMatchesCategory(typeName string, category core.HotCategory) bool {
+	isETF := strings.Contains(strings.ToUpper(strings.TrimSpace(typeName)), "ETF")
+	switch category {
+	case core.HotCategoryCNETF, core.HotCategoryHKETF:
+		return isETF
+	case core.HotCategoryCNA, core.HotCategoryHK:
+		return !isETF
 	default:
-		return hotSeed{}, false
+		return true
 	}
 }

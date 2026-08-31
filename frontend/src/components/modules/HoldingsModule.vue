@@ -171,17 +171,23 @@
                         <td class="watch-table-cell-dca watch-table-sticky watch-table-sticky-dca">
                             <div class="action-stack table-action-stack table-action-stack-centered">
                                 <Button
-                                    v-if="item.dcaEntries?.length"
                                     size="small"
                                     text
                                     rounded
-                                    icon="pi pi-chart-line"
-                                    :label="String(item.dcaEntries.length)"
-                                    :aria-label="t('holdings.dcaEntries', { count: item.dcaEntries.length })"
-                                    class="dca-list-button"
+                                    :icon="item.dcaEntries?.length ? 'pi pi-chart-line' : 'pi pi-plus'"
+                                    :label="item.dcaEntries?.length ? String(item.dcaEntries.length) : undefined"
+                                    :title="item.dcaEntries?.length ? undefined : t('holdings.firstDCAEntryTooltip')"
+                                    :aria-label="
+                                        item.dcaEntries?.length
+                                            ? t('holdings.dcaEntries', { count: item.dcaEntries.length })
+                                            : t('holdings.firstDCAEntryAria')
+                                    "
+                                    :class="[
+                                        'dca-list-button',
+                                        { 'dca-list-button-empty': !item.dcaEntries?.length },
+                                    ]"
                                     @click.stop="$emit('show-dca', item)"
                                 />
-                                <span v-else class="dca-empty-placeholder">—</span>
                             </div>
                         </td>
                         <td class="table-action-cell watch-table-sticky watch-table-sticky-actions">
@@ -301,17 +307,9 @@
         justify-content: flex-start;
     }
 
-    .watch-table .dca-empty-placeholder {
+    .watch-table :deep(.dca-list-button.p-button) {
         display: inline-flex;
         align-items: center;
-        min-height: 22px;
-        padding: 0 0.45rem;
-        color: var(--muted);
-        font-size: 12px;
-        line-height: 1;
-    }
-
-    .watch-table :deep(.dca-list-button.p-button) {
         min-width: 0;
         padding: 0.42rem 0.65rem;
         gap: 0.3rem;
@@ -321,15 +319,35 @@
         box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 38%, var(--border));
     }
 
+    .watch-table :deep(.dca-list-button-empty.p-button) {
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        max-width: 28px;
+        padding: 0;
+        gap: 0;
+        border-radius: 50%;
+    }
+
     .watch-table :deep(.dca-list-button .p-button-icon),
     .watch-table :deep(.dca-list-button .p-button-label) {
         font-size: 13px;
+        line-height: 1;
         color: var(--accent);
+    }
+
+    .watch-table :deep(.dca-list-button-empty .p-button-icon) {
+        margin: 0;
     }
 
     .watch-table :deep(.dca-list-button.p-button:hover) {
         background: color-mix(in srgb, var(--accent-soft) 72%, transparent);
         box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 60%, var(--border));
+    }
+
+    .watch-table :deep(.dca-list-button.p-button:focus-visible) {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
     }
 
     .watch-table .table-action-cell :deep(.p-button) {

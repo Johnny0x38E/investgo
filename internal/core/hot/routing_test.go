@@ -17,9 +17,9 @@ func TestListRoutesByCategory(t *testing.T) {
 		category core.HotCategory
 		wantPool bool
 	}{
-		{name: "CN-A ranking", category: core.HotCategoryCNA, wantPool: false},
-		{name: "CN-ETF ranking", category: core.HotCategoryCNETF, wantPool: false},
-		{name: "HK ranking", category: core.HotCategoryHK, wantPool: false},
+		{name: "CN-A ranking", category: core.HotCategoryCNA, wantPool: true},
+		{name: "CN-ETF ranking", category: core.HotCategoryCNETF, wantPool: true},
+		{name: "HK ranking", category: core.HotCategoryHK, wantPool: true},
 		{name: "US SP500 pool", category: core.HotCategoryUSSP500, wantPool: true},
 		{name: "US Nasdaq pool", category: core.HotCategoryUSNasdaq, wantPool: true},
 		{name: "US Dow pool", category: core.HotCategoryUSDow, wantPool: true},

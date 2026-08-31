@@ -15,8 +15,8 @@ type MembershipPage struct {
 }
 
 // MembershipSource produces ranked hot-list membership for categories that have
-// an upstream ranking API (EastMoney / Sina / Xueqiu). Pool-backed categories
-// (US indices, HK ETF) do not use this interface.
+// an upstream ranking API (EastMoney / Sina / Xueqiu). All shipped hot categories
+// are now constituent-pool backed; this interface remains for tests and adapters.
 type MembershipSource interface {
 	Rank(ctx context.Context, category core.HotCategory, sortBy core.HotSort, page int, pageSize int) (MembershipPage, error)
 }
@@ -24,7 +24,7 @@ type MembershipSource interface {
 // isPoolCategory reports whether the category is backed by a local constituent
 // pool rather than an upstream ranking API.
 func isPoolCategory(c core.HotCategory) bool {
-	return c == core.HotCategoryHKETF || isUSHotCategory(c)
+	return isCNHotCategory(c) || isHKHotCategory(c) || isUSHotCategory(c)
 }
 
 // sourceCanRank reports whether sourceID can produce a ranked membership page
@@ -46,8 +46,9 @@ func sourceCanRank(sourceID string, category core.HotCategory) bool {
 	}
 }
 
-// defaultMembershipSource returns the ranking source used when the user's
-// configured quote source cannot rank the category. Pool categories return "".
+// defaultMembershipSource returns the ranking adapter used when the user's
+// configured quote source cannot rank the category. US categories have no
+// ranking adapter.
 func defaultMembershipSource(category core.HotCategory) string {
 	switch category {
 	case core.HotCategoryCNA, core.HotCategoryCNETF:
@@ -59,11 +60,12 @@ func defaultMembershipSource(category core.HotCategory) string {
 	}
 }
 
-// resolveMembershipSource picks the ranking source for a browse request:
-// prefer the user's quote source when it can rank; otherwise fall back to the
-// category default. Empty means the category is pool-backed.
+// resolveMembershipSource picks the ranking adapter for browseRankingCategory
+// (kept for tests and unused List fallback). List() routes every shipped
+// category through browsePoolCategory via isPoolCategory; US and HK-ETF never
+// had a ranking browse path.
 func resolveMembershipSource(category core.HotCategory, quoteSourceID string) string {
-	if isPoolCategory(category) {
+	if isUSHotCategory(category) || category == core.HotCategoryHKETF {
 		return ""
 	}
 	if sourceCanRank(quoteSourceID, category) {

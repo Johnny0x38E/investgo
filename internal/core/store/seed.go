@@ -7,7 +7,7 @@ import (
 )
 
 // seedState returns sample state used on first startup.
-func seedState() persistedState {
+func seedState() PersistedState {
 	now := time.Now()
 	items := []core.WatchlistItem{
 		{
@@ -59,7 +59,7 @@ func seedState() persistedState {
 		},
 	}
 
-	state := persistedState{
+	state := PersistedState{
 		Items:  items,
 		Alerts: alerts,
 		Settings: core.AppSettings{

@@ -65,8 +65,13 @@ func hotResponseCacheKey(
 	}, "|")
 }
 
+// cloneHotItems returns a caller-owned copy of items. The result is always a
+// non-nil slice: hot responses must serialize empty results as [] instead of
+// null, which would crash the frontend render path.
 func cloneHotItems(items []core.HotItem) []core.HotItem {
-	return append([]core.HotItem(nil), items...)
+	cloned := make([]core.HotItem, len(items))
+	copy(cloned, items)
+	return cloned
 }
 
 func cloneHotListResponse(response core.HotListResponse) core.HotListResponse {

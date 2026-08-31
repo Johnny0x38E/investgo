@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"sync"
 	"time"
 
@@ -213,7 +214,6 @@ func (s *Store) refreshQuotesForItems(ctx context.Context, items []core.Watchlis
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 	for _, batch := range batchList {
-		batch := batch
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -223,9 +223,7 @@ func (s *Store) refreshQuotesForItems(ctx context.Context, items []core.Watchlis
 			if err != nil {
 				result.problems = append(result.problems, fmt.Sprintf("%s: %v", batch.provider.Name(), err))
 			}
-			for key, quote := range batchQuotes {
-				result.quotes[key] = quote
-			}
+			maps.Copy(result.quotes, batchQuotes)
 		}()
 	}
 	wg.Wait()

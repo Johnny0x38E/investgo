@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"investgo/internal/api/i18n"
 	"investgo/internal/core"
 	"investgo/internal/core/hot"
+	"investgo/internal/core/pool"
 	"investgo/internal/core/store"
 	"investgo/internal/logger"
 	"investgo/internal/platform"
@@ -18,6 +20,7 @@ import (
 type Handler struct {
 	store          *store.Store
 	hot            *hot.HotService
+	pools          *pool.Service
 	logs           *logger.LogBook
 	proxyTransport *platform.ProxyTransport
 	mux            *http.ServeMux // internal router (Go 1.22+ pattern matching)
@@ -44,15 +47,19 @@ type pinItemRequest struct {
 // NewHandler returns the unified API handler.
 func NewHandler(
 	store *store.Store,
-	hot *hot.HotService,
+	hotService *hot.HotService,
 	logs *logger.LogBook,
 	proxyTransport *platform.ProxyTransport,
+	poolServices ...*pool.Service,
 ) *Handler {
 	h := &Handler{
 		store:          store,
-		hot:            hot,
+		hot:            hotService,
 		logs:           logs,
 		proxyTransport: proxyTransport,
+	}
+	if len(poolServices) > 0 {
+		h.pools = poolServices[0]
 	}
 	h.mux = h.buildMux()
 	return h
@@ -69,6 +76,12 @@ func (h *Handler) buildMux() *http.ServeMux {
 	mux.HandleFunc("DELETE /logs", h.handleClearLogs)
 	mux.HandleFunc("POST /client-logs", h.handleClientLogs)
 	mux.HandleFunc("GET /hot", h.handleHot)
+	mux.HandleFunc("GET /pools", h.handlePools)
+	mux.HandleFunc("GET /pools/{id}/members", h.handlePoolMembers)
+	mux.HandleFunc("POST /pools/{id}/members", h.handleAddPoolMember)
+	mux.HandleFunc("PUT /pools/{id}/members/{instrumentId}", h.handleUpdatePoolMember)
+	mux.HandleFunc("DELETE /pools/{id}/members/{instrumentId}", h.handleDeletePoolMember)
+	mux.HandleFunc("POST /pools/{id}/members/{instrumentId}/restore", h.handleRestorePoolMember)
 	mux.HandleFunc("GET /history", h.handleHistory)
 	mux.HandleFunc("POST /refresh", h.handleRefresh)
 	mux.HandleFunc("POST /open-external", h.handleOpenExternal)
@@ -138,6 +151,13 @@ func writeJSON(writer http.ResponseWriter, status int, payload any) {
 // writeError encodes errors into a consistent JSON shape with a localized user message.
 func writeError(writer http.ResponseWriter, request *http.Request, status int, err error) {
 	debugMessage := strings.TrimSpace(err.Error())
+	// Prefer a dedicated API error message when the chain carries one, so the
+	// user-facing text stays clean even when errors are joined (errors.Join
+	// renders the full multi-line chain otherwise).
+	var apiErr *apiError
+	if errors.As(err, &apiErr) {
+		debugMessage = apiErr.message
+	}
 	localizedMessage := i18n.LocalizeErrorMessage(requestLocale(request), debugMessage)
 
 	payload := map[string]string{

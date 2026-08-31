@@ -12,15 +12,13 @@ export function useItemDialog(
     setStatus: StatusReporter,
 ) {
     const itemDialogVisible = ref(false);
-    const itemDialogInitialTab = ref<'basic' | 'dca'>('basic');
     const itemDialogWatchOnly = ref(false);
     const savingItem = ref(false);
     const itemForm = reactive<ItemFormModel>(emptyItemForm());
 
     // Open the item editor dialog, optionally pre-filling from an existing item.
-    function openItemDialog(item?: WatchlistItem, initialTab: 'basic' | 'dca' = 'basic'): void {
+    function openItemDialog(item?: WatchlistItem): void {
         Object.assign(itemForm, item ? mapItemToForm(item) : emptyItemForm());
-        itemDialogInitialTab.value = initialTab;
         itemDialogWatchOnly.value = false;
         itemDialogVisible.value = true;
     }
@@ -28,7 +26,6 @@ export function useItemDialog(
     // Open the item dialog pre-filled from a hot list item in watch-only mode.
     function openHotWatchDialog(item: HotItem): void {
         Object.assign(itemForm, hotItemToWatchForm(item));
-        itemDialogInitialTab.value = 'basic';
         itemDialogWatchOnly.value = true;
         itemDialogVisible.value = true;
     }
@@ -36,7 +33,6 @@ export function useItemDialog(
     // Open the item dialog pre-filled from a hot list item in open-position mode.
     function openHotPositionDialog(item: HotItem): void {
         Object.assign(itemForm, hotItemToPositionForm(item));
-        itemDialogInitialTab.value = 'basic';
         itemDialogWatchOnly.value = false;
         itemDialogVisible.value = true;
     }
@@ -131,7 +127,6 @@ export function useItemDialog(
 
     return {
         itemDialogVisible,
-        itemDialogInitialTab,
         itemDialogWatchOnly,
         savingItem,
         itemForm,

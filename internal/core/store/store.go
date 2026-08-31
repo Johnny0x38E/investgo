@@ -28,7 +28,7 @@ type Store struct {
 	quoteSourceOptions []core.QuoteSourceOption
 	historyProvider    core.HistoryProvider
 	logs               *logger.LogBook
-	state              persistedState
+	state              PersistedState
 	runtime            core.RuntimeStatus
 	fxRates            *fx.FxRates
 	refreshCache       *ttlcache.TTL[string, core.StateSnapshot]

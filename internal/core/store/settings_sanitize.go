@@ -3,6 +3,7 @@ package store
 import (
 	"errors"
 	"net/url"
+	"slices"
 	"strings"
 
 	"investgo/internal/core"
@@ -248,12 +249,7 @@ func quoteSourceSupportsMarketForSettings(sourceID string, market string, option
 			if len(opt.SupportedMarkets) == 0 {
 				return true
 			}
-			for _, m := range opt.SupportedMarkets {
-				if m == market {
-					return true
-				}
-			}
-			return false
+			return slices.Contains(opt.SupportedMarkets, market)
 		}
 	}
 	return false

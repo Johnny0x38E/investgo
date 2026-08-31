@@ -5,6 +5,7 @@
     import Tag from 'primevue/tag';
 
     import DataFreshnessMeta from '../DataFreshnessMeta.vue';
+    import PoolManagerDialog from '../dialogs/PoolManagerDialog.vue';
     import { ApiAbortError, api } from '../../api';
     import { getHotCategoryOptions } from '../../constants';
     import {
@@ -48,6 +49,7 @@
     const loading = ref(false);
     const loadingMore = ref(false);
     const error = ref('');
+    const managePoolsVisible = ref(false);
     const sentinelRef = ref<HTMLElement | null>(null);
     let observer: IntersectionObserver | null = null;
     let inflightController: AbortController | null = null;
@@ -58,7 +60,7 @@
     const categoryOptions = computed(() => hotCategoryOptions.value[props.marketGroup]);
 
     const sortedItems = computed(() => {
-        const result = [...items.value];
+        const result = [...(items.value ?? [])];
         if (!sortField.value) {
             return result;
         }
@@ -314,7 +316,10 @@
             if (inflightController !== controller) {
                 return;
             }
-            items.value = append ? [...items.value, ...payload.items] : payload.items;
+            // The backend may return an empty page as `items: []`; treat a
+            // null/missing array defensively so the render path never spreads null.
+            const responseItems = payload.items ?? [];
+            items.value = append ? [...items.value, ...responseItems] : responseItems;
             page.value = payload.page;
             total.value = payload.total;
             hasMore.value = payload.hasMore;
@@ -383,6 +388,15 @@
             </div>
             <div class="hot-toolbar">
                 <div class="hot-actions">
+                    <Button
+                        size="small"
+                        text
+                        icon="pi pi-database"
+                        :label="t('hot.managePoolsAction')"
+                        :aria-label="t('hot.managePools')"
+                        :title="t('hot.managePools')"
+                        @click="managePoolsVisible = true"
+                    />
                     <Button
                         size="small"
                         text
@@ -549,6 +563,12 @@
                 <span v-else-if="items.length">{{ t('hot.allLoaded') }}</span>
             </div>
         </div>
+
+        <PoolManagerDialog
+            v-model:visible="managePoolsVisible"
+            :market-group="marketGroup"
+            @changed="refreshHot(true)"
+        />
     </section>
 </template>
 

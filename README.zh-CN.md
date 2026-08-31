@@ -35,31 +35,29 @@ env GOCACHE=/tmp/go-build-cache go test ./...
 pnpm build
 ```
 
-## 构建与打包
+## 打包与发布
 
-macOS Apple Silicon：
-
-```bash
-./scripts/build-darwin-aarch64.sh
-VERSION=1.0.0 ./scripts/package-darwin-aarch64.sh
-```
-
-macOS Intel：
+推送和 Pull Request 会跑类型检查和 Go 测试。要出安装包时，打一个版本 tag：
 
 ```bash
-./scripts/build-darwin-x86_64.sh
-VERSION=1.0.0 ./scripts/package-darwin-x86_64.sh
+git tag v0.3.0
+git push origin v0.3.0
 ```
 
-Windows 11 x64（PowerShell）：
+GitHub Actions 会构建 Apple Silicon DMG、Intel DMG 和 Windows `.exe`，并挂到对应的 GitHub Release 上。也可以在 Actions 页手动跑 **Release**、不打 tag，产物留在那次运行的 Artifacts 里。
+
+若要在本地打包：
+
+```bash
+VERSION=1.0.0 ./scripts/package-darwin-aarch64.sh   # Apple Silicon
+VERSION=1.0.0 ./scripts/package-darwin-x86_64.sh    # Intel
+```
 
 ```powershell
 .\scripts\build-windows-amd64.ps1
 ```
 
-需要 Web Inspector 时，可以给 macOS 脚本加上 `--dev`。
-
-构建产物写入 `build/bin/`。Windows 当前只生成可运行的 `.exe`，暂未提供安装程序。
+需要 Web Inspector 时，给 macOS 脚本加上 `--dev`。产物写入 `build/bin/`。Windows 当前只生成可运行的 `.exe`，暂未提供安装程序。
 
 ## 说明
 

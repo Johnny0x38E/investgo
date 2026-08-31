@@ -9,8 +9,8 @@ import (
 
 // Repository abstracts persisted state storage so Store logic does not depend on a specific backend format.
 type Repository interface {
-	Load(target any) (bool, error)
-	Save(source any) error
+	Load() (PersistedState, bool, error)
+	Save(state PersistedState) error
 	Path() string
 }
 
@@ -33,36 +33,36 @@ func (r *JSONRepository) Path() string {
 }
 
 // Load loads state from disk into target and reports whether an existing file was found.
-func (r *JSONRepository) Load(target any) (bool, error) {
+func (r *JSONRepository) Load() (PersistedState, bool, error) {
 	if r == nil {
-		return false, errors.New("state repository is not configured")
+		return PersistedState{}, false, errors.New("state repository is not configured")
 	}
-
 	if err := os.MkdirAll(filepath.Dir(r.path), 0o755); err != nil {
-		return false, err
+		return PersistedState{}, false, err
 	}
 
 	payload, err := os.ReadFile(r.path)
 	if errors.Is(err, os.ErrNotExist) {
-		return false, nil
+		return PersistedState{}, false, nil
 	}
 	if err != nil {
-		return false, err
+		return PersistedState{}, false, err
 	}
 
-	if err := json.Unmarshal(payload, target); err != nil {
-		return false, err
+	state := PersistedState{}
+	if err := json.Unmarshal(payload, &state); err != nil {
+		return PersistedState{}, false, err
 	}
-	return true, nil
+	return state, true, nil
 }
 
 // Save persists source to disk using a temporary file plus atomic replace.
-func (r *JSONRepository) Save(source any) error {
+func (r *JSONRepository) Save(state PersistedState) error {
 	if r == nil {
 		return errors.New("state repository is not configured")
 	}
 
-	payload, err := json.MarshalIndent(source, "", "  ")
+	payload, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
 		return err
 	}

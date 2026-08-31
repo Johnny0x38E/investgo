@@ -63,13 +63,11 @@ func TestInitialFXFetchStartsOnlyAfterExplicitStart(t *testing.T) {
 
 type memoryRepository struct{}
 
-func (*memoryRepository) Load(target any) (bool, error) {
-	state := target.(*persistedState)
-	*state = persistedState{Settings: core.AppSettings{ProxyMode: "system"}}
-	return true, nil
+func (*memoryRepository) Load() (PersistedState, bool, error) {
+	return PersistedState{Settings: core.AppSettings{ProxyMode: "system"}}, true, nil
 }
 
-func (*memoryRepository) Save(any) error { return nil }
+func (*memoryRepository) Save(PersistedState) error { return nil }
 
 func (*memoryRepository) Path() string { return "memory" }
 
@@ -81,7 +79,7 @@ func TestFailedRefreshIsNotCached(t *testing.T) {
 	})}
 
 	appStore, err := NewStoreWithRepository(
-		&seededMemoryRepository{state: persistedState{
+		&seededMemoryRepository{state: PersistedState{
 			Items: []core.WatchlistItem{
 				{
 					ID:           "item-us",
@@ -144,7 +142,7 @@ func TestInitialFXFetchInvalidatesSnapshotCache(t *testing.T) {
 	})}
 
 	appStore, err := NewStoreWithRepository(
-		&seededMemoryRepository{state: persistedState{
+		&seededMemoryRepository{state: PersistedState{
 			Items: []core.WatchlistItem{
 				{
 					ID:           "item-us",
@@ -201,15 +199,17 @@ func TestInitialFXFetchInvalidatesSnapshotCache(t *testing.T) {
 }
 
 type seededMemoryRepository struct {
-	state persistedState
+	state PersistedState
 }
 
-func (r *seededMemoryRepository) Load(target any) (bool, error) {
-	*target.(*persistedState) = r.state
-	return true, nil
+func (r *seededMemoryRepository) Load() (PersistedState, bool, error) {
+	return clonePersistedState(r.state), true, nil
 }
 
-func (*seededMemoryRepository) Save(any) error { return nil }
+func (r *seededMemoryRepository) Save(state PersistedState) error {
+	r.state = clonePersistedState(state)
+	return nil
+}
 
 func (*seededMemoryRepository) Path() string { return "seeded-memory" }
 

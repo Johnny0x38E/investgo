@@ -2,7 +2,6 @@ package hot
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"investgo/internal/core"
@@ -49,9 +48,12 @@ func (s *HotService) getOrFetchPoolRank(
 }
 
 func (s *HotService) fetchFullPoolQuotes(ctx context.Context, category core.HotCategory, sourceID string) ([]core.HotItem, error) {
-	pool := poolSeedsForCategory(category)
+	pool, err := s.poolSeedsForCategory(ctx, category)
+	if err != nil {
+		return nil, err
+	}
 	if len(pool) == 0 {
-		return nil, fmt.Errorf("No available hot pool for category: %s", category)
+		return []core.HotItem{}, nil
 	}
 	if s.poolQuoteFn != nil {
 		return s.poolQuoteFn(ctx, pool, sourceID)
@@ -61,13 +63,6 @@ func (s *HotService) fetchFullPoolQuotes(ctx context.Context, category core.HotC
 		HKQuoteSource: sourceID,
 		USQuoteSource: sourceID,
 	})
-}
-
-func poolSeedsForCategory(category core.HotCategory) []hotSeed {
-	if category == core.HotCategoryHKETF {
-		return hkETFConstituents
-	}
-	return normalizedUSHotSeeds(category, hotConstituents[category])
 }
 
 // browsePoolCategory lists a pool-backed category using two-tier caching:

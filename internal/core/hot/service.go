@@ -30,12 +30,13 @@ type HotListOptions struct {
 // Category membership may come from different upstream ranking sources, while
 // displayed quote data should follow the configured market quote source.
 type HotService struct {
-	client        *http.Client
-	log           *slog.Logger
-	registry      *marketdata.Registry
-	searchCache   *ttlcache.TTL[string, []core.HotItem]
-	responseCache *ttlcache.TTL[string, core.HotListResponse]
-	rankCache     *ttlcache.TTL[string, []core.HotItem]
+	client         *http.Client
+	log            *slog.Logger
+	registry       *marketdata.Registry
+	searchCache    *ttlcache.TTL[string, []core.HotItem]
+	responseCache  *ttlcache.TTL[string, core.HotListResponse]
+	rankCache      *ttlcache.TTL[string, []core.HotItem]
+	poolMembership PoolMembership
 
 	// rankMembershipFn overrides ranking adapters in tests.
 	rankMembershipFn func(ctx context.Context, sourceID string, category core.HotCategory, sortBy core.HotSort, page int, pageSize int) (MembershipPage, error)
@@ -45,14 +46,19 @@ type HotService struct {
 }
 
 // NewHotService creates a hot list service.
-func NewHotService(client *http.Client, logger *slog.Logger, registry *marketdata.Registry) *HotService {
+func NewHotService(
+	client *http.Client,
+	logger *slog.Logger,
+	registry *marketdata.Registry,
+	poolMembership ...PoolMembership,
+) *HotService {
 	if client == nil {
 		client = &http.Client{Timeout: 12 * time.Second}
 	}
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &HotService{
+	service := &HotService{
 		client:        client,
 		log:           logger,
 		registry:      registry,
@@ -60,6 +66,10 @@ func NewHotService(client *http.Client, logger *slog.Logger, registry *marketdat
 		responseCache: ttlcache.NewTTL[string, core.HotListResponse](),
 		rankCache:     ttlcache.NewTTL[string, []core.HotItem](),
 	}
+	if len(poolMembership) > 0 {
+		service.poolMembership = poolMembership[0]
+	}
+	return service
 }
 
 // List returns the hot list for the given category and sort order.
@@ -68,8 +78,8 @@ func NewHotService(client *http.Client, logger *slog.Logger, registry *marketdat
 //  1. Normalize inputs and consult the short-TTL response cache.
 //  2. Search path keeps dedicated adapters (keyword → seeds → quotes).
 //  3. Browse path is membership → (optional) quote overlay:
-//     - ranking categories (CN-A / CN-ETF / HK): upstream rank page + overlay
-//     - pool categories (US indices / HK-ETF): long-TTL full-pool rank cache + page refresh
+//     - all shipped categories are constituent-pool backed
+//     - ranking adapters remain available for keyword search
 func (s *HotService) List(
 	ctx context.Context,
 	category core.HotCategory,
@@ -170,11 +180,19 @@ func (s *HotService) searchUSETFs(
 	page, pageSize int,
 	options HotListOptions,
 ) (core.HotListResponse, error) {
-	seeds := filterHotSeeds(normalizedUSHotSeeds(core.HotCategoryUSETF, hotConstituents[core.HotCategoryUSETF]), keyword)
+	poolSeeds, err := s.poolSeedsForCategory(ctx, core.HotCategoryUSETF)
+	if err != nil {
+		return core.HotListResponse{}, err
+	}
+	seeds := filterHotSeeds(poolSeeds, keyword)
 
 	remoteSeeds, err := s.searchYahooUSSeeds(ctx, keyword)
 	if err == nil {
 		seeds = mergeHotSeeds(seeds, remoteSeeds)
+	}
+	seeds, err = s.filterExcludedHotSeeds(ctx, core.HotCategoryUSETF, seeds)
+	if err != nil {
+		return core.HotListResponse{}, err
 	}
 
 	seeds = seeds[:min(len(seeds), hotSearchMaxSeeds)]
@@ -210,15 +228,22 @@ func (s *HotService) searchUSStocks(
 	page, pageSize int,
 	options HotListOptions,
 ) (core.HotListResponse, error) {
-	pool := normalizedUSHotSeeds(category, hotConstituents[category])
+	poolSeeds, err := s.poolSeedsForCategory(ctx, category)
+	if err != nil {
+		return core.HotListResponse{}, err
+	}
 
 	// Filter seeds locally — no network I/O.
-	seeds := filterHotSeeds(pool, keyword)
+	seeds := filterHotSeeds(poolSeeds, keyword)
 
 	// Call Yahoo search for broader coverage (e.g. name-based search).
 	remoteSeeds, err := s.searchYahooUSStockSeeds(ctx, keyword)
 	if err == nil && len(remoteSeeds) > 0 {
 		seeds = mergeHotSeeds(seeds, remoteSeeds)
+	}
+	seeds, err = s.filterExcludedHotSeeds(ctx, category, seeds)
+	if err != nil {
+		return core.HotListResponse{}, err
 	}
 
 	// Trim the merged seed list before quoting: a broad keyword can match far
@@ -283,6 +308,11 @@ func (s *HotService) searchCNHK(
 				Currency: item.Currency,
 			}})
 		}
+	}
+
+	seeds, err := s.filterExcludedHotSeeds(ctx, category, seeds)
+	if err != nil {
+		return core.HotListResponse{}, err
 	}
 
 	// Cap the seed list before quote fetch so a broad keyword does not turn
@@ -376,6 +406,8 @@ func categoryForHotSeeds(seeds []hotSeed) core.HotCategory {
 		return core.HotCategoryHK
 	case "HK-ETF":
 		return core.HotCategoryHKETF
+	case "CN-ETF":
+		return core.HotCategoryCNETF
 	default:
 		return core.HotCategoryCNA
 	}

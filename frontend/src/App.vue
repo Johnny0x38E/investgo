@@ -12,6 +12,7 @@
     import DCADetailDialog from './components/dialogs/DCADetailDialog.vue';
     import ItemDialog from './components/dialogs/ItemDialog.vue';
     import { appendClientLog, installClientLogCapture } from './devlog';
+    import { useDCALedger } from './composables/useDCALedger';
     import { useDeveloperLogs } from './composables/useDeveloperLogs';
     import { useHistorySeries } from './composables/useHistorySeries';
     import { useItemDialog } from './composables/useItemDialog';
@@ -59,8 +60,6 @@
     const hotMarketGroup = ref<HotMarketGroup>('cn');
     const settingsTab = ref<SettingsTabKey>('general');
     const savingSettings = ref(false);
-    const dcaDetailVisible = ref(false);
-    const dcaDetailItem = ref<WatchlistItem | null>(null);
     const matchMediaList = window.matchMedia('(prefers-color-scheme: dark)');
 
     const settingsDraft = reactive<AppSettings>({ ...defaultSettings });
@@ -455,7 +454,6 @@
 
     const {
         itemDialogVisible,
-        itemDialogInitialTab,
         itemDialogWatchOnly,
         savingItem,
         itemForm,
@@ -467,6 +465,14 @@
         toggleItemPinned,
         performDeleteItem: performDeleteItemInner,
     } = useItemDialog(applySnapshot, clearHistoryCache, setStatus);
+
+    const {
+        dcaLedgerVisible,
+        dcaLedgerItem,
+        savingDCAEntries,
+        openDCALedger,
+        saveDCAEntries,
+    } = useDCALedger(applySnapshot, clearHistoryCache, setStatus);
 
     async function quickAddHotItem(item: HotItem): Promise<void> {
         const key = `${item.market}:${item.symbol}`;
@@ -500,19 +506,6 @@
         if (existing) {
             requestDeleteItem(existing.id);
         }
-    }
-
-    // Open the DCA detail dialog.
-    function showDCADetail(item: WatchlistItem): void {
-        dcaDetailItem.value = item;
-        dcaDetailVisible.value = true;
-    }
-
-    // Jump from the DCA detail dialog back into the item editor with the DCA tab selected.
-    function editFromDCADetail(): void {
-        if (!dcaDetailItem.value) return;
-        dcaDetailVisible.value = false;
-        openItemDialog(dcaDetailItem.value, 'dca');
     }
 
     // Switch the active module; watchlist data loading is handled by the module watcher so it can choose single-item refreshes.
@@ -604,7 +597,7 @@
             @delete-item="requestDeleteItem"
             @toggle-pin="toggleItemPinned"
             @select-item="selectedItemId = $event"
-            @show-dca="showDCADetail"
+            @show-dca="openDCALedger"
             @add-alert="openAlertDialog(undefined, items[0]?.id)"
             @edit-alert="openAlertDialog"
             @delete-alert="requestDeleteAlert"
@@ -621,18 +614,18 @@
             :visible="itemDialogVisible"
             :form="itemForm"
             :saving="savingItem"
-            :initial-tab="itemDialogInitialTab"
             :watch-only="itemDialogWatchOnly"
             @update:visible="itemDialogVisible = $event"
             @save="saveItem"
         />
 
         <DCADetailDialog
-            v-if="dcaDetailVisible"
-            :visible="dcaDetailVisible"
-            :item="dcaDetailItem"
-            @update:visible="dcaDetailVisible = $event"
-            @edit="editFromDCADetail"
+            v-if="dcaLedgerVisible"
+            :visible="dcaLedgerVisible"
+            :item="dcaLedgerItem"
+            :saving="savingDCAEntries"
+            @update:visible="dcaLedgerVisible = $event"
+            @save="saveDCAEntries"
         />
 
         <AlertDialog

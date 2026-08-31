@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"io/fs"
@@ -9,14 +10,17 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"investgo/internal/api"
 	"investgo/internal/core"
 	"investgo/internal/core/hot"
 	"investgo/internal/core/marketdata"
+	"investgo/internal/core/pool"
 	"investgo/internal/core/store"
 	"investgo/internal/logger"
 	"investgo/internal/platform"
+	sqlitestorage "investgo/internal/storage/sqlite"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -69,8 +73,39 @@ func main() {
 	}
 	registry := marketdata.DefaultRegistry(httpClient, currentSettings)
 
-	appStore, err = store.NewStore(
-		defaultStatePath(),
+	legacyStatePath, databasePath := defaultStoragePaths()
+	migrationResult, err := store.EnsureSQLiteState(context.Background(), legacyStatePath, databasePath)
+	if err != nil {
+		log.Fatalf("prepare sqlite state: %v", err)
+	}
+	if migrationResult.Migrated {
+		logs.Info("backend", "storage", "migrated legacy JSON state to SQLite")
+	}
+
+	appDatabase, err := sqlitestorage.Open(databasePath)
+	if err != nil {
+		log.Fatalf("open sqlite state: %v", err)
+	}
+	instrumentRepository := sqlitestorage.NewInstrumentRepository(appDatabase)
+	poolRepository := sqlitestorage.NewPoolRepository(appDatabase)
+	if err := hot.SeedBuiltInPools(context.Background(), hot.Repositories{
+		Instruments: instrumentRepository,
+		Pools:       poolRepository,
+	}, hot.BuiltInPoolDataVersion); err != nil {
+		_ = appDatabase.Close()
+		log.Fatalf("seed built-in instrument pools: %v", err)
+	}
+	var closeDatabaseOnce sync.Once
+	var closeDatabaseErr error
+	closeDatabase := func() error {
+		closeDatabaseOnce.Do(func() {
+			closeDatabaseErr = appDatabase.Close()
+		})
+		return closeDatabaseErr
+	}
+
+	appStore, err = store.NewStoreWithRepository(
+		store.NewSQLiteRepository(appDatabase, databasePath),
 		registry.QuoteProviders(),
 		registry.QuoteSourceOptions(),
 		registry.NewHistoryRouter(currentSettings),
@@ -79,6 +114,7 @@ func main() {
 		httpClient, // shared http.Client so FX rate requests respect the configured proxy transport
 	)
 	if err != nil {
+		_ = closeDatabase()
 		log.Fatalf("initialise store: %v", err)
 	}
 
@@ -101,7 +137,8 @@ func main() {
 	}
 	appStore.StartInitialFXFetch()
 
-	hotService := hot.NewHotService(httpClient, logs.NewSlogLogger("hot", slog.LevelInfo), registry)
+	poolService := pool.NewService(instrumentRepository, poolRepository)
+	hotService := hot.NewHotService(httpClient, logs.NewSlogLogger("hot", slog.LevelInfo), registry, poolService)
 
 	frontendFS, err := fs.Sub(frontendAssets, "frontend/dist")
 	if err != nil {
@@ -109,7 +146,7 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/api/", api.NewHandler(appStore, hotService, logs, proxyTransport))
+	mux.Handle("/api/", api.NewHandler(appStore, hotService, logs, proxyTransport, poolService))
 	mux.Handle("/", application.BundledAssetFileServer(frontendFS))
 
 	app := application.New(application.Options{
@@ -129,10 +166,12 @@ func main() {
 		},
 		OnShutdown: func() {
 			logs.Info("backend", "app", "shutdown requested")
-			// Flush any pending debounced writes so dirty state is not lost when
-			// the process exits. No-ops when nothing is pending.
+			// Flush pending writes before closing SQLite so dirty state is not lost.
 			if err := appStore.Flush(); err != nil {
 				logs.Error("backend", "storage", fmt.Sprintf("flush state on shutdown failed: %v", err))
+			}
+			if err := closeDatabase(); err != nil {
+				logs.Error("backend", "storage", fmt.Sprintf("close sqlite state on shutdown failed: %v", err))
 			}
 		},
 	})
@@ -158,18 +197,31 @@ func main() {
 	app.Window.NewWithOptions(windowOptions)
 
 	if err := app.Run(); err != nil {
+		if flushErr := appStore.Flush(); flushErr != nil {
+			logs.Error("backend", "storage", fmt.Sprintf("flush state after run failure: %v", flushErr))
+		}
+		if closeErr := closeDatabase(); closeErr != nil {
+			logs.Error("backend", "storage", fmt.Sprintf("close sqlite state after run failure: %v", closeErr))
+		}
 		log.Printf("run app: %v", err)
 		os.Exit(1)
 	}
 }
 
-// defaultStatePath returns the default storage path for the state file.
-func defaultStatePath() string {
-	if configDir, err := os.UserConfigDir(); err == nil {
-		return filepath.Join(configDir, "investgo", "state.json")
+func defaultStoragePaths() (jsonPath, databasePath string) {
+	configDirectory, err := os.UserConfigDir()
+	if err != nil {
+		configDirectory = ""
 	}
+	return storagePathsForConfigDirectory(configDirectory)
+}
 
-	return filepath.Join(".", "data", "state.json")
+func storagePathsForConfigDirectory(configDirectory string) (jsonPath, databasePath string) {
+	baseDirectory := filepath.Join("data")
+	if configDirectory != "" {
+		baseDirectory = filepath.Join(configDirectory, "investgo")
+	}
+	return filepath.Join(baseDirectory, "state.json"), filepath.Join(baseDirectory, "investgo.db")
 }
 
 // defaultLogPath returns the default storage path for the log file.

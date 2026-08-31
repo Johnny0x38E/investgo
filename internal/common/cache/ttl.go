@@ -85,6 +85,25 @@ func (c *TTL[K, V]) Delete(key K) {
 	c.mu.Unlock()
 }
 
+// DeleteFunc removes every entry whose key matches predicate.
+func (c *TTL[K, V]) DeleteFunc(predicate func(K) bool) {
+	if c == nil || predicate == nil {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	kept := c.order[:0]
+	for _, key := range c.order {
+		if predicate(key) {
+			delete(c.entries, key)
+			continue
+		}
+		kept = append(kept, key)
+	}
+	c.order = kept
+}
+
 func (c *TTL[K, V]) Clear() {
 	if c == nil {
 		return

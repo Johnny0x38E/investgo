@@ -35,31 +35,29 @@ env GOCACHE=/tmp/go-build-cache go test ./...
 pnpm build
 ```
 
-## Build and package
+## Package and release
 
-macOS Apple Silicon:
-
-```bash
-./scripts/build-darwin-aarch64.sh
-VERSION=1.0.0 ./scripts/package-darwin-aarch64.sh
-```
-
-macOS Intel:
+Pushes and pull requests run typecheck and Go tests. To produce installers, push a version tag:
 
 ```bash
-./scripts/build-darwin-x86_64.sh
-VERSION=1.0.0 ./scripts/package-darwin-x86_64.sh
+git tag v0.3.0
+git push origin v0.3.0
 ```
 
-Windows 11 x64 (PowerShell):
+GitHub Actions then builds the Apple Silicon DMG, Intel DMG, and Windows `.exe`, and attaches them to a GitHub Release. You can also run **Release** from the Actions tab without creating a tag; artifacts stay on that workflow run.
+
+To package locally instead:
+
+```bash
+VERSION=1.0.0 ./scripts/package-darwin-aarch64.sh   # Apple Silicon
+VERSION=1.0.0 ./scripts/package-darwin-x86_64.sh    # Intel
+```
 
 ```powershell
 .\scripts\build-windows-amd64.ps1
 ```
 
-Use `--dev` with the macOS scripts when Web Inspector support is needed.
-
-Build outputs are written to `build/bin/`. Windows currently produces a runnable `.exe`; an installer is not included yet.
+Use `--dev` with the macOS scripts when Web Inspector support is needed. Outputs go to `build/bin/`. Windows currently produces a runnable `.exe`; an installer is not included yet.
 
 ## Notes
 

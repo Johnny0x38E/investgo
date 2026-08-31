@@ -8,12 +8,22 @@ import (
 
 // isCNHotCategory checks whether the category belongs to the A-share market (including ETFs).
 func isCNHotCategory(c core.HotCategory) bool {
-	return c == core.HotCategoryCNA || c == core.HotCategoryCNETF
+	switch c {
+	case core.HotCategoryCNA, core.HotCategoryCNETF:
+		return true
+	default:
+		return false
+	}
 }
 
 // isHKHotCategory checks whether the category belongs to the Hong Kong stock market.
 func isHKHotCategory(c core.HotCategory) bool {
-	return c == core.HotCategoryHK || c == core.HotCategoryHKETF
+	switch c {
+	case core.HotCategoryHK, core.HotCategoryHKETF:
+		return true
+	default:
+		return false
+	}
 }
 
 // isUSHotCategory checks whether the category belongs to the US stock market.

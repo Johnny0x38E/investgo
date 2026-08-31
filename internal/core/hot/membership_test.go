@@ -72,10 +72,10 @@ func TestResolveMembershipSource(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		category  core.HotCategory
-		quoteSrc  string
-		want      string
+		name     string
+		category core.HotCategory
+		quoteSrc string
+		want     string
 	}{
 		{name: "CN prefers eastmoney when it can rank", category: core.HotCategoryCNA, quoteSrc: "eastmoney", want: "eastmoney"},
 		{name: "CN falls back to sina for yahoo", category: core.HotCategoryCNA, quoteSrc: "yahoo", want: "sina"},
@@ -106,10 +106,10 @@ func TestIsPoolCategory(t *testing.T) {
 	if !isPoolCategory(core.HotCategoryHKETF) {
 		t.Fatal("HK ETF should be pool-backed")
 	}
-	if isPoolCategory(core.HotCategoryCNA) {
-		t.Fatal("CN-A should not be pool-backed")
+	if !isPoolCategory(core.HotCategoryCNA) {
+		t.Fatal("CN-A should be pool-backed")
 	}
-	if isPoolCategory(core.HotCategoryHK) {
-		t.Fatal("HK main should not be pool-backed")
+	if !isPoolCategory(core.HotCategoryHK) {
+		t.Fatal("HK main should be pool-backed")
 	}
 }

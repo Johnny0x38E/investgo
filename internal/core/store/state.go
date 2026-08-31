@@ -9,12 +9,32 @@ import (
 	"investgo/internal/core"
 )
 
-// persistedState represents application state that needs to be persisted.
-type persistedState struct {
+// PersistedState represents application state that needs to be persisted.
+type PersistedState struct {
 	Items     []core.WatchlistItem `json:"items"`
 	Alerts    []core.AlertRule     `json:"alerts"`
 	Settings  core.AppSettings     `json:"settings"`
 	UpdatedAt time.Time            `json:"updatedAt"`
+}
+
+func clonePersistedState(state PersistedState) PersistedState {
+	cloned := state
+	cloned.Items = make([]core.WatchlistItem, len(state.Items))
+	for index, item := range state.Items {
+		item.Tags = append([]string(nil), item.Tags...)
+		item.DCAEntries = append([]core.DCAEntry(nil), item.DCAEntries...)
+		if item.DCASummary != nil {
+			summary := *item.DCASummary
+			item.DCASummary = &summary
+		}
+		if item.Position != nil {
+			position := *item.Position
+			item.Position = &position
+		}
+		cloned.Items[index] = item
+	}
+	cloned.Alerts = append([]core.AlertRule(nil), state.Alerts...)
+	return cloned
 }
 
 // load loads state file from disk; if file does not exist, write a seed state.
@@ -23,8 +43,7 @@ func (s *Store) load() error {
 		return fmt.Errorf("state repository is not configured")
 	}
 
-	state := persistedState{}
-	found, err := s.repository.Load(&state)
+	state, found, err := s.repository.Load()
 	if !found && err == nil {
 		s.state = seedState()
 		s.runtime.QuoteSource = s.quoteProviderSummaryLocked()
