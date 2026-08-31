@@ -4,57 +4,88 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"investgo/internal/core"
 	"investgo/internal/core/marketdata"
 )
 
-func TestListRoutesByCategory(t *testing.T) {
+type stubQuoteProvider struct {
+	name  string
+	calls int
+	lastN int
+}
+
+func (p *stubQuoteProvider) Name() string { return p.name }
+
+func (p *stubQuoteProvider) Fetch(_ context.Context, items []core.WatchlistItem) (map[string]core.Quote, error) {
+	p.calls++
+	p.lastN = len(items)
+	out := make(map[string]core.Quote, len(items))
+	for _, item := range items {
+		target, err := core.ResolveQuoteTarget(item)
+		if err != nil {
+			continue
+		}
+		out[target.Key] = core.Quote{
+			Symbol:        target.DisplaySymbol,
+			Name:          item.Name + "-overlay",
+			Market:        target.Market,
+			Currency:      target.Currency,
+			CurrentPrice:  101,
+			PreviousClose: 100,
+			Change:        1,
+			ChangePercent: 1,
+			Volume:        999,
+			Source:        p.name,
+			UpdatedAt:     time.Now(),
+		}
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("stub quote provider empty")
+	}
+	return out, nil
+}
+
+func membershipItem(symbol, name, market, currency, source string, changePct float64) core.HotItem {
+	return core.HotItem{
+		Symbol:        symbol,
+		Name:          name,
+		Market:        market,
+		Currency:      currency,
+		CurrentPrice:  10,
+		Change:        changePct / 10,
+		ChangePercent: changePct,
+		Volume:        100,
+		QuoteSource:   source,
+		UpdatedAt:     time.Now(),
+	}
+}
+
+func TestListRoutesEveryCategoryThroughThePool(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name     string
-		category core.HotCategory
-		wantPool bool
-	}{
-		{name: "CN-A ranking", category: core.HotCategoryCNA, wantPool: true},
-		{name: "CN-ETF ranking", category: core.HotCategoryCNETF, wantPool: true},
-		{name: "HK ranking", category: core.HotCategoryHK, wantPool: true},
-		{name: "US SP500 pool", category: core.HotCategoryUSSP500, wantPool: true},
-		{name: "US Nasdaq pool", category: core.HotCategoryUSNasdaq, wantPool: true},
-		{name: "US Dow pool", category: core.HotCategoryUSDow, wantPool: true},
-		{name: "US ETF pool", category: core.HotCategoryUSETF, wantPool: true},
-		{name: "HK ETF pool", category: core.HotCategoryHKETF, wantPool: true},
+	categories := []core.HotCategory{
+		core.HotCategoryCNA,
+		core.HotCategoryCNETF,
+		core.HotCategoryHK,
+		core.HotCategoryHKETF,
+		core.HotCategoryUSSP500,
+		core.HotCategoryUSNasdaq,
+		core.HotCategoryUSDow,
+		core.HotCategoryUSETF,
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, category := range categories {
+		t.Run(string(category), func(t *testing.T) {
 			t.Parallel()
 
-			rankingHits := 0
 			poolHits := 0
-
 			yahooQP := &stubQuoteProvider{name: "Yahoo Finance"}
-			sinaQP := &stubQuoteProvider{name: "Sina"}
 			reg := marketdata.NewRegistry()
 			reg.Register(marketdata.NewDataSource("yahoo", "Yahoo", "", nil, yahooQP, nil))
-			reg.Register(marketdata.NewDataSource("sina", "Sina", "", nil, sinaQP, nil))
 
 			svc := NewHotService(nil, nil, reg)
-			svc.rankMembershipFn = func(
-				_ context.Context,
-				_ string,
-				category core.HotCategory,
-				_ core.HotSort,
-				_ int,
-				_ int,
-			) (MembershipPage, error) {
-				rankingHits++
-				return MembershipPage{
-					Total: 1,
-					Items: []core.HotItem{membershipItem("600519.SH", "Moutai", "CN-A", "CNY", "Sina", 1)},
-				}, nil
-			}
 			svc.poolQuoteFn = func(_ context.Context, seeds []hotSeed, _ string) ([]core.HotItem, error) {
 				poolHits++
 				if len(seeds) == 0 {
@@ -74,16 +105,11 @@ func TestListRoutesByCategory(t *testing.T) {
 				CacheTTL:      defaultHotCacheTTL,
 				BypassCache:   true,
 			}
-			_, err := svc.List(context.Background(), tt.category, core.HotSortVolume, "", 1, 5, opts)
-			if err != nil {
-				t.Fatalf("List(%s): %v", tt.category, err)
+			if _, err := svc.List(context.Background(), category, core.HotSortVolume, "", 1, 5, opts); err != nil {
+				t.Fatalf("List(%s): %v", category, err)
 			}
-			if tt.wantPool {
-				if poolHits == 0 || rankingHits != 0 {
-					t.Fatalf("expected pool route; poolHits=%d rankingHits=%d", poolHits, rankingHits)
-				}
-			} else if rankingHits == 0 || poolHits != 0 {
-				t.Fatalf("expected ranking route; poolHits=%d rankingHits=%d", poolHits, rankingHits)
+			if poolHits == 0 {
+				t.Fatalf("expected pool route for %s", category)
 			}
 		})
 	}

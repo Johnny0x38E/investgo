@@ -26,9 +26,8 @@ type HotListOptions struct {
 	BypassCache   bool
 }
 
-// HotService handles real-time data fetching and pagination for hot lists.
-// Category membership may come from different upstream ranking sources, while
-// displayed quote data should follow the configured market quote source.
+// HotService fetches and paginates hot lists from constituent pools.
+// Live prices follow the configured market quote source.
 type HotService struct {
 	client         *http.Client
 	log            *slog.Logger
@@ -37,9 +36,6 @@ type HotService struct {
 	responseCache  *ttlcache.TTL[string, core.HotListResponse]
 	rankCache      *ttlcache.TTL[string, []core.HotItem]
 	poolMembership PoolMembership
-
-	// rankMembershipFn overrides ranking adapters in tests.
-	rankMembershipFn func(ctx context.Context, sourceID string, category core.HotCategory, sortBy core.HotSort, page int, pageSize int) (MembershipPage, error)
 
 	// poolQuoteFn overrides full-pool quote fetching in tests.
 	poolQuoteFn func(ctx context.Context, seeds []hotSeed, sourceID string) ([]core.HotItem, error)
@@ -73,13 +69,7 @@ func NewHotService(
 }
 
 // List returns the hot list for the given category and sort order.
-//
-// Browse flow:
-//  1. Normalize inputs and consult the short-TTL response cache.
-//  2. Search path keeps dedicated adapters (keyword → seeds → quotes).
-//  3. Browse path is membership → (optional) quote overlay:
-//     - all shipped categories are constituent-pool backed
-//     - ranking adapters remain available for keyword search
+// Browse uses the constituent pool; keyword search uses dedicated adapters.
 func (s *HotService) List(
 	ctx context.Context,
 	category core.HotCategory,
@@ -114,10 +104,8 @@ func (s *HotService) List(
 		searchCtx, cancel := context.WithTimeout(ctx, hotSearchTimeout)
 		defer cancel()
 		response, err = s.search(searchCtx, category, sortBy, keyword, page, pageSize, options)
-	} else if isPoolCategory(category) {
-		response, err = s.browsePoolCategory(ctx, category, sortBy, page, pageSize, options)
 	} else {
-		response, err = s.browseRankingCategory(ctx, category, sortBy, page, pageSize, options)
+		response, err = s.browsePoolCategory(ctx, category, sortBy, page, pageSize, options)
 	}
 	if err != nil {
 		return core.HotListResponse{}, err
@@ -352,25 +340,6 @@ func (s *HotService) searchCNHK(
 	}, nil
 }
 
-func (s *HotService) listCategoryBySource(
-	ctx context.Context,
-	sourceID string,
-	category core.HotCategory,
-	sortBy core.HotSort,
-	page, pageSize int,
-) (core.HotListResponse, error) {
-	switch sourceID {
-	case "eastmoney":
-		return s.listEastMoney(ctx, category, sortBy, page, pageSize)
-	case "sina":
-		return s.listSina(ctx, category, sortBy, page, pageSize)
-	case "xueqiu":
-		return s.listXueqiu(ctx, category, sortBy, page, pageSize)
-	default:
-		return core.HotListResponse{}, fmt.Errorf("Hot quote source is unsupported: %s", sourceID)
-	}
-}
-
 // loadHotItemsForSeeds fetches real-time quotes for the given hotSeed list and returns only rows backed by live data.
 func (s *HotService) loadHotItemsForSeeds(ctx context.Context, seeds []hotSeed, options HotListOptions) ([]core.HotItem, error) {
 	if len(seeds) == 0 {
@@ -379,17 +348,7 @@ func (s *HotService) loadHotItemsForSeeds(ctx context.Context, seeds []hotSeed, 
 
 	category := categoryForHotSeeds(seeds)
 	sourceID := effectivePoolQuoteSource(category, resolveHotQuoteSource(category, options))
-	items, err := s.fetchPoolQuotes(ctx, seeds, sourceID)
-	if err != nil {
-		return nil, err
-	}
-	// apply custom name overrides for US-ETF seeds
-	for i, item := range items {
-		if custom, ok := core.USETFSeedNames[item.Symbol]; ok {
-			items[i].Name = custom
-		}
-	}
-	return items, nil
+	return s.fetchPoolQuotes(ctx, seeds, sourceID)
 }
 
 // categoryForHotSeeds infers the HotCategory from the market field of the first seed.

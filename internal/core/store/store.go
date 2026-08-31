@@ -55,27 +55,6 @@ type Store struct {
 	initialFXFetchOnce sync.Once
 }
 
-// NewStore creates a Store and completes state loading and runtime dependency injection.
-func NewStore(
-	path string,
-	quoteProviders map[string]core.QuoteProvider,
-	quoteSourceOptions []core.QuoteSourceOption,
-	historyProvider core.HistoryProvider,
-	logs *logger.LogBook,
-	appVersion string,
-	httpClient *http.Client,
-) (*Store, error) {
-	return NewStoreWithRepository(
-		NewJSONRepository(path),
-		quoteProviders,
-		quoteSourceOptions,
-		historyProvider,
-		logs,
-		appVersion,
-		httpClient,
-	)
-}
-
 // NewStoreWithRepository creates a Store with an explicit persistence backend.
 func NewStoreWithRepository(
 	repository Repository,

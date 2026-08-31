@@ -576,11 +576,8 @@ func buildUSSeeds(market string, symbols []string) []hotSeed {
 	seeds := make([]hotSeed, 0, len(symbols))
 	for _, symbol := range symbols {
 		name := symbol
-		switch market {
-		case "US-STOCK":
+		if market == "US-STOCK" {
 			name = provider.FirstNonEmpty(usEquitySeedNames[symbol], symbol)
-		case "US-ETF":
-			name = provider.FirstNonEmpty(core.USETFSeedNames[symbol], symbol)
 		}
 		seeds = append(seeds, hotSeed{
 			Symbol:   symbol,
