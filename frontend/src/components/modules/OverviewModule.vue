@@ -1,5 +1,6 @@
 <script setup lang="ts">
     import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+    import { color } from 'chart.js/helpers';
     import Chart from 'primevue/chart';
     import Button from 'primevue/button';
     import Message from 'primevue/message';
@@ -79,8 +80,11 @@
         return isDark ? CHART_PALETTE_DARK : CHART_PALETTE_LIGHT;
     }
 
-    // Single palette shared by both the breakdown doughnut and trend charts.
+    // Single palette shared by the breakdown bar and the trend chart.
     const chartPalette = computed(() => resolveChartPalette());
+    const chartTooltipRadius = computed(() =>
+        Number.parseFloat(documentStyle.value?.getPropertyValue('--radius-panel') || '8'),
+    );
 
     const trendTotalColor = computed(() => {
         if (!documentStyle.value) return '#24476f';
@@ -118,69 +122,10 @@
         return dashboard.totalCost > 0 || dashboard.totalValue > 0;
     });
 
-    const doughnutData = computed(() => {
-        const breakdown = analytics.value?.breakdown ?? [];
-        return {
-            labels: breakdown.map((slice) => slice.name || slice.symbol),
-            datasets: [
-                {
-                    data: breakdown.map((slice) => slice.value),
-                    backgroundColor: breakdown.map((_, index) => chartPalette.value[index % chartPalette.value.length]),
-                    borderWidth: 0,
-                    hoverOffset: 12,
-                    cutout: '70%',
-                },
-            ],
-        };
-    });
-
-    const doughnutOptions = computed(() => {
-        return {
-            responsive: true,
-            maintainAspectRatio: false,
-            layout: {
-                padding: 16,
-            },
-            animation: {
-                duration: 220,
-            },
-            plugins: {
-                legend: {
-                    display: false,
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(10, 16, 30, 0.96)',
-                    padding: 10,
-                    cornerRadius: 8,
-                    boxWidth: 8,
-                    boxHeight: 8,
-                    usePointStyle: true,
-                    titleFont: { size: 12, weight: '600' },
-                    bodyFont: { size: 12 },
-                    borderColor: 'rgba(255,255,255,0.08)',
-                    borderWidth: 1,
-                    callbacks: {
-                        labelPointStyle() {
-                            return { pointStyle: 'circle', rotation: 0 };
-                        },
-                        labelColor(context: { dataset: { backgroundColor: string[] }; dataIndex: number }) {
-                            const colors = context.dataset.backgroundColor as string[];
-                            return {
-                                borderColor: colors[context.dataIndex],
-                                backgroundColor: colors[context.dataIndex],
-                                borderWidth: 0,
-                            };
-                        },
-                        label(context: { parsed: number }) {
-                            const value = context.parsed ?? 0;
-                            const weight = breakdownTotal.value > 0 ? (value / breakdownTotal.value) * 100 : 0;
-                            return ` ${formatMoney(value)}  ${formatNumber(weight, 1)}%`;
-                        },
-                    },
-                },
-            },
-        };
-    });
+    /** Desaturated slice ink shared by the proportion bar, legend dots, and row bars. */
+    function sliceTone(baseColor: string): string {
+        return color(baseColor).desaturate(0.12).rgbString();
+    }
 
     const trendData = computed(() => {
         const trend = analytics.value?.trend;
@@ -257,7 +202,7 @@
                 tooltip: {
                     backgroundColor: 'rgba(10, 16, 30, 0.96)',
                     padding: 14,
-                    cornerRadius: 10,
+                    cornerRadius: chartTooltipRadius.value,
                     boxWidth: 8,
                     boxHeight: 8,
                     usePointStyle: true,
@@ -434,7 +379,7 @@
                 <div class="overview-loading-card">
                     <Skeleton width="8rem" height="1rem" />
                     <div class="overview-loading-breakdown">
-                        <Skeleton shape="circle" size="10rem" />
+                        <Skeleton width="100%" height="1.4rem" borderRadius="999px" />
                         <div class="overview-loading-list">
                             <Skeleton v-for="index in 4" :key="index" width="100%" height="2.5rem" />
                         </div>
@@ -464,18 +409,22 @@
                 </div>
 
                 <div v-if="analytics.breakdown.length" class="overview-breakdown">
-                    <div class="overview-doughnut-wrap">
-                        <div class="overview-doughnut-shell">
-                            <Chart
-                                type="doughnut"
-                                :data="doughnutData"
-                                :options="doughnutOptions"
-                                class="overview-doughnut-chart"
-                            />
-                            <div class="overview-doughnut-center">
-                                <strong>{{ formatMoney(breakdownTotal) }}</strong>
-                                <span>{{ t('overview.charts.category.totalValue') }}</span>
-                            </div>
+                    <div class="overview-share">
+                        <div class="overview-share-total">
+                            <strong>{{ formatMoney(breakdownTotal) }}</strong>
+                            <span>{{ t('overview.charts.category.totalValue') }}</span>
+                        </div>
+                        <div class="overview-share-bar" role="img" :aria-label="t('overview.charts.category.aria')">
+                            <span
+                                v-for="(slice, index) in analytics.breakdown"
+                                :key="slice.itemId"
+                                class="overview-share-segment"
+                                :style="{
+                                    flexGrow: Math.max(slice.weight, 0.01),
+                                    backgroundColor: sliceTone(chartPalette[index % chartPalette.length]),
+                                }"
+                                :title="`${slice.name || slice.symbol} ${formatNumber(slice.weight * 100, 1)}%`"
+                            ></span>
                         </div>
                     </div>
 
@@ -488,7 +437,7 @@
                             <div class="overview-breakdown-line">
                                 <span
                                     class="overview-breakdown-dot"
-                                    :style="{ backgroundColor: chartPalette[index % chartPalette.length] }"
+                                    :style="{ backgroundColor: sliceTone(chartPalette[index % chartPalette.length]) }"
                                 ></span>
                                 <strong>{{ slice.name || slice.symbol }}</strong>
                                 <span class="overview-breakdown-pct">{{ formatNumber(slice.weight * 100, 1) }}%</span>
@@ -498,7 +447,7 @@
                                     class="overview-breakdown-fill"
                                     :style="{
                                         width: `${Math.max(slice.weight * 100, 6)}%`,
-                                        backgroundColor: chartPalette[index % chartPalette.length],
+                                        backgroundColor: sliceTone(chartPalette[index % chartPalette.length]),
                                     }"
                                 ></div>
                             </div>
@@ -607,71 +556,53 @@
     }
 
     .overview-breakdown {
-        display: grid;
-        grid-template-columns: 280px minmax(0, 1fr);
-        gap: 24px;
-        height: 100%;
-        min-height: 0;
-        overflow: hidden;
-        position: relative;
-    }
-
-    .overview-doughnut-wrap {
-        min-height: 0;
-        min-width: 0;
         display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-    }
-
-    .overview-doughnut-shell {
-        border: none;
-        background: transparent;
-        position: relative;
-        display: grid;
-        width: 100%;
-        max-width: 240px;
-        aspect-ratio: 1 / 1;
-        min-height: 0;
-    }
-
-    .overview-doughnut-chart {
-        width: 100%;
+        flex-direction: column;
+        gap: 16px;
         height: 100%;
-        min-width: 0;
         min-height: 0;
         overflow: hidden;
-        position: relative;
-        z-index: 10;
     }
 
-    .overview-doughnut-chart :deep(canvas) {
-        width: 100% !important;
-        height: 100% !important;
-        max-width: 100% !important;
-        max-height: 100% !important;
-        display: block;
-    }
-
-    .overview-doughnut-center {
-        position: absolute;
-        inset: 0;
+    .overview-share {
         display: grid;
-        place-content: center;
-        gap: 3px;
-        text-align: center;
-        pointer-events: none;
-        z-index: 1;
+        gap: 8px;
+        flex: 0 0 auto;
+        padding: 0 8px;
     }
 
-    .overview-doughnut-center strong {
-        font: 600 16px/1.05 var(--font-display);
+    .overview-share-total {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        min-width: 0;
     }
 
-    .overview-doughnut-center span {
-        font-size: 10px;
+    .overview-share-total strong {
+        font: 600 20px/1.05 var(--font-display);
+        letter-spacing: -0.03em;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .overview-share-total span {
+        font-size: 11px;
         color: var(--muted);
+    }
+
+    .overview-share-bar {
+        display: flex;
+        height: 14px;
+        gap: 2px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: color-mix(in srgb, var(--border) 84%, transparent);
+        box-shadow: var(--shadow-soft);
+    }
+
+    .overview-share-segment {
+        min-width: 8px;
+        height: 100%;
+        border-radius: 999px;
     }
 
     .overview-breakdown-list {
@@ -686,9 +617,11 @@
     }
 
     .overview-breakdown-dot {
+        display: block;
         width: 8px;
         height: 8px;
-        border-radius: 999px;
+        aspect-ratio: 1;
+        border-radius: 50%;
         flex: 0 0 auto;
     }
 
@@ -797,7 +730,7 @@
         min-width: 0;
         height: 100%;
         border: 1px dashed color-mix(in srgb, var(--border) 90%, transparent);
-        border-radius: 12px;
+        border-radius: var(--radius-panel);
         display: grid;
         place-items: center;
         color: var(--muted);
@@ -811,18 +744,14 @@
     }
 
     .overview-loading-breakdown {
-        grid-template-columns: 10rem 1fr;
-        align-items: center;
+        grid-template-columns: 1fr;
+        align-items: stretch;
     }
 
     @media (max-width: 1180px) {
         .overview-loading-grid,
         .overview-stack {
             grid-template-rows: 250px minmax(0, 1fr);
-        }
-
-        .overview-breakdown {
-            grid-template-columns: 1fr;
         }
 
         .overview-head {

@@ -113,9 +113,9 @@ const messages: Record<SupportedLocale, TranslationTree> = {
             charts: {
                 category: {
                     title: '持仓分布',
-                    description: '按具体标的展示当前持仓资产分布，环形图和列表使用同一份后端聚合结果。',
+                    description: '按具体标的展示当前持仓资产分布，比例条和列表使用同一份后端聚合结果。',
                     meta: '总持仓 {total}',
-                    aria: '标的分类环形图',
+                    aria: '持仓分布比例条',
                     totalValue: '持仓资产',
                     topHolding: '最大持仓',
                     empty: '还没有可展示的持仓分布。',
@@ -720,9 +720,9 @@ const messages: Record<SupportedLocale, TranslationTree> = {
                 category: {
                     title: 'Holdings Breakdown',
                     description:
-                        'Current portfolio value broken down by instrument. The chart and the list both reflect the same data.',
+                        'Current portfolio value broken down by instrument. The bar and the list both reflect the same data.',
                     meta: 'Total {total}',
-                    aria: 'Holdings breakdown donut chart',
+                    aria: 'Holdings breakdown bar',
                     totalValue: 'Holdings Value',
                     topHolding: 'Top Holding',
                     empty: 'No position mix is available yet.',

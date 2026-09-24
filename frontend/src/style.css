@@ -22,10 +22,10 @@
     --rise: #d14343;
     --fall: #198754;
     --warn: #d97706;
-    --radius-shell: 14px;
-    --radius-panel: 14px;
-    --radius-control: 14px;
-    --radius-micro: 14px;
+    --radius-shell: 16px;
+    --radius-panel: 8px;
+    --radius-control: 6px;
+    --radius-micro: 4px;
     --chart-1: #2a62aa;
     --chart-2: #0f8860;
     --chart-3: #b07610;

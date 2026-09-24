@@ -580,13 +580,13 @@
             var(--panel-strong) 100%
         );
         box-shadow: var(--shadow-soft);
-        border-radius: calc(var(--radius-panel) + 2px);
+        border-radius: var(--radius-panel);
     }
 
     .settings-nav-item {
         min-height: 36px;
         padding: 0 16px;
-        border-radius: calc(var(--radius-control) - 2px);
+        border-radius: var(--radius-control);
         border: 1px solid transparent;
         background: transparent;
         color: var(--muted);
@@ -718,7 +718,7 @@
         display: grid;
         gap: 12px;
         border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
-        border-radius: calc(var(--radius-panel) + 2px);
+        border-radius: var(--radius-panel);
         padding: 14px;
         background:
             radial-gradient(

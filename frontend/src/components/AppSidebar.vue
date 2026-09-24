@@ -146,7 +146,7 @@
     .sidebar-primary-item {
         min-height: 38px;
         padding: 0 12px;
-        border-radius: calc(var(--radius-control) - 2px);
+        border-radius: var(--radius-panel);
         font: 500 12px/1 var(--font-ui);
         display: inline-flex;
         align-items: center;
@@ -186,7 +186,7 @@
         display: grid;
         gap: 2px;
         padding: 6px 10px;
-        border-radius: 10px;
+        border-radius: var(--radius-panel);
     }
 
     .sidebar-secondary-item strong {

@@ -617,7 +617,7 @@
         gap: 6px;
         padding: 4px;
         border: 1px solid var(--border);
-        border-radius: calc(var(--radius-control) + 2px);
+        border-radius: var(--radius-panel);
         background: var(--panel-soft);
         box-shadow: var(--shadow-soft);
         flex: 0 0 auto;
@@ -626,7 +626,7 @@
     .hot-category-tab {
         min-height: 32px;
         padding: 0 12px;
-        border-radius: calc(var(--radius-control) - 4px);
+        border-radius: var(--radius-micro);
         border: 1px solid transparent;
         background: transparent;
         color: var(--muted);

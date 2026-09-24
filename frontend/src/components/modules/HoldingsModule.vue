@@ -271,9 +271,9 @@
     .watch-table th.watch-table-sticky-dca,
     .watch-table td.watch-table-sticky-dca {
         right: 112px;
-        width: 88px;
-        min-width: 88px;
-        max-width: 88px;
+        width: 100px;
+        min-width: 100px;
+        max-width: 100px;
         text-align: left;
     }
 
@@ -292,8 +292,9 @@
     }
 
     .watch-table th.watch-table-sticky-dca {
-        padding-left: 18px;
-        padding-right: 14px;
+        padding-left: 14px;
+        padding-right: 8px;
+        white-space: nowrap;
     }
 
     .watch-table .table-action-stack {
@@ -315,7 +316,7 @@
         gap: 0.3rem;
         justify-content: center;
         white-space: nowrap;
-        border-radius: var(--radius-control);
+        border-radius: calc(var(--radius-control) * 2);
         box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 38%, var(--border));
     }
 

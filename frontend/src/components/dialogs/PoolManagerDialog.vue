@@ -641,14 +641,14 @@
         width: fit-content;
         padding: 3px;
         border: 1px solid var(--border);
-        border-radius: 10px;
+        border-radius: var(--radius-panel);
         background: var(--panel-soft);
     }
 
     .pool-member-tabs button {
         padding: 6px 12px;
         border: 0;
-        border-radius: 7px;
+        border-radius: var(--radius-micro);
         background: transparent;
         color: var(--muted);
         cursor: pointer;

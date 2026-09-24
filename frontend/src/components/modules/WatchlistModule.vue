@@ -471,7 +471,7 @@
     .interval-pill {
         min-height: 28px;
         padding: 0 10px;
-        border-radius: var(--radius-micro);
+        border-radius: 999px;
         border: 1px solid transparent;
         background: transparent;
         color: var(--muted);

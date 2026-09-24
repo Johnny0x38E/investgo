@@ -12,6 +12,8 @@ func BuildMainWindowOptions(useNativeTitleBar bool) application.WebviewWindowOpt
 }
 
 func buildMainWindowOptions(useNativeTitleBar bool, targetOS string) application.WebviewWindowOptions {
+	// Match the light --app-bg so AppKit can pick inactive traffic-light contrast correctly
+	// on recent macOS. The previous warm cream frame made inactive buttons look transparent.
 	options := application.WebviewWindowOptions{
 		Name:             "main",
 		Title:            "InvestGo",
@@ -20,18 +22,22 @@ func buildMainWindowOptions(useNativeTitleBar bool, targetOS string) application
 		Height:           828,
 		MinWidth:         1200,
 		MinHeight:        828,
-		BackgroundColour: application.NewRGB(247, 243, 233),
+		BackgroundColour: application.NewRGB(251, 252, 254),
 		Windows: application.WindowsWindow{
 			Theme: application.SystemDefault,
 		},
 		Mac: application.MacWindow{
-			Backdrop: application.MacBackdropTranslucent,
+			// Liquid Glass keeps native round traffic lights and a visible inactive state on
+			// macOS 26+. Older releases fall back to the translucent material inside Wails.
+			Backdrop: application.MacBackdropLiquidGlass,
 		},
 	}
 
 	if !useNativeTitleBar {
 		if targetOS == "darwin" {
-			options.Mac.TitleBar = application.MacTitleBarHiddenInsetUnified
+			// HiddenInset (not Unified) keeps the standard circular traffic lights.
+			// Unified toolbar styling can flatten them on recent macOS.
+			options.Mac.TitleBar = application.MacTitleBarHiddenInset
 		} else {
 			options.Frameless = true
 		}

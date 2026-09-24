@@ -216,7 +216,13 @@
 </script>
 
 <template>
-    <Dialog v-model:visible="visibleProxy" modal :header="dialogHeader" class="desk-dialog dca-ledger-dialog">
+    <Dialog
+        v-model:visible="visibleProxy"
+        modal
+        :closable="false"
+        :header="dialogHeader"
+        class="desk-dialog dca-ledger-dialog"
+    >
         <div class="dca-ledger-shell">
             <section v-if="entryExpanded" class="dca-entry-card" aria-labelledby="dca-entry-title">
                 <div class="dca-entry-heading">
@@ -486,7 +492,7 @@
         padding: 14px;
         background: color-mix(in srgb, var(--accent-soft) 58%, var(--panel-strong));
         border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
-        border-radius: calc(var(--radius-control) + 4px);
+        border-radius: var(--radius-panel);
         box-shadow: inset 0 1px 0 color-mix(in srgb, white 35%, transparent);
     }
     .dca-entry-tools {
@@ -550,7 +556,7 @@
         color: var(--muted);
         background: transparent;
         border: 0;
-        border-radius: calc(var(--radius-control) - 2px);
+        border-radius: var(--radius-micro);
         font: 600 11px/1 var(--font-ui);
         cursor: pointer;
         transition:

@@ -3,7 +3,7 @@
     import AppSidebar from './AppSidebar.vue';
     import { useSidebarLayout } from '../composables/useSidebarLayout';
     import { useI18n } from '../i18n';
-    import { shouldReserveMacWindowControls, shouldShowCustomWindowControls } from '../wails-runtime';
+    import { getDesktopPlatform, shouldReserveMacWindowControls, shouldShowCustomWindowControls } from '../wails-runtime';
     import type { HotMarketGroup, ModuleKey, StatusTone, WatchlistItem } from '../types';
 
     const props = defineProps<{
@@ -25,6 +25,7 @@
     }>();
 
     const { t } = useI18n();
+    const isMacOS = getDesktopPlatform() === 'darwin';
     const { appShellRef, sidebarWidth, sidebarHidden, toggleSidebar, startSidebarResize } = useSidebarLayout();
 </script>
 
@@ -33,6 +34,7 @@
         ref="appShellRef"
         class="app-shell"
         :class="{
+            'is-macos': isMacOS,
             'is-sidebar-hidden': sidebarHidden,
             'is-mac-custom-titlebar': shouldReserveMacWindowControls(props.useNativeTitleBar),
             'is-nonmac-custom-titlebar': shouldShowCustomWindowControls(props.useNativeTitleBar),
@@ -116,12 +118,13 @@
 <style scoped>
     .app-shell {
         --window-control-inset-left: 0px;
-        --sidebar-shell-radius: 18px;
+        --shell-space: 10px;
+        --sidebar-shell-radius: var(--radius-shell);
         height: 100%;
         display: grid;
         grid-template-columns: var(--sidebar-width, 220px) minmax(0, 1fr);
-        gap: 10px;
-        padding: 10px;
+        gap: var(--shell-space);
+        padding: var(--shell-space);
     }
 
     .app-shell.is-mac-custom-titlebar {
@@ -129,11 +132,18 @@
     }
 
     .app-shell.is-nonmac-custom-titlebar {
-        --sidebar-shell-radius: 10px;
+        --sidebar-shell-radius: var(--radius-panel);
     }
 
     .app-shell.is-sidebar-hidden {
         grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* On macOS the sidebar sits on the window edge. Drop the shell's left pad while
+       the sidebar is open so the content column keeps a matching right gutter —
+       a negative left margin alone would shift the sidebar and widen the gap. */
+    .app-shell.is-macos:not(.is-sidebar-hidden) {
+        padding-left: 0;
     }
 
     .sidebar-column {
@@ -218,7 +228,7 @@
         width: 30px;
         height: 30px;
         padding: 0;
-        border-radius: 8px;
+        border-radius: var(--radius-control);
         color: var(--muted);
         background: transparent;
         border: none;
@@ -234,6 +244,16 @@
         color: var(--ink);
     }
 
+    .is-macos .sidebar-column {
+        margin: calc(var(--shell-space) * -1) 0;
+        padding: var(--shell-space) 0 var(--shell-space) var(--shell-space);
+        border-color: transparent;
+        border-right-color: var(--border);
+        border-radius: 0;
+        background-origin: border-box;
+        box-shadow: none;
+    }
+
     @media (max-width: 1180px) {
         .sidebar-column {
             display: none;
@@ -241,6 +261,7 @@
 
         .app-shell {
             grid-template-columns: minmax(0, 1fr);
+            padding-left: var(--shell-space);
         }
     }
 

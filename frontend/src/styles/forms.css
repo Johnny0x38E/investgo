@@ -43,7 +43,7 @@
     padding: 0 8px;
     border: 1px solid var(--border-strong);
     border-bottom-width: 2px;
-    border-radius: 6px;
+    border-radius: var(--radius-micro);
     background: var(--control-bg);
     color: var(--ink);
     font-size: 12px;

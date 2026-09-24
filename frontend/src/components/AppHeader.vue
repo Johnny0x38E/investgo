@@ -269,7 +269,7 @@
         display: inline-flex;
         align-items: stretch;
         gap: 1px;
-        border-radius: 8px;
+        border-radius: var(--radius-control);
         overflow: hidden;
     }
 

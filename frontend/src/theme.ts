@@ -18,8 +18,24 @@ const themeSeeds: Record<ColorTheme, string> = {
 };
 
 export const investGoPreset = definePreset(Aura, {
+    primitive: {
+        borderRadius: {
+            sm: 'var(--radius-micro)',
+            md: 'var(--radius-control)',
+            lg: 'var(--radius-panel)',
+        },
+    },
     semantic: {
         primary: palette(themeSeeds.blue),
+        formField: { borderRadius: 'var(--radius-control)' },
+        content: { borderRadius: 'var(--radius-panel)' },
+        overlay: {
+            select: { borderRadius: 'var(--radius-panel)' },
+            popover: { borderRadius: 'var(--radius-panel)' },
+            modal: { borderRadius: 'var(--radius-shell)' },
+        },
+        list: { option: { borderRadius: 'var(--radius-micro)' } },
+        navigation: { item: { borderRadius: 'var(--radius-control)' } },
     },
     components: {
         button: {
