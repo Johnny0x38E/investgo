@@ -1,7 +1,8 @@
 package store
 
 import (
-	"encoding/json"
+	"encoding/json/jsontext"
+	json "encoding/json/v2"
 	"errors"
 	"os"
 	"path/filepath"
@@ -62,7 +63,14 @@ func (r *JSONRepository) Save(state PersistedState) error {
 		return errors.New("state repository is not configured")
 	}
 
-	payload, err := json.MarshalIndent(state, "", "  ")
+	// Nil slices stay JSON null so legacy state files round-trip the same way
+	// encoding/json did. HTTP responses use the json/v2 default and emit [].
+	payload, err := json.Marshal(
+		state,
+		jsontext.WithIndent("  "),
+		json.FormatNilSliceAsNull(true),
+		json.FormatNilMapAsNull(true),
+	)
 	if err != nil {
 		return err
 	}

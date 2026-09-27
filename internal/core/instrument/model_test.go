@@ -223,6 +223,29 @@ func TestNormalizeRejectsInvalidInstrumentIdentity(t *testing.T) {
 	}
 }
 
+func TestNormalizeProviderSymbolKeepsLegacyJSONAcceptance(t *testing.T) {
+	t.Parallel()
+
+	base := ProviderSymbol{
+		InstrumentID: "instrument-1",
+		ProviderID:   "yahoo",
+		Symbol:       "AAPL",
+	}
+	for _, metadata := range []string{`{"a":1,"a":2}`, "\"\xff\""} {
+		value := base
+		value.MetadataJSON = metadata
+		if _, err := NormalizeProviderSymbol(value); err != nil {
+			t.Fatalf("NormalizeProviderSymbol(%q) error = %v", metadata, err)
+		}
+	}
+
+	value := base
+	value.MetadataJSON = "{"
+	if _, err := NormalizeProviderSymbol(value); err == nil {
+		t.Fatal("NormalizeProviderSymbol() accepted invalid JSON")
+	}
+}
+
 func assertInstrumentIdentity(t *testing.T, got, want Instrument) {
 	t.Helper()
 

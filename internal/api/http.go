@@ -1,7 +1,7 @@
 package api
 
 import (
-	"encoding/json"
+	json "encoding/json/v2"
 	"errors"
 	"net/http"
 	"net/url"
@@ -129,7 +129,7 @@ func trimAPIPath(path string) string {
 // decodeJSON deserializes the request body into the target object and closes the body.
 func decodeJSON(request *http.Request, target any) error {
 	defer request.Body.Close() // nolint:errcheck
-	if err := json.NewDecoder(request.Body).Decode(target); err != nil {
+	if err := json.UnmarshalRead(request.Body, target); err != nil {
 		return &apiError{message: "Invalid JSON request body"}
 	}
 	return nil

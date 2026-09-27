@@ -14,13 +14,13 @@
 
 ## 技术栈
 
-- Go 1.24 与 Wails v3 alpha.54
+- Go 1.27 与 Wails v3 alpha.54
 - Vue 3、TypeScript、PrimeVue、Vite 和 Chart.js
 - 多个行情数据 provider，以及用于汇率数据的 Frankfurter
 
 ## 快速开始
 
-前置要求：Node.js 22.13+、pnpm 11+、Go 1.24+。macOS 构建需要 macOS 13+；Windows 构建需要 WebView2 Runtime。
+前置要求：Node.js 22.13+、pnpm 11+、Go 1.27+。macOS 构建需要 macOS 13+；Windows 构建需要 WebView2 Runtime。
 
 ```bash
 pnpm install

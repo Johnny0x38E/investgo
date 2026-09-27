@@ -3,7 +3,7 @@ package api
 import (
 	"bytes"
 	"context"
-	"encoding/json"
+	json "encoding/json/v2"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -246,7 +246,7 @@ func performPoolRequest(t *testing.T, handler http.Handler, method, target strin
 
 	var body bytes.Buffer
 	if payload != nil {
-		if err := json.NewEncoder(&body).Encode(payload); err != nil {
+		if err := json.MarshalWrite(&body, payload); err != nil {
 			t.Fatalf("encode request: %v", err)
 		}
 	}

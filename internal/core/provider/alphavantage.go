@@ -3,7 +3,8 @@ package provider
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/jsontext"
+	json "encoding/json/v2"
 	"errors"
 	"fmt"
 	"io"
@@ -244,7 +245,7 @@ func fetchAlphaVantageHistory(
 	if resp.StatusCode != http.StatusOK {
 		return nil, "", fmt.Errorf("Alpha Vantage history request failed: status %d", resp.StatusCode)
 	}
-	var raw map[string]json.RawMessage
+	var raw map[string]jsontext.Value
 	if err := json.Unmarshal(body, &raw); err != nil {
 		return nil, "", err
 	}
@@ -258,7 +259,7 @@ func fetchAlphaVantageHistory(
 		return nil, "", errors.New(msg)
 	}
 	var series map[string]map[string]string
-	if err := json.Unmarshal(raw[seriesKey], &series); err != nil || len(series) == 0 {
+	if err := json.Unmarshal([]byte(raw[seriesKey]), &series); err != nil || len(series) == 0 {
 		return nil, "", errors.New("History response contains no valid price points")
 	}
 	points := make([]core.HistoryPoint, 0, len(series))
@@ -281,12 +282,12 @@ func fetchAlphaVantageHistory(
 	return points, "", nil
 }
 
-func decodeRawString(raw json.RawMessage) string {
+func decodeRawString(raw jsontext.Value) string {
 	if len(raw) == 0 {
 		return ""
 	}
 	var value string
-	if err := json.Unmarshal(raw, &value); err != nil {
+	if err := json.Unmarshal([]byte(raw), &value); err != nil {
 		return ""
 	}
 	return value

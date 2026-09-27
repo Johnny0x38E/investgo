@@ -3,7 +3,7 @@ package instrument
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
+	"encoding/json/jsontext"
 	"errors"
 	"fmt"
 	"strings"
@@ -218,7 +218,9 @@ func NormalizeProviderSymbol(value ProviderSymbol) (ProviderSymbol, error) {
 	if value.MetadataJSON == "" {
 		value.MetadataJSON = "{}"
 	}
-	if !json.Valid([]byte(value.MetadataJSON)) {
+	// encoding/json.Valid accepted duplicate names and invalid UTF-8.
+	// jsontext.Value.IsValid follows RFC 7493 unless those checks are relaxed.
+	if !jsontext.Value(value.MetadataJSON).IsValid(jsontext.AllowDuplicateNames(true), jsontext.AllowInvalidUTF8(true)) {
 		return ProviderSymbol{}, invalid("metadataJson", "must contain valid JSON")
 	}
 	if !value.UpdatedAt.IsZero() {

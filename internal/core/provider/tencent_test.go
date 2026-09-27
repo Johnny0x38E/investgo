@@ -1,7 +1,8 @@
 package provider
 
 import (
-	"encoding/json"
+	"encoding/json/jsontext"
+	json "encoding/json/v2"
 	"testing"
 
 	"investgo/internal/core"
@@ -22,14 +23,14 @@ func TestTencentParseRawFloat(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := tencentParseRawFloat(json.RawMessage(tc.raw))
+			got, err := tencentParseRawFloat(jsontext.Value(tc.raw))
 			if err != nil || got != tc.want {
 				t.Fatalf("tencentParseRawFloat(%s) = %v, %v; want %v, nil", tc.raw, got, err, tc.want)
 			}
 		})
 	}
 
-	if _, err := tencentParseRawFloat(json.RawMessage(`"bad"`)); err == nil {
+	if _, err := tencentParseRawFloat(jsontext.Value(`"bad"`)); err == nil {
 		t.Fatal("malformed numeric value returned nil error")
 	}
 }

@@ -2,7 +2,8 @@ package provider
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/jsontext"
+	json "encoding/json/v2"
 	"fmt"
 	"io"
 	"math"
@@ -38,7 +39,7 @@ type tencentKlineRow struct {
 }
 
 func (r *tencentKlineRow) UnmarshalJSON(data []byte) error {
-	var elems []json.RawMessage
+	var elems []jsontext.Value
 	if err := json.Unmarshal(data, &elems); err != nil {
 		return err
 	}
@@ -49,7 +50,7 @@ func (r *tencentKlineRow) UnmarshalJSON(data []byte) error {
 
 	fields := []struct {
 		name   string
-		raw    json.RawMessage
+		raw    jsontext.Value
 		target *float64
 	}{
 		{name: "open", raw: elems[1], target: &r.Open},
@@ -69,18 +70,14 @@ func (r *tencentKlineRow) UnmarshalJSON(data []byte) error {
 }
 
 // tencentParseRawFloat parses a JSON value that may be either a bare number or a quoted string.
-func tencentParseRawFloat(raw json.RawMessage) (float64, error) {
+func tencentParseRawFloat(raw jsontext.Value) (float64, error) {
 	clean := strings.TrimSpace(string(raw))
 	if clean == "null" {
 		return 0, nil
 	}
 
-	var n json.Number
-	if err := json.Unmarshal(raw, &n); err == nil {
-		value, err := n.Float64()
-		if err != nil {
-			return 0, fmt.Errorf("invalid numeric value %s: %w", clean, err)
-		}
+	var value float64
+	if err := json.Unmarshal([]byte(raw), &value); err == nil {
 		if math.IsNaN(value) || math.IsInf(value, 0) {
 			return 0, fmt.Errorf("invalid numeric value %s: non-finite value", clean)
 		}
@@ -88,7 +85,7 @@ func tencentParseRawFloat(raw json.RawMessage) (float64, error) {
 	}
 
 	var s string
-	if err := json.Unmarshal(raw, &s); err == nil {
+	if err := json.Unmarshal([]byte(raw), &s); err == nil {
 		s = strings.TrimSpace(s)
 		if s == "" || s == "-" {
 			return 0, nil
