@@ -14,13 +14,13 @@ A lightweight desktop investment workbench for watchlists, holdings, portfolio a
 
 ## Tech stack
 
-- Go 1.24 and Wails v3 alpha.54
+- Go 1.27 and Wails v3 alpha.54
 - Vue 3, TypeScript, PrimeVue, Vite, and Chart.js
 - Multiple market-data providers with Frankfurter for FX rates
 
 ## Quick start
 
-Requirements: Node.js 22.13+, pnpm 11+, Go 1.24+. macOS builds require macOS 13+; Windows builds require WebView2 Runtime.
+Requirements: Node.js 22.13+, pnpm 11+, Go 1.27+. macOS builds require macOS 13+; Windows builds require WebView2 Runtime.
 
 ```bash
 pnpm install

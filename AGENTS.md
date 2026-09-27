@@ -16,7 +16,7 @@ Add Go tests beside the package under test using `*_test.go`.
 
 ## Build, Test, and Development Commands
 
-Requirements are Node.js 22.13+, pnpm 11+, and Go 1.24+.
+Requirements are Node.js 22.13+, pnpm 11+, and Go 1.27+.
 
 - `pnpm install` installs frontend dependencies.
 - `pnpm dev` starts the Vite frontend development server.

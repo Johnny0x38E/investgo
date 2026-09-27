@@ -14,15 +14,17 @@ const (
 )
 
 // DCAEntry represents a Dollar-Cost Averaging entry.
+// Zero price, fee, and effectivePrice are omitted. json/v2 omitempty would
+// emit numeric 0, but the frontend treats a missing number as not filled.
 type DCAEntry struct {
 	ID             string    `json:"id"`
 	Date           time.Time `json:"date"`
 	Amount         float64   `json:"amount"`
 	Shares         float64   `json:"shares"`
-	Price          float64   `json:"price,omitempty"`
-	Fee            float64   `json:"fee,omitempty"`
+	Price          float64   `json:"price,omitzero"`
+	Fee            float64   `json:"fee,omitzero"`
 	Note           string    `json:"note,omitempty"`
-	EffectivePrice float64   `json:"effectivePrice,omitempty"`
+	EffectivePrice float64   `json:"effectivePrice,omitzero"`
 }
 
 // DCASummary represents aggregated metrics derived from saved DCA records.

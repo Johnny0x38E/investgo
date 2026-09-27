@@ -2,7 +2,7 @@ package store
 
 import (
 	"database/sql"
-	"encoding/json"
+	json "encoding/json/v2"
 	"errors"
 	"fmt"
 	"strconv"
@@ -515,7 +515,9 @@ func saveInstrument(tx *sql.Tx, item core.WatchlistItem, stateUpdatedAt time.Tim
 }
 
 func saveWatchlistItem(tx *sql.Tx, instrumentID string, item core.WatchlistItem, sortOrder int) error {
-	tagsJSON, err := json.Marshal(item.Tags)
+	// Keep a nil tag list as JSON null so a database round trip stays nil.
+	// json/v2 would otherwise encode it as [] and reload a non-nil slice.
+	tagsJSON, err := json.Marshal(item.Tags, json.FormatNilSliceAsNull(true))
 	if err != nil {
 		return fmt.Errorf("encode tags for item %s: %w", item.ID, err)
 	}

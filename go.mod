@@ -1,6 +1,6 @@
 module investgo
 
-go 1.24.0
+go 1.27.0
 
 require (
 	github.com/refraction-networking/utls v1.8.2

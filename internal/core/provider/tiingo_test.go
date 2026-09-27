@@ -2,7 +2,7 @@ package provider
 
 import (
 	"context"
-	"encoding/json"
+	json "encoding/json/v2"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -111,7 +111,7 @@ func TestTiingoQuoteProviderFetchBatch(t *testing.T) {
 		prevA := 98.0
 		lastB := 50.5
 		prevB := 51.0
-		_ = json.NewEncoder(w).Encode([]tiingoIEXQuote{
+		_ = json.MarshalWrite(w, []tiingoIEXQuote{
 			{Ticker: "AAPL", Last: &lastA, PrevClose: &prevA, Timestamp: "2024-06-01T15:30:00Z"},
 			{Ticker: "MSFT", Last: &lastB, PrevClose: &prevB, Timestamp: "2024-06-01T15:30:00Z"},
 		})
@@ -155,7 +155,7 @@ func TestTiingoHistoryProviderDaily(t *testing.T) {
 			t.Fatalf("token = %q; want test-token", got)
 		}
 		adj := 191.0
-		_ = json.NewEncoder(w).Encode([]tiingoEODBar{
+		_ = json.MarshalWrite(w, []tiingoEODBar{
 			{Date: "2024-05-31", Open: 188, High: 192, Low: 187, Close: 190, Volume: 1000, AdjClose: &adj},
 			{Date: "2024-06-01", Open: 190, High: 193, Low: 189, Close: 192, Volume: 1100},
 		})
