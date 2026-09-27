@@ -112,6 +112,9 @@ export interface AlertRule {
     updatedAt: string;
 }
 
+// PUT /api/settings applies only the JSON fields that are present.
+// The settings form sends this full object on every save. An empty proxyURL
+// or API key string is an intentional clear because the property is included.
 export interface AppSettings {
     hotCacheTTLSeconds: number;
     cnQuoteSource: string;

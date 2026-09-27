@@ -88,3 +88,10 @@ SQLite databases, or generated binaries. Live user data is
 `~/Library/Application Support/investgo/`); leftover `state.json` is
 legacy. Avoid placing secrets in logs or screenshots; use the application's
 local settings and redaction behavior when testing integrations.
+
+`PUT /api/settings` is a partial update. Omitted JSON fields keep their stored
+values, including API keys and `developerMode` / `useNativeTitleBar`. The Vue
+settings form still sends the full `AppSettings` object. A present empty
+`proxyURL` or API key clears that secret on purpose. `POST /api/client-logs`
+redacts the same provider-key patterns as the store and rejects oversized
+bodies or batches.

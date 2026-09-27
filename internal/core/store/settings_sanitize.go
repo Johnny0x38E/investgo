@@ -9,73 +9,74 @@ import (
 	"investgo/internal/core"
 )
 
-// sanitiseSettings merges user input with current configuration and performs unified validation.
+// SettingsUpdate is the JSON body for PUT /api/settings.
+//
+// The route is a partial update. A nil field was omitted from the body and
+// keeps the stored value. The Vue settings form sends every field on save, so
+// an empty proxyURL or API key is an intentional clear. Other empty strings
+// are ignored because those settings are required enums. A present
+// hotCacheTTLSeconds replaces the stored TTL and must be at least 10 seconds.
+// developerMode and useNativeTitleBar change only when the JSON includes them,
+// so a partial body cannot reset them to false.
+type SettingsUpdate struct {
+	HotCacheTTLSeconds *int    `json:"hotCacheTTLSeconds"`
+	CNQuoteSource      *string `json:"cnQuoteSource"`
+	HKQuoteSource      *string `json:"hkQuoteSource"`
+	USQuoteSource      *string `json:"usQuoteSource"`
+	ThemeMode          *string `json:"themeMode"`
+	ColorTheme         *string `json:"colorTheme"`
+	FontPreset         *string `json:"fontPreset"`
+	AmountDisplay      *string `json:"amountDisplay"`
+	CurrencyDisplay    *string `json:"currencyDisplay"`
+	PriceColorScheme   *string `json:"priceColorScheme"`
+	Locale             *string `json:"locale"`
+	ProxyMode          *string `json:"proxyMode"`
+	ProxyURL           *string `json:"proxyURL"`
+	AlphaVantageAPIKey *string `json:"alphaVantageApiKey"`
+	TwelveDataAPIKey   *string `json:"twelveDataApiKey"`
+	FinnhubAPIKey      *string `json:"finnhubApiKey"`
+	TiingoAPIKey       *string `json:"tiingoApiKey"`
+	PolygonAPIKey      *string `json:"polygonApiKey"`
+	DeveloperMode      *bool   `json:"developerMode"`
+	DashboardCurrency  *string `json:"dashboardCurrency"`
+	UseNativeTitleBar  *bool   `json:"useNativeTitleBar"`
+}
+
+// sanitiseSettings merges a partial settings update with current configuration and validates the result.
 func sanitiseSettings(
-	input core.AppSettings,
+	input SettingsUpdate,
 	current core.AppSettings,
 	quoteProviders map[string]core.QuoteProvider,
 	quoteSourceOptions []core.QuoteSourceOption,
 ) (core.AppSettings, error) {
 	settings := current
-	if input.HotCacheTTLSeconds > 0 {
-		settings.HotCacheTTLSeconds = input.HotCacheTTLSeconds
+	if input.HotCacheTTLSeconds != nil {
+		settings.HotCacheTTLSeconds = *input.HotCacheTTLSeconds
 	}
-	if strings.TrimSpace(input.CNQuoteSource) != "" {
-		settings.CNQuoteSource = strings.ToLower(strings.TrimSpace(input.CNQuoteSource))
+	settings.CNQuoteSource = applyOptionalString(settings.CNQuoteSource, input.CNQuoteSource, strings.ToLower)
+	settings.HKQuoteSource = applyOptionalString(settings.HKQuoteSource, input.HKQuoteSource, strings.ToLower)
+	settings.USQuoteSource = applyOptionalString(settings.USQuoteSource, input.USQuoteSource, strings.ToLower)
+	settings.ThemeMode = applyOptionalString(settings.ThemeMode, input.ThemeMode, strings.ToLower)
+	settings.ColorTheme = applyOptionalString(settings.ColorTheme, input.ColorTheme, strings.ToLower)
+	settings.FontPreset = applyOptionalString(settings.FontPreset, input.FontPreset, strings.ToLower)
+	settings.AmountDisplay = applyOptionalString(settings.AmountDisplay, input.AmountDisplay, strings.ToLower)
+	settings.CurrencyDisplay = applyOptionalString(settings.CurrencyDisplay, input.CurrencyDisplay, strings.ToLower)
+	settings.PriceColorScheme = applyOptionalString(settings.PriceColorScheme, input.PriceColorScheme, strings.ToLower)
+	settings.Locale = applyOptionalString(settings.Locale, input.Locale, nil)
+	settings.ProxyMode = applyOptionalString(settings.ProxyMode, input.ProxyMode, strings.ToLower)
+	settings.ProxyURL = applyClearableString(settings.ProxyURL, input.ProxyURL)
+	settings.AlphaVantageAPIKey = applyClearableString(settings.AlphaVantageAPIKey, input.AlphaVantageAPIKey)
+	settings.TwelveDataAPIKey = applyClearableString(settings.TwelveDataAPIKey, input.TwelveDataAPIKey)
+	settings.FinnhubAPIKey = applyClearableString(settings.FinnhubAPIKey, input.FinnhubAPIKey)
+	settings.TiingoAPIKey = applyClearableString(settings.TiingoAPIKey, input.TiingoAPIKey)
+	settings.PolygonAPIKey = applyClearableString(settings.PolygonAPIKey, input.PolygonAPIKey)
+	settings.DashboardCurrency = applyOptionalString(settings.DashboardCurrency, input.DashboardCurrency, strings.ToUpper)
+	if input.DeveloperMode != nil {
+		settings.DeveloperMode = *input.DeveloperMode
 	}
-	if strings.TrimSpace(input.HKQuoteSource) != "" {
-		settings.HKQuoteSource = strings.ToLower(strings.TrimSpace(input.HKQuoteSource))
+	if input.UseNativeTitleBar != nil {
+		settings.UseNativeTitleBar = *input.UseNativeTitleBar
 	}
-	if strings.TrimSpace(input.USQuoteSource) != "" {
-		settings.USQuoteSource = strings.ToLower(strings.TrimSpace(input.USQuoteSource))
-	}
-	if strings.TrimSpace(input.ThemeMode) != "" {
-		settings.ThemeMode = strings.ToLower(strings.TrimSpace(input.ThemeMode))
-	}
-	if strings.TrimSpace(input.ColorTheme) != "" {
-		settings.ColorTheme = strings.ToLower(strings.TrimSpace(input.ColorTheme))
-	}
-	if strings.TrimSpace(input.FontPreset) != "" {
-		settings.FontPreset = strings.ToLower(strings.TrimSpace(input.FontPreset))
-	}
-	if strings.TrimSpace(input.AmountDisplay) != "" {
-		settings.AmountDisplay = strings.ToLower(strings.TrimSpace(input.AmountDisplay))
-	}
-	if strings.TrimSpace(input.CurrencyDisplay) != "" {
-		settings.CurrencyDisplay = strings.ToLower(strings.TrimSpace(input.CurrencyDisplay))
-	}
-	if strings.TrimSpace(input.PriceColorScheme) != "" {
-		settings.PriceColorScheme = strings.ToLower(strings.TrimSpace(input.PriceColorScheme))
-	}
-	if strings.TrimSpace(input.Locale) != "" {
-		settings.Locale = strings.TrimSpace(input.Locale)
-	}
-	if strings.TrimSpace(input.ProxyMode) != "" {
-		settings.ProxyMode = strings.ToLower(strings.TrimSpace(input.ProxyMode))
-	}
-	if input.ProxyURL != "" || strings.TrimSpace(current.ProxyURL) != "" {
-		settings.ProxyURL = strings.TrimSpace(input.ProxyURL)
-	}
-	if input.AlphaVantageAPIKey != "" || strings.TrimSpace(current.AlphaVantageAPIKey) != "" {
-		settings.AlphaVantageAPIKey = strings.TrimSpace(input.AlphaVantageAPIKey)
-	}
-	if input.TwelveDataAPIKey != "" || strings.TrimSpace(current.TwelveDataAPIKey) != "" {
-		settings.TwelveDataAPIKey = strings.TrimSpace(input.TwelveDataAPIKey)
-	}
-	if input.FinnhubAPIKey != "" || strings.TrimSpace(current.FinnhubAPIKey) != "" {
-		settings.FinnhubAPIKey = strings.TrimSpace(input.FinnhubAPIKey)
-	}
-	if input.TiingoAPIKey != "" || strings.TrimSpace(current.TiingoAPIKey) != "" {
-		settings.TiingoAPIKey = strings.TrimSpace(input.TiingoAPIKey)
-	}
-	if input.PolygonAPIKey != "" || strings.TrimSpace(current.PolygonAPIKey) != "" {
-		settings.PolygonAPIKey = strings.TrimSpace(input.PolygonAPIKey)
-	}
-	if strings.TrimSpace(input.DashboardCurrency) != "" {
-		settings.DashboardCurrency = strings.ToUpper(strings.TrimSpace(input.DashboardCurrency))
-	}
-	settings.DeveloperMode = input.DeveloperMode
-	settings.UseNativeTitleBar = input.UseNativeTitleBar
 
 	if settings.HotCacheTTLSeconds < 10 {
 		return core.AppSettings{}, errors.New("Cache TTL must be at least 10 seconds")
@@ -203,6 +204,31 @@ func sanitiseSettings(
 	}
 
 	return settings, nil
+}
+
+// applyOptionalString keeps current when the field was omitted or blank.
+// Blank required enums are not a clear signal; only proxy URL and API keys clear on "".
+func applyOptionalString(current string, next *string, transform func(string) string) string {
+	if next == nil {
+		return current
+	}
+	value := strings.TrimSpace(*next)
+	if value == "" {
+		return current
+	}
+	if transform != nil {
+		return transform(value)
+	}
+	return value
+}
+
+// applyClearableString keeps current when the field was omitted.
+// A present value, including "", replaces the stored secret or proxy URL.
+func applyClearableString(current string, next *string) string {
+	if next == nil {
+		return current
+	}
+	return strings.TrimSpace(*next)
 }
 
 // normaliseQuoteSourceIDForSettings determines the final quote source ID to use based on user input, market type, and available quote source list.

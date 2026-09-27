@@ -4,21 +4,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
 	"investgo/internal/core"
 	"investgo/internal/core/instrument"
+	"investgo/internal/logger"
 )
 
-var sensitiveLogPatterns = []*regexp.Regexp{
-	regexp.MustCompile(`(?i)(alphaVantageApiKey|twelveDataApiKey|finnhubApiKey|tiingoApiKey|polygonApiKey)\s*[:=]\s*["']?[^"'\s,;]+["']?`),
-	regexp.MustCompile(`(?i)(apikey|api_key|key)=([^&\s]+)`),
-}
+const quoteUpsertTimeout = 8 * time.Second
 
 // UpsertItem saves or updates a tracked item and fetches a fresh quote when a live provider is available.
-func (s *Store) UpsertItem(input core.WatchlistItem) (core.StateSnapshot, error) {
+// ctx bounds the quote fetch. A nil ctx is treated as context.Background().
+func (s *Store) UpsertItem(ctx context.Context, input core.WatchlistItem) (core.StateSnapshot, error) {
 	item, err := sanitiseItem(input)
 	if err != nil {
 		return core.StateSnapshot{}, err
@@ -58,8 +56,12 @@ func (s *Store) UpsertItem(input core.WatchlistItem) (core.StateSnapshot, error)
 
 	if provider != nil {
 		// Fetch one quote immediately after saving the item to ensure current price always comes from a unified quote source.
-		ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
-		quotes, quoteErr := provider.Fetch(ctx, []core.WatchlistItem{item})
+		// The timeout is derived from the request context so a canceled client stops the upstream call.
+		if ctx == nil {
+			ctx = context.Background()
+		}
+		fetchCtx, cancel := context.WithTimeout(ctx, quoteUpsertTimeout)
+		quotes, quoteErr := provider.Fetch(fetchCtx, []core.WatchlistItem{item})
 		cancel()
 
 		if quoteErr == nil {
@@ -75,6 +77,15 @@ func (s *Store) UpsertItem(input core.WatchlistItem) (core.StateSnapshot, error)
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	// Re-check under the write lock. The scan above runs before the quote
+	// fetch, so two concurrent creates of the same symbol and market can both
+	// pass it. instruments are unique on (asset_class, market, exchange, symbol)
+	// and watchlist_entries.instrument_id is UNIQUE, but this request appends
+	// to the in-memory list before save, so the lock is what stops the duplicate.
+	if s.duplicateItemLocked(item.Symbol, item.Market, item.ID) {
+		return core.StateSnapshot{}, fmt.Errorf("Item already exists in the list: %s (%s)", item.Symbol, item.Market)
+	}
 
 	if item.ID == "" {
 		item.ID = newID("item")
@@ -303,8 +314,21 @@ func (s *Store) DeleteAlert(id string) (core.StateSnapshot, error) {
 	return s.snapshotLocked(), nil
 }
 
-// UpdateSettings updates application settings and immediately persists them.
-func (s *Store) UpdateSettings(input core.AppSettings) (core.StateSnapshot, error) {
+func (s *Store) duplicateItemLocked(symbol, market, exceptID string) bool {
+	for _, it := range s.state.Items {
+		if exceptID != "" && it.ID == exceptID {
+			continue
+		}
+		if it.Symbol == symbol && it.Market == market {
+			return true
+		}
+	}
+	return false
+}
+
+// UpdateSettings applies a partial settings update and immediately persists it.
+// Omitted fields keep their stored values. See SettingsUpdate.
+func (s *Store) UpdateSettings(input SettingsUpdate) (core.StateSnapshot, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -420,19 +444,5 @@ func (s *Store) logError(scope, message string) {
 }
 
 func redactSensitiveLogText(message string) string {
-	redacted := message
-	for _, pattern := range sensitiveLogPatterns {
-		redacted = pattern.ReplaceAllStringFunc(redacted, func(segment string) string {
-			if strings.Contains(segment, "=") {
-				parts := strings.SplitN(segment, "=", 2)
-				return parts[0] + "=***"
-			}
-			if strings.Contains(segment, ":") {
-				parts := strings.SplitN(segment, ":", 2)
-				return parts[0] + ": ***"
-			}
-			return "***"
-		})
-	}
-	return redacted
+	return logger.RedactSensitiveText(message)
 }

@@ -8,6 +8,7 @@ import (
 
 	"investgo/internal/core"
 	"investgo/internal/core/hot"
+	"investgo/internal/core/store"
 	"investgo/internal/logger"
 	"investgo/internal/platform"
 )
@@ -16,7 +17,7 @@ import (
 func (h *Handler) handleOverview(writer http.ResponseWriter, request *http.Request) {
 	analytics, err := h.store.OverviewAnalytics(request.Context(), parseBoolQuery(request.URL.Query().Get("force")))
 	if err != nil {
-		writeError(writer, request, http.StatusBadGateway, err)
+		writeClassifiedError(writer, request, err)
 		return
 	}
 
@@ -103,19 +104,17 @@ func (h *Handler) handleClearLogs(writer http.ResponseWriter, request *http.Requ
 }
 
 // handleClientLogs accepts developer logs reported by the frontend.
+// Messages are redacted and size-limited here. The frontend redacts too, but this route must not trust the caller.
+// A JSON object is one entry. A JSON array is a batch and is rejected above maxClientLogBatch.
 func (h *Handler) handleClientLogs(writer http.ResponseWriter, request *http.Request) {
-	if h.logs == nil {
-		writeJSON(writer, http.StatusOK, map[string]bool{"ok": true})
-		return
-	}
-
-	var payload clientLogRequest
-	if err := decodeJSON(request, &payload); err != nil {
+	entries, err := readClientLogs(writer, request)
+	if err != nil {
 		writeError(writer, request, http.StatusBadRequest, err)
 		return
 	}
-
-	h.logs.Log(payload.Source, payload.Scope, sanitiseDeveloperLogLevel(payload.Level), payload.Message)
+	for _, entry := range entries {
+		h.recordClientLog(entry)
+	}
 	writeJSON(writer, http.StatusOK, map[string]bool{"ok": true})
 }
 
@@ -151,7 +150,7 @@ func (h *Handler) handleHot(writer http.ResponseWriter, request *http.Request) {
 
 	list, err := h.hot.List(request.Context(), category, sortBy, keyword, page, pageSize, options)
 	if err != nil {
-		writeError(writer, request, http.StatusBadRequest, err)
+		writeClassifiedError(writer, request, err)
 		return
 	}
 
@@ -168,7 +167,7 @@ func (h *Handler) handleHistory(writer http.ResponseWriter, request *http.Reques
 
 	series, err := h.store.ItemHistory(request.Context(), itemID, interval, parseBoolQuery(request.URL.Query().Get("force")))
 	if err != nil {
-		writeError(writer, request, http.StatusBadRequest, err)
+		writeClassifiedError(writer, request, err)
 		return
 	}
 
@@ -179,7 +178,7 @@ func (h *Handler) handleHistory(writer http.ResponseWriter, request *http.Reques
 func (h *Handler) handleRefresh(writer http.ResponseWriter, request *http.Request) {
 	snapshot, err := h.store.Refresh(request.Context(), parseBoolQuery(request.URL.Query().Get("force")))
 	if err != nil {
-		writeError(writer, request, http.StatusInternalServerError, err)
+		writeClassifiedError(writer, request, err)
 		return
 	}
 
@@ -190,16 +189,18 @@ func (h *Handler) handleRefresh(writer http.ResponseWriter, request *http.Reques
 func (h *Handler) handleRefreshItem(writer http.ResponseWriter, request *http.Request) {
 	snapshot, err := h.store.RefreshItem(request.Context(), request.PathValue("id"), parseBoolQuery(request.URL.Query().Get("force")))
 	if err != nil {
-		writeError(writer, request, http.StatusBadRequest, err)
+		writeClassifiedError(writer, request, err)
 		return
 	}
 
 	writeJSON(writer, http.StatusOK, localizeSnapshot(snapshot, requestLocale(request)))
 }
 
-// handleUpdateSettings updates application settings.
+// handleUpdateSettings applies a partial settings update.
+// Omitted JSON fields keep their stored values. The settings form sends the full object;
+// a present empty API key or proxy URL clears that value on purpose.
 func (h *Handler) handleUpdateSettings(writer http.ResponseWriter, request *http.Request) {
-	var settings core.AppSettings
+	var settings store.SettingsUpdate
 	if err := decodeJSON(request, &settings); err != nil {
 		writeError(writer, request, http.StatusBadRequest, err)
 		return
@@ -207,7 +208,7 @@ func (h *Handler) handleUpdateSettings(writer http.ResponseWriter, request *http
 
 	snapshot, err := h.store.UpdateSettings(settings)
 	if err != nil {
-		writeError(writer, request, http.StatusBadRequest, err)
+		writeClassifiedError(writer, request, err)
 		return
 	}
 	if h.proxyTransport != nil {
@@ -236,7 +237,7 @@ func (h *Handler) handleLookup(writer http.ResponseWriter, request *http.Request
 
 	result, err := h.store.LookupSymbol(request.Context(), symbol, strings.TrimSpace(request.URL.Query().Get("market")))
 	if err != nil {
-		writeError(writer, request, http.StatusBadRequest, err)
+		writeClassifiedError(writer, request, err)
 		return
 	}
 
@@ -251,9 +252,9 @@ func (h *Handler) handleCreateItem(writer http.ResponseWriter, request *http.Req
 		return
 	}
 
-	snapshot, err := h.store.UpsertItem(item)
+	snapshot, err := h.store.UpsertItem(request.Context(), item)
 	if err != nil {
-		writeError(writer, request, http.StatusBadRequest, err)
+		writeClassifiedError(writer, request, err)
 		return
 	}
 
@@ -270,9 +271,9 @@ func (h *Handler) handleUpdateItem(writer http.ResponseWriter, request *http.Req
 	}
 
 	item.ID = request.PathValue("id")
-	snapshot, err := h.store.UpsertItem(item)
+	snapshot, err := h.store.UpsertItem(request.Context(), item)
 	if err != nil {
-		writeError(writer, request, http.StatusBadRequest, err)
+		writeClassifiedError(writer, request, err)
 		return
 	}
 
@@ -284,7 +285,7 @@ func (h *Handler) handleUpdateItem(writer http.ResponseWriter, request *http.Req
 func (h *Handler) handleDeleteItem(writer http.ResponseWriter, request *http.Request) {
 	snapshot, err := h.store.DeleteItem(request.PathValue("id"))
 	if err != nil {
-		writeError(writer, request, http.StatusBadRequest, err)
+		writeClassifiedError(writer, request, err)
 		return
 	}
 
@@ -301,7 +302,7 @@ func (h *Handler) handlePinItem(writer http.ResponseWriter, request *http.Reques
 
 	snapshot, err := h.store.SetItemPinned(request.PathValue("id"), payload.Pinned)
 	if err != nil {
-		writeError(writer, request, http.StatusBadRequest, err)
+		writeClassifiedError(writer, request, err)
 		return
 	}
 
@@ -318,7 +319,7 @@ func (h *Handler) handleCreateAlert(writer http.ResponseWriter, request *http.Re
 
 	snapshot, err := h.store.UpsertAlert(alert)
 	if err != nil {
-		writeError(writer, request, http.StatusBadRequest, err)
+		writeClassifiedError(writer, request, err)
 		return
 	}
 
@@ -336,7 +337,7 @@ func (h *Handler) handleUpdateAlert(writer http.ResponseWriter, request *http.Re
 	alert.ID = request.PathValue("id")
 	snapshot, err := h.store.UpsertAlert(alert)
 	if err != nil {
-		writeError(writer, request, http.StatusBadRequest, err)
+		writeClassifiedError(writer, request, err)
 		return
 	}
 
@@ -347,7 +348,7 @@ func (h *Handler) handleUpdateAlert(writer http.ResponseWriter, request *http.Re
 func (h *Handler) handleDeleteAlert(writer http.ResponseWriter, request *http.Request) {
 	snapshot, err := h.store.DeleteAlert(request.PathValue("id"))
 	if err != nil {
-		writeError(writer, request, http.StatusBadRequest, err)
+		writeClassifiedError(writer, request, err)
 		return
 	}
 

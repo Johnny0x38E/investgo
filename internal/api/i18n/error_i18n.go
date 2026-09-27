@@ -53,6 +53,8 @@ var localizedExactMessages = map[string]string{
 	"FX payload is invalid":                                                                    "汇率数据格式异常",
 	"Hot fallback quote response is empty":                                                     "热门备援行情无数据",
 	"Pool service is unavailable":                                                              "证券池服务不可用",
+	"Client log payload is too large":                                                          "客户端日志过大",
+	"Client log batch is too large":                                                            "客户端日志条数过多",
 	"Pool member is already excluded":                                                          "该成员已被删除",
 	"Pool member status must be active or excluded":                                            "成员状态仅支持 active 或 excluded",
 	"invalid instrument symbol: is required":                                                   "股票代码不能为空",
@@ -150,6 +152,7 @@ var localizedPrefixMessages = []struct {
 	{prefix: "invalid instrument status: ", zhPrefix: "标的状态无效: ", recursive: true},
 	{prefix: "invalid instrument ", zhPrefix: "标的数据无效: ", recursive: true},
 	{prefix: "invalid pool ", zhPrefix: "证券池数据无效: ", recursive: true},
+	{prefix: "failed to sync instrument display name: ", zhPrefix: "同步标的显示名称失败: ", recursive: true},
 }
 
 var (
