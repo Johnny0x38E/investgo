@@ -14,7 +14,7 @@ A lightweight desktop investment workbench for watchlists, holdings, portfolio a
 
 ## Tech stack
 
-- Go 1.27 and Wails v3 alpha.54
+- Go 1.27 and Wails v3 beta.26
 - Vue 3, TypeScript, PrimeVue, Vite, and Chart.js
 - Multiple market-data providers with Frankfurter for FX rates
 
@@ -59,9 +59,15 @@ VERSION=1.0.0 ./scripts/package-darwin-x86_64.sh    # Intel
 
 Use `--dev` with the macOS scripts when Web Inspector support is needed. Outputs go to `build/bin/`. Windows currently produces a runnable `.exe`; an installer is not included yet.
 
+macOS desktop builds pass `-tags private_mac_apis`. From Wails v3 beta.19, Liquid Glass webview transparency and `OpenDevTools` compile to no-ops without that tag, so the Apple Silicon and Intel scripts include it by default (release DMGs included). `--dev` still adds the `devtools` tag; on macOS the inspector also needs `private_mac_apis`. App Store or public-API-only builds can omit it:
+
+```bash
+PRIVATE_MAC_APIS=0 VERSION=1.0.0 ./scripts/package-darwin-aarch64.sh
+```
+
 ## Notes
 
-- Wails v3 is still in alpha, so APIs and packaging details may change.
+- Wails v3 is still in beta, so APIs and packaging details may change.
 - Public macOS builds are unsigned. If macOS blocks a trusted app, first try **Open Anyway** in System Settings > Privacy & Security. If it still cannot open, run:
 
     ```bash

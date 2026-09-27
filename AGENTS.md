@@ -52,6 +52,16 @@ Local packaging is optional and writes to `build/bin/`:
   `./scripts/package-darwin-x86_64.sh`
 - `.\scripts\build-windows-amd64.ps1` on Windows
 
+macOS desktop builds pass `-tags private_mac_apis`. Wails v3 beta.19 and later
+compile Liquid Glass webview transparency and `OpenDevTools` as no-ops unless
+that tag is set. `scripts/build-darwin-aarch64.sh` adds it by default; the
+Intel build script and both package scripts call that path, and so does
+`.github/workflows/release.yml`. Set `PRIVATE_MAC_APIS=0` for an App Store or
+public-API-only binary. `--dev` still adds the `devtools` tag and the
+DevTools ldflags; on macOS the inspector call also needs `private_mac_apis`.
+The tag is macOS-only, so the Windows script does not pass it. `go test`
+does not need it: the window tests only check option values.
+
 ## Coding Style and Naming
 
 Run `gofmt` on Go changes and use idiomatic Go naming. For Vue/TypeScript,

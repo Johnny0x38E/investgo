@@ -86,6 +86,8 @@ try {
     $env:CGO_ENABLED = "0"
 
     $ldflags = "-s -w -X main.appVersion=$AppVersion"
+    # private_mac_apis is a macOS-only Wails tag (Liquid Glass / OpenDevTools).
+    # Windows WebView2 does not use it.
     $buildTags = "production"
     if ($Dev) {
         $ldflags = "$ldflags -X main.defaultTerminalLogging=1 -X main.defaultDevToolsBuild=1"

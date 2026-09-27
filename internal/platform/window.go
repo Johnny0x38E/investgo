@@ -29,6 +29,8 @@ func buildMainWindowOptions(useNativeTitleBar bool, targetOS string) application
 		Mac: application.MacWindow{
 			// Liquid Glass keeps native round traffic lights and a visible inactive state on
 			// macOS 26+. Older releases fall back to the translucent material inside Wails.
+			// Wails beta.19+ no-ops the private transparency calls unless the binary is
+			// built with -tags private_mac_apis. scripts/build-darwin-aarch64.sh adds it.
 			Backdrop: application.MacBackdropLiquidGlass,
 		},
 	}
