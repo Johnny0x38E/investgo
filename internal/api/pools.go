@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -196,8 +197,11 @@ func (h *Handler) handleUpdatePoolMember(writer http.ResponseWriter, request *ht
 		h.writePoolError(writer, request, err)
 		return
 	}
-	h.syncInstrumentDisplay(member.Instrument)
 	h.invalidateHotLists()
+	if err := h.syncInstrumentDisplay(member.Instrument); err != nil {
+		writeError(writer, request, http.StatusInternalServerError, err)
+		return
+	}
 	writeJSON(writer, http.StatusOK, newPoolMemberDTO(member))
 }
 
@@ -301,24 +305,21 @@ func (h *Handler) invalidateHotLists() {
 	}
 }
 
-func (h *Handler) syncInstrumentDisplay(value instrument.Instrument) {
+func (h *Handler) syncInstrumentDisplay(value instrument.Instrument) error {
 	if h.store == nil {
-		return
+		return nil
 	}
-	if err := h.store.ApplyInstrumentDisplay(value); err != nil && h.logs != nil {
-		h.logs.Warn("backend", "pools", "apply instrument display: "+err.Error())
+	if err := h.store.ApplyInstrumentDisplay(value); err != nil {
+		if h.logs != nil {
+			h.logs.Warn("backend", "pools", "apply instrument display: "+err.Error())
+		}
+		return fmt.Errorf("failed to sync instrument display name: %w", err)
 	}
+	return nil
 }
 
 func (h *Handler) writePoolError(writer http.ResponseWriter, request *http.Request, err error) {
-	status := http.StatusBadRequest
-	switch {
-	case errors.Is(err, pool.ErrPoolNotFound), errors.Is(err, pool.ErrInstrumentNotFound), errors.Is(err, pool.ErrMemberNotFound):
-		status = http.StatusNotFound
-	case errors.Is(err, pool.ErrInvalidOperation):
-		status = http.StatusConflict
-	}
-	writeError(writer, request, status, err)
+	writeClassifiedError(writer, request, err)
 }
 
 func parsePoolPagination(request *http.Request) (int, int, error) {
