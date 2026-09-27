@@ -5,6 +5,8 @@
     --table-head-pad-y: 9px;
     --table-action-size: 28px;
     --table-action-gap: 4px;
+    /* PrimeIcons 在按钮里居中，字形比按钮盒内收半个差值。右内边距要扣掉这份内收。 */
+    --table-icon-size: 12px;
 }
 
 .table-shell {
@@ -70,6 +72,18 @@
 .watch-table td.watch-table-sticky-actions {
     padding-left: var(--table-pad-x);
     padding-right: var(--table-pad-x);
+}
+
+.watch-table td.table-action-cell,
+.hot-table td.table-action-cell {
+    /* 右侧要比文字少一截按钮内的空白，眼睛看到的图标边缘才和「标的」文字对齐。 */
+    padding-right: calc(var(--table-pad-x) - (var(--table-action-size) - var(--table-icon-size)) / 2);
+}
+
+.watch-table .table-action-cell .p-button .pi,
+.hot-table .table-action-cell .p-button .pi {
+    font-size: var(--table-icon-size);
+    line-height: 1;
 }
 
 .watch-table-sticky,

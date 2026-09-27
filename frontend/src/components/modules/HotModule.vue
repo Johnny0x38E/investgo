@@ -756,7 +756,7 @@
         max-width: var(--hot-actions-width);
     }
 
-    /* 右对齐后，图标右缘只留 --table-pad-x，和左侧文字到分隔线的留白一致。 */
+    /* 右对齐，避免列内多余空间把图标从窗口边往里推。字形补偿在表格样式的右内边距里。 */
     .hot-table .table-action-stack {
         width: 100%;
         justify-content: flex-end;

@@ -286,10 +286,14 @@
         max-width: 124px;
     }
 
-    .watch-table td.watch-table-cell-dca,
-    .watch-table td.table-action-cell {
+    .watch-table td.watch-table-cell-dca {
         padding-left: var(--table-pad-x);
         padding-right: var(--table-pad-x);
+    }
+
+    .watch-table td.table-action-cell {
+        padding-left: var(--table-pad-x);
+        padding-right: calc(var(--table-pad-x) - (var(--table-action-size) - var(--table-icon-size)) / 2);
     }
 
     .watch-table th.watch-table-sticky-dca {
