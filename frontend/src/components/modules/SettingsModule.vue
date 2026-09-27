@@ -22,6 +22,7 @@
         getThemeModeOptions,
         COLOR_THEME_SWATCHES,
     } from '../../constants';
+    import { maxHotCacheTTLSeconds, minHotCacheTTLSeconds } from '../../forms';
     import { formatDateTime } from '../../format';
     import { useI18n } from '../../i18n';
     import type { AppSettings, DeveloperLogEntry, QuoteSourceOption, RuntimeStatus, SettingsTabKey } from '../../types';
@@ -215,7 +216,13 @@
 
                             <label class="full-span">
                                 <span>{{ t('settings.labels.hotCacheTTL') }}</span>
-                                <InputNumber v-model="settingsDraft.hotCacheTTLSeconds" :min="10" :step="10" fluid />
+                                <InputNumber
+                                    v-model="settingsDraft.hotCacheTTLSeconds"
+                                    :min="minHotCacheTTLSeconds"
+                                    :max="maxHotCacheTTLSeconds"
+                                    :step="10"
+                                    fluid
+                                />
                             </label>
                         </div>
                     </div>

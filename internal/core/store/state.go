@@ -74,6 +74,7 @@ func (s *Store) normaliseLocked() {
 	if s.state.Settings.HotCacheTTLSeconds <= 0 {
 		s.state.Settings.HotCacheTTLSeconds = 60
 	}
+	s.state.Settings.HotCacheTTLSeconds = core.ClampHotCacheTTLSeconds(s.state.Settings.HotCacheTTLSeconds)
 	s.state.Settings.CNQuoteSource = s.normaliseQuoteSourceIDLocked(s.state.Settings.CNQuoteSource, "CN-A")
 	s.state.Settings.HKQuoteSource = s.normaliseQuoteSourceIDLocked(s.state.Settings.HKQuoteSource, "HK-MAIN")
 	s.state.Settings.USQuoteSource = s.normaliseQuoteSourceIDLocked(s.state.Settings.USQuoteSource, "US-STOCK")
