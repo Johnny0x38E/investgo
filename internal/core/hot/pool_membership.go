@@ -193,10 +193,11 @@ func instrumentHotSeed(value instrument.Instrument) hotSeed {
 		}
 	}
 	return hotSeed{
-		Symbol:   symbol,
-		Name:     value.Name,
-		Market:   value.Market,
-		Currency: value.QuoteCurrency,
+		Symbol:     symbol,
+		Name:       value.Display(),
+		Market:     value.Market,
+		Currency:   value.QuoteCurrency,
+		CustomName: value.HasCustomName(),
 	}
 }
 

@@ -54,6 +54,8 @@ type WatchlistItem struct {
 	ID             string           `json:"id"`
 	Symbol         string           `json:"symbol"`
 	Name           string           `json:"name"`
+	DefaultName    string           `json:"defaultName,omitempty"`
+	HasCustomName  bool             `json:"hasCustomName,omitzero"`
 	Market         string           `json:"market"`
 	Currency       string           `json:"currency"`
 	Quantity       float64          `json:"quantity"`
@@ -366,6 +368,16 @@ type QuoteTarget struct {
 	DisplaySymbol string
 	Market        string
 	Currency      string
+}
+
+// SymbolLookup is the identity and optional live quote used to prefill an item form.
+type SymbolLookup struct {
+	Symbol       string  `json:"symbol"`
+	Name         string  `json:"name"`
+	Market       string  `json:"market"`
+	Currency     string  `json:"currency"`
+	CurrentPrice float64 `json:"currentPrice,omitzero"`
+	QuoteSource  string  `json:"quoteSource,omitempty"`
 }
 
 // HistoryProvider is the interface for loading historical price series, used by the Store for chart rendering and portfolio trend calculation.

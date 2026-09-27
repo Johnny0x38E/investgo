@@ -50,6 +50,19 @@ export function getHistoryRangeOptions(): OptionItem<HistoryInterval>[] {
     ];
 }
 
+export function formMarketValue(market: string): MarketType {
+    switch (market) {
+        case 'CN-GEM':
+        case 'CN-STAR':
+        case 'CN-BJ':
+            return 'CN-A';
+        case 'HK-GEM':
+            return 'HK-MAIN';
+        default:
+            return market as MarketType;
+    }
+}
+
 export function getMarketOptions(): OptionItem<MarketType>[] {
     // Only the six canonical user-facing categories are offered in forms.
     // Sub-markets (CN-GEM, CN-STAR, CN-BJ, HK-GEM) are handled by the backend

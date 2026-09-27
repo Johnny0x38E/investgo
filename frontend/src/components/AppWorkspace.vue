@@ -59,6 +59,7 @@
         (event: 'hot-watch-item', item: HotItem): void;
         (event: 'hot-unwatch-item', item: HotItem): void;
         (event: 'hot-open-position', item: HotItem): void;
+        (event: 'hot-state-changed'): void;
         (event: 'update:search', value: string): void;
         (event: 'add-item'): void;
         (event: 'edit-item', item: WatchlistItem): void;
@@ -111,6 +112,7 @@
         @watch-item="$emit('hot-watch-item', $event)"
         @unwatch-item="$emit('hot-unwatch-item', $event)"
         @open-position="$emit('hot-open-position', $event)"
+        @state-changed="$emit('hot-state-changed')"
     />
 
     <HoldingsModule

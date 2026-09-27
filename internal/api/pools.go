@@ -31,6 +31,8 @@ type instrumentDTO struct {
 	AssetClass    instrument.AssetClass       `json:"assetClass"`
 	Symbol        string                      `json:"symbol"`
 	Name          string                      `json:"name"`
+	DefaultName   string                      `json:"defaultName,omitempty"`
+	HasCustomName bool                        `json:"hasCustomName,omitzero"`
 	Market        string                      `json:"market"`
 	Exchange      string                      `json:"exchange"`
 	BaseAsset     string                      `json:"baseAsset,omitempty"`
@@ -74,8 +76,9 @@ type addPoolMemberRequest struct {
 }
 
 type updatePoolMemberRequest struct {
-	Symbol string `json:"symbol"`
-	Name   string `json:"name"`
+	Symbol    string `json:"symbol"`
+	Name      string `json:"name"`
+	ResetName bool   `json:"resetName,omitzero"`
 }
 
 func (h *Handler) handlePools(writer http.ResponseWriter, request *http.Request) {
@@ -185,14 +188,16 @@ func (h *Handler) handleUpdatePoolMember(writer http.ResponseWriter, request *ht
 	}
 	poolID := request.PathValue("id")
 	member, err := h.pools.UpdateMember(request.Context(), poolID, request.PathValue("instrumentId"), pool.UpdateMemberInput{
-		Symbol: payload.Symbol,
-		Name:   payload.Name,
+		Symbol:    payload.Symbol,
+		Name:      payload.Name,
+		ResetName: payload.ResetName,
 	})
 	if err != nil {
 		h.writePoolError(writer, request, err)
 		return
 	}
-	h.invalidatePool(poolID)
+	h.syncInstrumentDisplay(member.Instrument)
+	h.invalidateHotLists()
 	writeJSON(writer, http.StatusOK, newPoolMemberDTO(member))
 }
 
@@ -281,6 +286,30 @@ func (h *Handler) invalidatePool(poolID string) {
 	}
 }
 
+func (h *Handler) invalidateHotLists() {
+	for _, poolID := range []string{
+		pool.PoolIDCNA,
+		pool.PoolIDCNETF,
+		pool.PoolIDHK,
+		pool.PoolIDHKETF,
+		pool.PoolIDUSSP500,
+		pool.PoolIDUSNasdaq,
+		pool.PoolIDUSDow,
+		pool.PoolIDUSETF,
+	} {
+		h.invalidatePool(poolID)
+	}
+}
+
+func (h *Handler) syncInstrumentDisplay(value instrument.Instrument) {
+	if h.store == nil {
+		return
+	}
+	if err := h.store.ApplyInstrumentDisplay(value); err != nil && h.logs != nil {
+		h.logs.Warn("backend", "pools", "apply instrument display: "+err.Error())
+	}
+}
+
 func (h *Handler) writePoolError(writer http.ResponseWriter, request *http.Request, err error) {
 	status := http.StatusBadRequest
 	switch {
@@ -333,7 +362,8 @@ func newPoolMemberDTO(value pool.Member) poolMemberDTO {
 		PoolID: value.PoolID,
 		Instrument: instrumentDTO{
 			ID: value.Instrument.ID, AssetClass: value.Instrument.AssetClass, Symbol: value.Instrument.Symbol,
-			Name: value.Instrument.Name, Market: value.Instrument.Market, Exchange: value.Instrument.Exchange,
+			Name: value.Instrument.Display(), DefaultName: value.Instrument.Name, HasCustomName: value.Instrument.HasCustomName(),
+			Market: value.Instrument.Market, Exchange: value.Instrument.Exchange,
 			BaseAsset: value.Instrument.BaseAsset, QuoteCurrency: value.Instrument.QuoteCurrency,
 			Status: value.Instrument.Status, UpdatedAt: value.Instrument.UpdatedAt,
 		},

@@ -6,15 +6,45 @@
 
 .form-grid label {
     display: grid;
-    gap: 7px;
+    gap: 6px;
+}
+
+.form-grid label > span {
+    font-size: 11px;
+    line-height: 1.3;
+    color: var(--muted);
 }
 
 .form-grid :is(.p-select, .p-inputnumber, .p-inputtext, .p-textarea) {
     width: 100%;
 }
 
+.form-grid input[type='date'] {
+    width: 100%;
+    height: var(--control-height);
+    min-height: var(--control-height);
+    padding: 0 12px;
+    box-sizing: border-box;
+    font: 13px / calc(var(--control-height) - 2px) var(--font-ui);
+    color: var(--ink);
+    background: var(--control-bg);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-control);
+    outline: none;
+    color-scheme: light dark;
+}
+
+.form-grid input[type='date']:hover {
+    background: var(--control-bg-hover);
+}
+
+.form-grid input[type='date']:focus {
+    border-color: color-mix(in srgb, var(--accent) 44%, var(--border-strong));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
 .checkbox-field .checkbox-wrap {
-    min-height: 42px;
+    min-height: var(--control-height);
     display: flex;
     align-items: center;
 }

@@ -75,6 +75,8 @@ export interface WatchlistItem {
     id: string;
     symbol: string;
     name: string;
+    defaultName?: string;
+    hasCustomName?: boolean;
     market: string;
     currency: string;
     quantity: number;
@@ -315,6 +317,8 @@ export interface ItemFormModel {
     id: string;
     symbol: string;
     name: string;
+    defaultName: string;
+    hasCustomName: boolean;
     market: string;
     currency: string;
     quantity: number;
@@ -324,6 +328,15 @@ export interface ItemFormModel {
     thesis: string;
     currentPrice: number; // Used only for DCA summary display; not serialized on submit
     dcaEntries: DCAEntryRow[];
+}
+
+export interface SymbolLookup {
+    symbol: string;
+    name: string;
+    market: string;
+    currency: string;
+    currentPrice?: number;
+    quoteSource?: string;
 }
 
 export interface AlertFormModel {
@@ -372,6 +385,8 @@ export interface Instrument {
     assetClass: AssetClass;
     symbol: string;
     name: string;
+    defaultName?: string;
+    hasCustomName?: boolean;
     market: string;
     exchange: string;
     baseAsset?: string;
@@ -420,4 +435,5 @@ export interface AddPoolMemberRequest {
 export interface UpdatePoolMemberRequest {
     symbol?: string;
     name?: string;
+    resetName?: boolean;
 }

@@ -245,8 +245,11 @@ func TestServiceUpdateMemberEditsBuiltInMemberPersistently(t *testing.T) {
 	if err != nil {
 		t.Fatalf("UpdateMember(name) error = %v", err)
 	}
-	if edited.Instrument.Name != "Apple Inc." || edited.Instrument.Symbol != "AAPL" {
+	if edited.Instrument.Display() != "Apple Inc." || edited.Instrument.Symbol != "AAPL" {
 		t.Fatalf("edited member = %+v", edited)
+	}
+	if edited.Instrument.Name != "Apple" || edited.Instrument.DisplayName != "Apple Inc." {
+		t.Fatalf("official/alias = %+v", edited.Instrument)
 	}
 	if edited.Source != pool.MemberSourceBuiltIn {
 		t.Fatalf("edited member source = %q, want builtin", edited.Source)
@@ -259,17 +262,17 @@ func TestServiceUpdateMemberEditsBuiltInMemberPersistently(t *testing.T) {
 	if err != nil {
 		t.Fatalf("UpdateMember(symbol) error = %v", err)
 	}
-	if edited.Instrument.Symbol != "META" || edited.Instrument.Name != "Apple Inc." {
+	if edited.Instrument.Symbol != "META" || edited.Instrument.Display() != "Apple Inc." {
 		t.Fatalf("edited member = %+v", edited)
 	}
 
-	// The shipped baseline row must stay untouched.
+	// Official baseline name stays; only the display alias changes.
 	baseline, found, err := catalog.Get(ctx, aapl.ID)
 	if err != nil || !found {
 		t.Fatalf("baseline Get = found %v, error %v", found, err)
 	}
-	if baseline.Symbol != "AAPL" || baseline.Name != "Apple" {
-		t.Fatalf("baseline instrument mutated: %+v", baseline)
+	if baseline.Symbol != "AAPL" || baseline.Name != "Apple" || baseline.DisplayName != "Apple Inc." {
+		t.Fatalf("baseline instrument = %+v", baseline)
 	}
 
 	// Restart + data-version bump: the edit persists and the baseline is intact.
@@ -282,8 +285,8 @@ func TestServiceUpdateMemberEditsBuiltInMemberPersistently(t *testing.T) {
 		t.Fatalf("EffectiveMembers(after restart) error = %v", err)
 	}
 	assertInstrumentSymbols(t, members, []string{"META"})
-	if members[0].Name != "Apple Inc." {
-		t.Fatalf("member name after restart = %q, want Apple Inc.", members[0].Name)
+	if members[0].Display() != "Apple Inc." {
+		t.Fatalf("member name after restart = %q, want Apple Inc.", members[0].Display())
 	}
 
 	// Exclude then restore: the edited display data survives.
@@ -322,7 +325,7 @@ func TestServiceUpdateMemberEditsUserMemberAndMovesOverride(t *testing.T) {
 	if err != nil {
 		t.Fatalf("UpdateMember(name) error = %v", err)
 	}
-	if edited.Instrument.Name != "NVIDIA Corporation" {
+	if edited.Instrument.Display() != "NVIDIA Corporation" {
 		t.Fatalf("edited member = %+v", edited)
 	}
 
@@ -348,6 +351,47 @@ func TestServiceUpdateMemberEditsUserMemberAndMovesOverride(t *testing.T) {
 		t.Fatalf("EffectiveMembers(after restart) error = %v", err)
 	}
 	assertInstrumentSymbols(t, members, []string{"AAPL", "MSFT", "NVDA2"})
+}
+
+func TestServiceUpdateMemberDisplayNameIsGlobalAndResettable(t *testing.T) {
+	t.Parallel()
+
+	ctx, _, catalog, _, service, instruments := newPoolServiceFixture(t)
+	aapl := instruments["AAPL"]
+
+	if _, err := service.UpdateMember(ctx, pool.PoolIDUSSP500, aapl.ID, pool.UpdateMemberInput{
+		Name: "苹果",
+	}); err != nil {
+		t.Fatalf("UpdateMember(name) error = %v", err)
+	}
+
+	nasdaq, err := service.EffectiveMembers(ctx, pool.PoolIDUSNasdaq)
+	if err != nil {
+		t.Fatalf("EffectiveMembers(nasdaq) error = %v", err)
+	}
+	var displayed instrument.Instrument
+	for _, member := range nasdaq {
+		if member.ID == aapl.ID {
+			displayed = member
+			break
+		}
+	}
+	if displayed.Display() != "苹果" || displayed.Name != "Apple" {
+		t.Fatalf("nasdaq AAPL = %+v", displayed)
+	}
+
+	if _, err := service.UpdateMember(ctx, pool.PoolIDUSNasdaq, aapl.ID, pool.UpdateMemberInput{
+		ResetName: true,
+	}); err != nil {
+		t.Fatalf("UpdateMember(reset) error = %v", err)
+	}
+	stored, found, err := catalog.Get(ctx, aapl.ID)
+	if err != nil || !found {
+		t.Fatalf("Get after reset = found %v, error %v", found, err)
+	}
+	if stored.DisplayName != "" || stored.Display() != "Apple" {
+		t.Fatalf("reset instrument = %+v", stored)
+	}
 }
 
 func TestServiceUpdateMemberRejectsCollisionAndExcludedMember(t *testing.T) {

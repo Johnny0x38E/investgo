@@ -170,7 +170,7 @@ func (r *SQLiteRepository) loadSettings(state *PersistedState) error {
 
 func (r *SQLiteRepository) loadItems(state *PersistedState) (map[string]int, error) {
 	rows, err := r.db.Query(`
-        SELECT w.id, i.symbol, i.name, i.market, i.quote_currency,
+        SELECT w.id, i.symbol, i.name, i.display_name, i.market, i.quote_currency,
                w.quantity, w.cost_price, w.acquired_at, w.current_price,
                w.previous_close, w.open_price, w.day_high, w.day_low,
                w.change_value, w.change_percent, w.quote_source,
@@ -188,6 +188,8 @@ func (r *SQLiteRepository) loadItems(state *PersistedState) (map[string]int, err
 	itemIndex := make(map[string]int)
 	for rows.Next() {
 		var item core.WatchlistItem
+		var officialName string
+		var displayName string
 		var quantityRaw string
 		var costPriceRaw string
 		var acquiredAtRaw sql.NullString
@@ -198,7 +200,8 @@ func (r *SQLiteRepository) loadItems(state *PersistedState) (map[string]int, err
 		if err := rows.Scan(
 			&item.ID,
 			&item.Symbol,
-			&item.Name,
+			&officialName,
+			&displayName,
 			&item.Market,
 			&item.Currency,
 			&quantityRaw,
@@ -247,6 +250,13 @@ func (r *SQLiteRepository) loadItems(state *PersistedState) (map[string]int, err
 		}
 		if err := json.Unmarshal([]byte(tagsJSON), &item.Tags); err != nil {
 			return nil, fmt.Errorf("load tags for item %s: %w", item.ID, err)
+		}
+
+		item.Name = officialName
+		if strings.TrimSpace(displayName) != "" {
+			item.Name = displayName
+			item.DefaultName = officialName
+			item.HasCustomName = true
 		}
 
 		itemIndex[item.ID] = len(state.Items)
@@ -438,10 +448,19 @@ func saveSettings(tx *sql.Tx, settings core.AppSettings, updatedAt time.Time) er
 // the instrument catalog so seeded HK/CN rows are reused instead of splitting
 // into a second exchange-empty duplicate.
 func saveInstrument(tx *sql.Tx, item core.WatchlistItem, stateUpdatedAt time.Time) (string, error) {
+	officialName := item.Name
+	displayName := ""
+	if item.HasCustomName {
+		displayName = item.Name
+		if strings.TrimSpace(item.DefaultName) != "" {
+			officialName = item.DefaultName
+		}
+	}
 	normalized, err := instrument.Normalize(instrument.Instrument{
 		AssetClass:    instrument.AssetClass(sqliteAssetClass(item.Market)),
 		Symbol:        item.Symbol,
-		Name:          item.Name,
+		Name:          officialName,
+		DisplayName:   displayName,
 		Market:        item.Market,
 		QuoteCurrency: item.Currency,
 	})
@@ -458,11 +477,12 @@ func saveInstrument(tx *sql.Tx, item core.WatchlistItem, stateUpdatedAt time.Tim
 	}
 	_, err = tx.Exec(`
         INSERT INTO instruments(
-            id, asset_class, symbol, name, market, exchange, base_asset,
+            id, asset_class, symbol, name, display_name, market, exchange, base_asset,
             quote_currency, status, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, '', ?, 'active', ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, 'active', ?, ?)
         ON CONFLICT(asset_class, market, exchange, symbol) DO UPDATE SET
             name = excluded.name,
+            display_name = excluded.display_name,
             quote_currency = excluded.quote_currency,
             status = excluded.status,
             updated_at = excluded.updated_at
@@ -471,6 +491,7 @@ func saveInstrument(tx *sql.Tx, item core.WatchlistItem, stateUpdatedAt time.Tim
 		normalized.AssetClass,
 		normalized.Symbol,
 		normalized.Name,
+		normalized.DisplayName,
 		normalized.Market,
 		normalized.Exchange,
 		normalized.QuoteCurrency,

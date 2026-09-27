@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"investgo/internal/core"
+	"investgo/internal/core/instrument"
 )
 
 var sensitiveLogPatterns = []*regexp.Regexp{
@@ -42,12 +43,16 @@ func (s *Store) UpsertItem(input core.WatchlistItem) (core.StateSnapshot, error)
 	}
 	s.mu.RUnlock()
 
+	requestedName := strings.TrimSpace(item.Name)
 	if existing != nil {
 		item = inheritLiveFields(item, *existing)
 		if existing.PinnedAt != nil {
 			item.PinnedAt = ptrTime(*existing.PinnedAt)
 		} else {
 			item.PinnedAt = nil
+		}
+		if existing.HasCustomName && !item.HasCustomName && requestedName != "" && requestedName != strings.TrimSpace(existing.DefaultName) {
+			item.HasCustomName = true
 		}
 	}
 
@@ -66,13 +71,7 @@ func (s *Store) UpsertItem(input core.WatchlistItem) (core.StateSnapshot, error)
 		}
 	}
 
-	if item.Name == "" {
-		if existing != nil && existing.Name != "" {
-			item.Name = existing.Name
-		} else {
-			item.Name = item.Symbol
-		}
-	}
+	resolveSavedDisplay(&item, existing, requestedName)
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -104,6 +103,71 @@ func (s *Store) UpsertItem(input core.WatchlistItem) (core.StateSnapshot, error)
 	}
 
 	return s.snapshotLocked(), nil
+}
+
+// ApplyInstrumentDisplay copies an instrument display alias onto matching
+// watchlist/holding rows so a rename made in the pool manager is visible
+// everywhere without waiting for the next quote refresh.
+func (s *Store) ApplyInstrumentDisplay(value instrument.Instrument) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	changed := false
+	display := value.Display()
+	official := value.Name
+	custom := value.HasCustomName()
+	for index := range s.state.Items {
+		identity, ok := watchlistInstrumentIdentity(s.state.Items[index])
+		if !ok || identity != value.Identity() {
+			continue
+		}
+		item := s.state.Items[index]
+		if item.Name == display && item.DefaultName == official && item.HasCustomName == custom {
+			continue
+		}
+		item.Name = display
+		item.DefaultName = official
+		item.HasCustomName = custom
+		item.UpdatedAt = time.Now()
+		s.state.Items[index] = item
+		changed = true
+	}
+	if !changed {
+		return nil
+	}
+
+	now := time.Now()
+	s.state.UpdatedAt = now
+	s.holdingsUpdatedAt = now
+	s.invalidateAllCachesLocked()
+	if err := s.saveLocked(); err != nil {
+		s.logError("storage", fmt.Sprintf("save state failed after display name update: %v", err))
+		return err
+	}
+	return nil
+}
+
+func watchlistInstrumentIdentity(item core.WatchlistItem) (instrument.Identity, bool) {
+	normalized, err := instrument.Normalize(instrument.Instrument{
+		AssetClass:    instrument.AssetClass(sqliteAssetClass(item.Market)),
+		Symbol:        item.Symbol,
+		Name:          firstNonEmptyDisplay(item.DefaultName, item.Name, item.Symbol),
+		Market:        item.Market,
+		QuoteCurrency: item.Currency,
+	})
+	if err != nil {
+		return instrument.Identity{}, false
+	}
+	return normalized.Identity(), true
+}
+
+func firstNonEmptyDisplay(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 // SetItemPinned pins or unpins the specified item; pinned items sort to the top of all list views.

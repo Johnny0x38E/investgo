@@ -223,6 +223,26 @@ func (h *Handler) handleUpdateSettings(writer http.ResponseWriter, request *http
 	writeJSON(writer, http.StatusOK, localizeSnapshot(snapshot, requestLocale(request)))
 }
 
+// handleLookup resolves a typed symbol into name, market, currency, and live price for form prefills.
+func (h *Handler) handleLookup(writer http.ResponseWriter, request *http.Request) {
+	symbol := strings.TrimSpace(request.URL.Query().Get("symbol"))
+	if symbol == "" {
+		symbol = strings.TrimSpace(request.URL.Query().Get("q"))
+	}
+	if symbol == "" {
+		writeError(writer, request, http.StatusBadRequest, &apiError{message: "Symbol is required"})
+		return
+	}
+
+	result, err := h.store.LookupSymbol(request.Context(), symbol, strings.TrimSpace(request.URL.Query().Get("market")))
+	if err != nil {
+		writeError(writer, request, http.StatusBadRequest, err)
+		return
+	}
+
+	writeJSON(writer, http.StatusOK, result)
+}
+
 // handleCreateItem creates a new tracked item (watch-only or held position).
 func (h *Handler) handleCreateItem(writer http.ResponseWriter, request *http.Request) {
 	var item core.WatchlistItem
@@ -237,6 +257,7 @@ func (h *Handler) handleCreateItem(writer http.ResponseWriter, request *http.Req
 		return
 	}
 
+	h.invalidateHotLists()
 	writeJSON(writer, http.StatusOK, localizeSnapshot(snapshot, requestLocale(request)))
 }
 
@@ -255,6 +276,7 @@ func (h *Handler) handleUpdateItem(writer http.ResponseWriter, request *http.Req
 		return
 	}
 
+	h.invalidateHotLists()
 	writeJSON(writer, http.StatusOK, localizeSnapshot(snapshot, requestLocale(request)))
 }
 

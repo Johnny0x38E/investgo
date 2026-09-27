@@ -30,6 +30,9 @@ type yahooSearchResponse struct {
 }
 
 // searchYahooUSStockSeeds calls Yahoo Finance search API and returns US stock seeds matching the keyword.
+// QuoteType must be EQUITY (or empty). Exchange filtering uses Yahoo MIC tokens
+// (NMS/NYQ/…) — see isLikelyUSExchange. Class-share queries are hyphenated
+// (BRK.B → BRK-B) by normaliseYahooSearchKeyword before the request.
 func (s *HotService) searchYahooUSStockSeeds(ctx context.Context, keyword string) ([]hotSeed, error) {
 	parsed, err := fetchYahooSearch(ctx, s.client, keyword)
 	if err != nil {
@@ -114,7 +117,7 @@ func fetchYahooSearch(ctx context.Context, client *http.Client, keyword string) 
 	}
 
 	params := url.Values{}
-	params.Set("q", strings.TrimSpace(keyword))
+	params.Set("q", normaliseYahooSearchKeyword(keyword))
 	params.Set("quotesCount", "20")
 	params.Set("newsCount", "0")
 	params.Set("enableFuzzyQuery", "false")
@@ -203,6 +206,22 @@ func isYahooETFQuote(quoteType, typeDisp string) bool {
 	return quoteType == "ETF" || strings.Contains(typeDisp, "ETF")
 }
 
+// yahooUSExchangeTokens are the Yahoo search MIC / display fragments that mean
+// a US listing. exchDisp is usually "NASDAQ" / "NYSE" / "NYSEArca" / "BATS Trading",
+// but Exchange itself is a short MIC and will not contain those strings:
+//
+//	NMS / NGM / NCM — Nasdaq Global Select / Global / Capital
+//	NYQ             — NYSE
+//	ASE / AMEX      — NYSE American
+//	PCX / ARCX      — NYSE Arca (SPY, IWM)
+//	BTS / BATS      — Cboe BZX (ARKK)
+//
+// Pink-sheet / OTC tokens (PNK, OTCPK) are intentionally omitted.
+var yahooUSExchangeTokens = []string{
+	"NASDAQ", "NYSE", "ARCA", "ARCX", "BATS", "PCX",
+	"NMS", "NGM", "NCM", "NYQ", "ASE", "AMEX", "BTS",
+}
+
 // isLikelyUSExchange reports whether the given exchange fields likely represent a US-listed
 // instrument based on well-known US exchange identifiers.
 func isLikelyUSExchange(exchange, exchDisp string) bool {
@@ -210,10 +229,31 @@ func isLikelyUSExchange(exchange, exchDisp string) bool {
 	if label == "" {
 		return true
 	}
-	for _, token := range []string{"NASDAQ", "NYSE", "ARCA", "ARCX", "BATS", "PCX"} {
+	for _, token := range yahooUSExchangeTokens {
 		if strings.Contains(label, token) {
 			return true
 		}
 	}
 	return false
+}
+
+// normaliseYahooSearchKeyword rewrites a US ticker into the form Yahoo search
+// indexes. Share classes are listed with a hyphen (BRK-B, BF-B). Users and the
+// local S&P pool write a dot (BRK.B); searching the dot form returns options
+// and unrelated ETFs, not the equity.
+func normaliseYahooSearchKeyword(keyword string) string {
+	keyword = strings.TrimSpace(keyword)
+	if keyword == "" {
+		return keyword
+	}
+	upper := strings.ToUpper(keyword)
+	dot := strings.LastIndexByte(upper, '.')
+	if dot <= 0 || dot != len(upper)-2 {
+		return keyword
+	}
+	class := upper[dot+1]
+	if class < 'A' || class > 'Z' {
+		return keyword
+	}
+	return upper[:dot] + "-" + upper[dot+1:]
 }

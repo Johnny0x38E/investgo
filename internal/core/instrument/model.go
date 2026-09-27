@@ -59,6 +59,7 @@ type Instrument struct {
 	AssetClass    AssetClass
 	Symbol        string
 	Name          string
+	DisplayName   string
 	Market        string
 	Exchange      string
 	BaseAsset     string
@@ -66,6 +67,18 @@ type Instrument struct {
 	Status        InstrumentStatus
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
+}
+
+// Display returns the user-facing name, preferring a stored alias.
+func (i Instrument) Display() string {
+	if name := strings.TrimSpace(i.DisplayName); name != "" {
+		return name
+	}
+	return i.Name
+}
+
+func (i Instrument) HasCustomName() bool {
+	return strings.TrimSpace(i.DisplayName) != ""
 }
 
 func (i Instrument) Identity() Identity {
@@ -116,6 +129,7 @@ func Normalize(value Instrument) (Instrument, error) {
 	if value.Name == "" {
 		value.Name = value.Symbol
 	}
+	value.DisplayName = strings.TrimSpace(value.DisplayName)
 	value.BaseAsset = strings.ToUpper(strings.TrimSpace(value.BaseAsset))
 	value.QuoteCurrency = strings.ToUpper(strings.TrimSpace(value.QuoteCurrency))
 	if value.AssetClass == AssetClassCrypto {

@@ -94,6 +94,53 @@ func TestInstrumentRepositoryRoundTripAndCanonicalUniqueness(t *testing.T) {
 	}
 }
 
+func TestInstrumentRepositorySetDisplayNameSurvivesUpsert(t *testing.T) {
+	t.Parallel()
+
+	db := openInstrumentRepositoryTestDB(t)
+	repository := NewInstrumentRepository(db)
+	ctx := context.Background()
+
+	stored, err := repository.Upsert(ctx, instrument.Instrument{
+		AssetClass: instrument.AssetClassEquity,
+		Market:     "US-STOCK",
+		Symbol:     "AAPL",
+		Name:       "Apple",
+	})
+	if err != nil {
+		t.Fatalf("Upsert() error = %v", err)
+	}
+
+	aliased, err := repository.SetDisplayName(ctx, stored.ID, "苹果")
+	if err != nil {
+		t.Fatalf("SetDisplayName() error = %v", err)
+	}
+	if aliased.Name != "Apple" || aliased.Display() != "苹果" {
+		t.Fatalf("aliased = %+v", aliased)
+	}
+
+	updated, err := repository.Upsert(ctx, instrument.Instrument{
+		AssetClass: instrument.AssetClassEquity,
+		Market:     "US-STOCK",
+		Symbol:     "AAPL",
+		Name:       "Apple Inc.",
+	})
+	if err != nil {
+		t.Fatalf("Upsert(second) error = %v", err)
+	}
+	if updated.Name != "Apple Inc." || updated.DisplayName != "苹果" || updated.Display() != "苹果" {
+		t.Fatalf("upsert cleared alias: %+v", updated)
+	}
+
+	cleared, err := repository.SetDisplayName(ctx, stored.ID, "")
+	if err != nil {
+		t.Fatalf("SetDisplayName(reset) error = %v", err)
+	}
+	if cleared.DisplayName != "" || cleared.Display() != "Apple Inc." {
+		t.Fatalf("cleared = %+v", cleared)
+	}
+}
+
 func TestInstrumentRepositorySupportsMarketsAndAssetClasses(t *testing.T) {
 	t.Parallel()
 

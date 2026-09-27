@@ -292,15 +292,18 @@ func (s *Service) DeleteUserMember(ctx context.Context, poolID, instrumentID str
 }
 
 // UpdateMemberInput carries a user edit of a pool member. Only fields that are
-// set are applied; the rest keep their current values.
+// set are applied; the rest keep their current values. ResetName clears a
+// display alias so every surface falls back to the official name.
 type UpdateMemberInput struct {
-	Symbol string
-	Name   string
+	Symbol    string
+	Name      string
+	ResetName bool
 }
 
 // UpdateMember edits a pool member's display symbol and/or name and persists
-// the change. Built-in members are edited via a scoped overlay so shipped
-// baseline rows stay immutable; user-added members are edited in the catalog.
+// the change. Display names are instrument-level aliases so holdings and every
+// pool that shares the instrument stay in sync. Built-in symbol edits remain a
+// scoped overlay so shipped baseline rows stay immutable.
 func (s *Service) UpdateMember(
 	ctx context.Context,
 	poolID string,
@@ -337,9 +340,17 @@ func (s *Service) UpdateMember(
 	}
 
 	next := target.Instrument
-	next.Symbol = firstNonEmpty(strings.TrimSpace(input.Symbol), next.Symbol)
-	next.Name = firstNonEmpty(strings.TrimSpace(input.Name), next.Name)
-	if next.Symbol == target.Instrument.Symbol && next.Name == target.Instrument.Name {
+	symbolInput := strings.TrimSpace(input.Symbol)
+	nameInput := strings.TrimSpace(input.Name)
+	next.Symbol = firstNonEmpty(symbolInput, next.Symbol)
+	presentedName := next.Display()
+	nextPresented := presentedName
+	if input.ResetName {
+		nextPresented = next.Name
+	} else if nameInput != "" {
+		nextPresented = nameInput
+	}
+	if next.Symbol == target.Instrument.Symbol && nextPresented == presentedName && !input.ResetName {
 		return *target, nil
 	}
 
@@ -368,7 +379,7 @@ func (s *Service) UpdateMember(
 		}
 	}
 
-	if target.Source == MemberSourceUser {
+	if target.Source == MemberSourceUser && next.Symbol != target.Instrument.Symbol {
 		stored, err := s.instruments.Upsert(ctx, normalized)
 		if err != nil {
 			return Member{}, err
@@ -386,32 +397,43 @@ func (s *Service) UpdateMember(
 				return Member{}, err
 			}
 		}
-		return Member{
-			PoolID:     definition.ID,
-			Instrument: stored,
-			Source:     MemberSourceUser,
-			Status:     MemberStatusActive,
-			UpdatedAt:  stored.UpdatedAt,
-		}, nil
+		target.Instrument = stored
+		target.UpdatedAt = stored.UpdatedAt
 	}
 
-	// Merge with any existing edit overlay so partial updates keep previously
-	// edited fields (only fields that are set are applied).
-	existing, _, err := s.pools.GetEdit(ctx, definition.ID, target.Instrument.ID)
-	if err != nil {
-		return Member{}, err
+	if input.ResetName || nameInput != "" {
+		alias := nameInput
+		if input.ResetName || nameInput == strings.TrimSpace(target.Instrument.Name) {
+			alias = ""
+		}
+		stored, err := s.instruments.SetDisplayName(ctx, target.Instrument.ID, alias)
+		if err != nil {
+			return Member{}, err
+		}
+		target.Instrument = stored
+		target.UpdatedAt = stored.UpdatedAt
 	}
-	edit, err := s.pools.UpsertEdit(ctx, Edit{
-		PoolID:       definition.ID,
-		InstrumentID: target.Instrument.ID,
-		Symbol:       firstNonEmpty(strings.TrimSpace(input.Symbol), existing.Symbol),
-		Name:         firstNonEmpty(strings.TrimSpace(input.Name), existing.Name),
-	})
-	if err != nil {
-		return Member{}, err
+
+	if target.Source != MemberSourceUser && symbolInput != "" {
+		// Merge with any existing symbol overlay so a later name-only edit keeps
+		// a previously edited ticker. Name aliases live on the instrument now.
+		existing, _, err := s.pools.GetEdit(ctx, definition.ID, target.Instrument.ID)
+		if err != nil {
+			return Member{}, err
+		}
+		edit, err := s.pools.UpsertEdit(ctx, Edit{
+			PoolID:       definition.ID,
+			InstrumentID: target.Instrument.ID,
+			Symbol:       firstNonEmpty(symbolInput, existing.Symbol),
+			Name:         existing.Name,
+		})
+		if err != nil {
+			return Member{}, err
+		}
+		target.Instrument = applyMemberEditValue(target.Instrument, edit)
+		target.UpdatedAt = edit.UpdatedAt
 	}
-	target.Instrument = applyMemberEditValue(target.Instrument, edit)
-	target.UpdatedAt = edit.UpdatedAt
+
 	return *target, nil
 }
 
@@ -436,9 +458,6 @@ func (s *Service) applyMemberEdit(
 func applyMemberEditValue(value instrument.Instrument, edit Edit) instrument.Instrument {
 	if edit.Symbol != "" {
 		value.Symbol = edit.Symbol
-	}
-	if edit.Name != "" {
-		value.Name = edit.Name
 	}
 	return value
 }

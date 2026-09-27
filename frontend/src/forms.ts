@@ -1,3 +1,4 @@
+import { formMarketValue } from './constants';
 import type {
     AlertFormModel,
     AlertRule,
@@ -6,6 +7,7 @@ import type {
     DCAEntryRow,
     HotItem,
     ItemFormModel,
+    SymbolLookup,
     WatchlistItem,
 } from './types';
 
@@ -67,6 +69,8 @@ export function emptyItemForm(): ItemFormModel {
         id: '',
         symbol: '',
         name: '',
+        defaultName: '',
+        hasCustomName: false,
         market: 'CN-A',
         currency: 'CNY',
         quantity: 0,
@@ -78,12 +82,49 @@ export function emptyItemForm(): ItemFormModel {
         dcaEntries: [],
     };
 }
-function todayDateString(): string {
+export function todayDateString(): string {
     const d = new Date();
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
+}
+
+export function applySymbolLookup(
+    form: ItemFormModel,
+    result: SymbolLookup,
+    options: { watchOnly: boolean },
+): void {
+    const previousSymbol = form.symbol.trim();
+    const nextName = result.name.trim();
+    const prettyName = nextName !== '' && nextName.toUpperCase() !== result.symbol.toUpperCase();
+
+    form.symbol = result.symbol;
+    form.market = formMarketValue(result.market);
+    form.currency = result.currency;
+    if (
+        !form.hasCustomName &&
+        (prettyName || !form.name.trim() || form.name.trim().toUpperCase() === previousSymbol.toUpperCase())
+    ) {
+        form.name = nextName || result.symbol;
+        form.defaultName = form.name;
+    }
+    if ((result.currentPrice ?? 0) > 0) {
+        form.currentPrice = result.currentPrice ?? 0;
+    }
+    if (options.watchOnly || form.id) {
+        return;
+    }
+    const hasDCA = form.dcaEntries.some((entry) => (entry.amount ?? 0) > 0 && (entry.shares ?? 0) > 0);
+    if (hasDCA) {
+        return;
+    }
+    if ((result.currentPrice ?? 0) > 0) {
+        form.costPrice = result.currentPrice ?? 0;
+    }
+    if (!form.acquiredAt) {
+        form.acquiredAt = todayDateString();
+    }
 }
 
 // Pre-fill a form for "观察" (watch only, no position) from a hot list item.
@@ -92,6 +133,8 @@ export function hotItemToWatchForm(item: HotItem): ItemFormModel {
         id: '',
         symbol: item.symbol,
         name: item.name,
+        defaultName: item.name,
+        hasCustomName: false,
         market: item.market,
         currency: item.currency,
         quantity: 0,
@@ -111,6 +154,8 @@ export function hotItemToPositionForm(item: HotItem): ItemFormModel {
         id: '',
         symbol: item.symbol,
         name: item.name,
+        defaultName: item.name,
+        hasCustomName: false,
         market: item.market,
         currency: item.currency,
         quantity: 0,
@@ -149,6 +194,8 @@ export function mapItemToForm(item: WatchlistItem): ItemFormModel {
         id: item.id,
         symbol: item.symbol,
         name: item.name,
+        defaultName: item.defaultName || item.name,
+        hasCustomName: Boolean(item.hasCustomName),
         market: item.market,
         currency: item.currency,
         quantity: item.quantity,
@@ -194,6 +241,8 @@ export function serialiseItemForm(form: ItemFormModel): Omit<
         id: form.id,
         symbol: form.symbol,
         name: form.name,
+        defaultName: form.defaultName,
+        hasCustomName: form.hasCustomName,
         market: form.market,
         currency: form.currency,
         quantity: form.quantity || 0,

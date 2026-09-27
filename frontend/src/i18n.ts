@@ -440,6 +440,7 @@ const messages: Record<SupportedLocale, TranslationTree> = {
             editNameLabel: '名称',
             editBuiltinNote: '内置证券的编辑会作为覆盖保留，升级内置数据后依然生效。',
             editFailed: '修改失败',
+            resetName: '恢复默认名称',
             emptyActive: '暂无生效成员',
             emptyActiveHint: '通过上方搜索把标的加入当前证券池，加入后会永久保留。',
             emptyExcluded: '暂无已删除的标的',
@@ -534,6 +535,7 @@ const messages: Record<SupportedLocale, TranslationTree> = {
                     tags: '标签',
                     thesis: '策略备注',
                 },
+                resetName: '恢复默认',
                 positionDerived: '持仓数量与成本价由定投记录计算。',
             },
             dcaDetail: {
@@ -1046,6 +1048,7 @@ const messages: Record<SupportedLocale, TranslationTree> = {
             editNameLabel: 'Name',
             editBuiltinNote: 'Edits to built-in securities are kept as an overlay and survive built-in data upgrades.',
             editFailed: 'Failed to update',
+            resetName: 'Restore default name',
             emptyActive: 'No active members',
             emptyActiveHint: 'Add instruments via the search box above; additions stay in this pool permanently.',
             emptyExcluded: 'No deleted members',
@@ -1140,6 +1143,7 @@ const messages: Record<SupportedLocale, TranslationTree> = {
                     tags: 'Tags',
                     thesis: 'Strategy Notes',
                 },
+                resetName: 'Restore default',
                 positionDerived: 'Position size and cost price are calculated from DCA records.',
             },
             dcaDetail: {

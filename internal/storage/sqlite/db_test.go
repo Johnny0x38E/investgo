@@ -70,7 +70,7 @@ func TestApplyMigrationsIsIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("SchemaVersion() error = %v", err)
 	}
-	if version != 2 {
-		t.Fatalf("SchemaVersion() = %d; want 2", version)
+	if version != 3 {
+		t.Fatalf("SchemaVersion() = %d; want 3", version)
 	}
 }

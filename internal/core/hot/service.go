@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	ttlcache "investgo/internal/common/cache"
@@ -348,7 +349,29 @@ func (s *HotService) loadHotItemsForSeeds(ctx context.Context, seeds []hotSeed, 
 
 	category := categoryForHotSeeds(seeds)
 	sourceID := effectivePoolQuoteSource(category, resolveHotQuoteSource(category, options))
-	return s.fetchPoolQuotes(ctx, seeds, sourceID)
+	items, err := s.fetchPoolQuotes(ctx, seeds, sourceID)
+	if err != nil {
+		return nil, err
+	}
+	applyCustomSeedNames(items, seeds)
+	return items, nil
+}
+
+func applyCustomSeedNames(items []core.HotItem, seeds []hotSeed) {
+	custom := make(map[string]string, len(seeds))
+	for _, seed := range seeds {
+		if seed.CustomName && strings.TrimSpace(seed.Name) != "" {
+			custom[seed.Symbol+"|"+seed.Market] = seed.Name
+		}
+	}
+	if len(custom) == 0 {
+		return
+	}
+	for index := range items {
+		if name, ok := custom[items[index].Symbol+"|"+items[index].Market]; ok {
+			items[index].Name = name
+		}
+	}
 }
 
 // categoryForHotSeeds infers the HotCategory from the market field of the first seed.

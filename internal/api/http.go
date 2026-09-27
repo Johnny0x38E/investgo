@@ -83,6 +83,7 @@ func (h *Handler) buildMux() *http.ServeMux {
 	mux.HandleFunc("DELETE /pools/{id}/members/{instrumentId}", h.handleDeletePoolMember)
 	mux.HandleFunc("POST /pools/{id}/members/{instrumentId}/restore", h.handleRestorePoolMember)
 	mux.HandleFunc("GET /history", h.handleHistory)
+	mux.HandleFunc("GET /lookup", h.handleLookup)
 	mux.HandleFunc("POST /refresh", h.handleRefresh)
 	mux.HandleFunc("POST /open-external", h.handleOpenExternal)
 	mux.HandleFunc("PUT /settings", h.handleUpdateSettings)

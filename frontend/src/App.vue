@@ -591,6 +591,7 @@
             @hot-watch-item="openHotWatchDialog"
             @hot-unwatch-item="unwatchHotItem"
             @hot-open-position="openHotPositionDialog"
+            @hot-state-changed="loadLocalState"
             @update:search="search = $event"
             @add-item="openItemDialog()"
             @edit-item="openItemDialog"

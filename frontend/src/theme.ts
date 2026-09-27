@@ -27,7 +27,12 @@ export const investGoPreset = definePreset(Aura, {
     },
     semantic: {
         primary: palette(themeSeeds.blue),
-        formField: { borderRadius: 'var(--radius-control)' },
+        formField: {
+            borderRadius: 'var(--radius-control)',
+            fontSize: '13px',
+            paddingX: '0.75rem',
+            paddingY: '0',
+        },
         content: { borderRadius: 'var(--radius-panel)' },
         overlay: {
             select: { borderRadius: 'var(--radius-panel)' },
@@ -38,6 +43,12 @@ export const investGoPreset = definePreset(Aura, {
         navigation: { item: { borderRadius: 'var(--radius-control)' } },
     },
     components: {
+        dialog: {
+            title: {
+                fontSize: '13px',
+                fontWeight: '600',
+            },
+        },
         button: {
             root: {
                 paddingX: '0.875rem',

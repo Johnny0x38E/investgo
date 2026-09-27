@@ -515,9 +515,12 @@
 
     .overview-loading-grid,
     .overview-stack {
+        --overview-row-block: 48px;
+        --overview-list-gap: 8px;
+        --overview-visible-rows: 3;
         display: grid;
-        grid-template-rows: 260px minmax(0, 1fr);
-        gap: 36px;
+        grid-template-rows: 280px minmax(0, 1fr);
+        gap: 16px;
         padding-bottom: 12px;
         min-height: 0;
         min-width: 0;
@@ -531,8 +534,12 @@
         height: 100%;
         display: flex;
         flex-direction: column;
-        gap: 16px;
+        gap: 12px;
         overflow: hidden;
+    }
+
+    .overview-card-top {
+        gap: 20px;
     }
 
     .overview-breakdown,
@@ -608,10 +615,13 @@
     .overview-breakdown-list {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 8px 16px;
+        gap: var(--overview-list-gap) 16px;
         overflow-y: auto;
         overflow-x: hidden;
-        min-height: 0;
+        min-height: calc(
+            var(--overview-visible-rows) * var(--overview-row-block) + (var(--overview-visible-rows) - 1) *
+                var(--overview-list-gap)
+        );
         min-width: 0;
         align-content: start;
     }
@@ -626,10 +636,12 @@
     }
 
     .overview-breakdown-row {
+        min-height: var(--overview-row-block);
         padding: 4px 8px;
         border: none;
         background: transparent;
         display: grid;
+        align-content: start;
         gap: 4px;
     }
 
@@ -642,6 +654,7 @@
 
     .overview-breakdown-line strong {
         font-size: 11px;
+        line-height: 1.3;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -650,6 +663,7 @@
     .overview-breakdown-pct,
     .overview-breakdown-value {
         font-size: 10px;
+        line-height: 1.3;
         color: var(--muted);
     }
 
@@ -751,7 +765,7 @@
     @media (max-width: 1180px) {
         .overview-loading-grid,
         .overview-stack {
-            grid-template-rows: 250px minmax(0, 1fr);
+            grid-template-rows: 270px minmax(0, 1fr);
         }
 
         .overview-head {

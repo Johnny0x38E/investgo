@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { computed } from 'vue';
+    import { computed, onBeforeUnmount, ref, watch } from 'vue';
     import Button from 'primevue/button';
     import Dialog from 'primevue/dialog';
     import InputNumber from 'primevue/inputnumber';
@@ -7,9 +7,11 @@
     import Select from 'primevue/select';
     import Textarea from 'primevue/textarea';
 
+    import { ApiAbortError, api } from '../../api';
     import { currencyOptions, getMarketOptions } from '../../constants';
+    import { applySymbolLookup } from '../../forms';
     import { useI18n } from '../../i18n';
-    import type { ItemFormModel } from '../../types';
+    import type { ItemFormModel, SymbolLookup } from '../../types';
 
     const props = defineProps<{
         visible: boolean;
@@ -33,6 +35,127 @@
 
     // The backend derives position size and cost price from valid DCA records.
     const hasDCA = computed(() => props.form.dcaEntries.some((e) => (e.amount ?? 0) > 0 && (e.shares ?? 0) > 0));
+
+    const lastLookupKey = ref('');
+    let lookupTimer = 0;
+    let lookupAbort: AbortController | null = null;
+
+    function normalizeLookupKey(symbol: string, market: string): string {
+        return `${symbol.trim().toUpperCase().replace(/\s/g, '')}|${market}`;
+    }
+
+    function symbolLooksComplete(symbol: string): boolean {
+        const value = symbol.trim().toUpperCase().replace(/\s/g, '');
+        if (!value) {
+            return false;
+        }
+        if (/^\d{6}(\.(SH|SZ|BJ))?$/.test(value) || /^(SH|SZ|BJ)\d{6}$/.test(value)) {
+            return true;
+        }
+        if (/^(HK)?\d{1,5}\.HK$/.test(value)) {
+            return true;
+        }
+        return /^[A-Z][A-Z0-9.-]{0,9}$/.test(value);
+    }
+
+    function cancelLookup(): void {
+        window.clearTimeout(lookupTimer);
+        lookupTimer = 0;
+        lookupAbort?.abort();
+        lookupAbort = null;
+    }
+
+    function rememberOpenedSymbol(): void {
+        lastLookupKey.value = normalizeLookupKey(props.form.symbol, props.form.market);
+    }
+
+    async function lookupSymbol(force: boolean): Promise<void> {
+        const symbol = props.form.symbol.trim();
+        if (!symbol) {
+            return;
+        }
+        if (!force && !symbolLooksComplete(symbol)) {
+            return;
+        }
+
+        const requestKey = normalizeLookupKey(symbol, props.form.market);
+        if (requestKey === lastLookupKey.value) {
+            return;
+        }
+
+        lookupAbort?.abort();
+        const controller = new AbortController();
+        lookupAbort = controller;
+
+        try {
+            const params = new URLSearchParams({ symbol, market: props.form.market });
+            const result = await api<SymbolLookup>(`/api/lookup?${params.toString()}`, {
+                timeoutMs: 10000,
+                signal: controller.signal,
+            });
+            lastLookupKey.value = normalizeLookupKey(result.symbol, result.market);
+            applySymbolLookup(props.form, result, { watchOnly: Boolean(props.watchOnly) });
+            lastLookupKey.value = normalizeLookupKey(props.form.symbol, props.form.market);
+        } catch (error) {
+            if (error instanceof ApiAbortError) {
+                return;
+            }
+            // Ignore lookup failures; the user can still fill the form manually.
+        } finally {
+            if (lookupAbort === controller) {
+                lookupAbort = null;
+            }
+        }
+    }
+
+    function scheduleLookup(): void {
+        window.clearTimeout(lookupTimer);
+        lookupTimer = window.setTimeout(() => {
+            void lookupSymbol(false);
+        }, 400);
+    }
+
+    function lookupOnBlur(): void {
+        window.clearTimeout(lookupTimer);
+        void lookupSymbol(true);
+    }
+
+    function markNameCustom(): void {
+        const next = props.form.name.trim();
+        const fallback = props.form.defaultName.trim();
+        props.form.hasCustomName = next !== '' && next !== fallback;
+    }
+
+    function resetItemName(): void {
+        props.form.name = props.form.defaultName;
+        props.form.hasCustomName = false;
+    }
+
+    watch(
+        () => props.visible,
+        (visible) => {
+            if (visible) {
+                rememberOpenedSymbol();
+                return;
+            }
+            cancelLookup();
+        },
+        { immediate: true },
+    );
+
+    watch(
+        () => [props.form.symbol, props.form.market] as const,
+        () => {
+            if (!props.visible) {
+                return;
+            }
+            scheduleLookup();
+        },
+    );
+
+    onBeforeUnmount(() => {
+        cancelLookup();
+    });
 </script>
 
 <template>
@@ -53,11 +176,20 @@
         <div class="form-grid">
             <label>
                 <span>{{ t('dialogs.item.labels.symbol') }}</span>
-                <InputText v-model.trim="form.symbol" />
+                <InputText v-model.trim="form.symbol" @blur="lookupOnBlur" />
             </label>
             <label>
                 <span>{{ t('dialogs.item.labels.itemName') }}</span>
-                <InputText v-model.trim="form.name" />
+                <div class="item-name-field">
+                    <InputText v-model.trim="form.name" @update:model-value="markNameCustom" />
+                    <Button
+                        v-if="form.hasCustomName"
+                        size="small"
+                        text
+                        :label="t('dialogs.item.resetName')"
+                        @click="resetItemName"
+                    />
+                </div>
             </label>
             <label>
                 <span>{{ t('dialogs.item.labels.market') }}</span>
@@ -95,7 +227,7 @@
             <!-- Acquisition date is only relevant for holdings without DCA entries. -->
             <label v-if="!hasDCA && !props.watchOnly">
                 <span>{{ t('dialogs.item.labels.acquiredAt') }}</span>
-                <input v-model="form.acquiredAt" type="date" class="item-date-input" />
+                <input v-model="form.acquiredAt" type="date" />
             </label>
 
             <p v-if="hasDCA && !props.watchOnly" class="item-dialog-note">
@@ -140,21 +272,10 @@
         flex: 0 0 auto;
     }
 
-    input[type='date'].item-date-input {
-        width: 100%;
-        height: 36px;
-        padding: 0 12px;
-        font: 13px var(--font-ui);
-        color: var(--ink);
-        background: var(--control-bg);
-        border: 1px solid var(--border-strong);
-        border-radius: var(--radius-control);
-        outline: none;
-        box-sizing: border-box;
-        color-scheme: light dark;
-    }
-
-    input[type='date'].item-date-input:focus {
-        border-color: var(--accent);
+    .item-name-field {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 6px;
+        align-items: center;
     }
 </style>

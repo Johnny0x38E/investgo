@@ -14,9 +14,16 @@
 }
 
 .desk-dialog .p-dialog-header {
-    padding: 14px 18px 12px;
+    padding: 12px 16px 10px;
     border-bottom: 1px solid var(--border);
     background: var(--panel-strong);
+}
+
+.p-dialog.desk-dialog .p-dialog-title {
+    margin: 0;
+    font: 600 13px/1.25 var(--font-display);
+    letter-spacing: -0.015em;
+    color: var(--ink);
 }
 
 .desk-dialog .p-dialog-content {
@@ -48,6 +55,39 @@
     box-shadow: none;
 }
 
+.p-select,
+.p-inputnumber,
+.p-inputtext,
+.p-inputnumber-input {
+    height: var(--control-height);
+    min-height: var(--control-height);
+    box-sizing: border-box;
+}
+
+.p-select,
+.p-inputnumber {
+    display: flex;
+    align-items: center;
+    padding-block: 0;
+}
+
+.p-inputtext,
+.p-inputnumber-input,
+.p-select-label {
+    display: block;
+    height: calc(var(--control-height) - 2px);
+    padding-block: 0;
+    line-height: calc(var(--control-height) - 2px);
+}
+
+.p-select-dropdown {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    flex: none;
+}
+
 .p-select:hover,
 .p-inputnumber:hover,
 .p-inputtext:hover,
@@ -68,11 +108,17 @@
     color: var(--muted);
 }
 
-.p-select-label,
+.p-select-label.p-placeholder,
 .p-inputnumber-input::placeholder,
 .p-inputtext::placeholder,
-.p-textarea::placeholder {
+.p-textarea::placeholder,
+input::placeholder,
+textarea::placeholder {
     color: var(--muted);
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0;
+    opacity: 1;
 }
 
 .p-select-overlay {
@@ -110,10 +156,10 @@
     font-size: 12px;
 }
 
-.p-dialog-title,
 .p-inputtext,
 .p-select-label,
 .p-inputnumber-input,
+.p-textarea,
 .p-message-text,
 .p-tag {
     font-size: 13px;

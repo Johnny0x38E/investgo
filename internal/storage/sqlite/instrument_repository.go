@@ -80,22 +80,22 @@ func (r *InstrumentRepository) Upsert(ctx context.Context, value instrument.Inst
 
 	stored, _, err := scanInstrument(tx.QueryRowContext(ctx, `
 		INSERT INTO instruments(
-			id, asset_class, symbol, name, market, exchange, base_asset,
+			id, asset_class, symbol, name, display_name, market, exchange, base_asset,
 			quote_currency, status, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(asset_class, market, exchange, symbol) DO UPDATE SET
 			name = excluded.name,
 			base_asset = excluded.base_asset,
 			quote_currency = excluded.quote_currency,
 			status = excluded.status,
 			updated_at = excluded.updated_at
-		RETURNING id, asset_class, symbol, name, market, exchange, base_asset,
-		          quote_currency, status, created_at, updated_at
+		RETURNING `+instrumentReturning+`
 	`,
 		normalized.ID,
 		normalized.AssetClass,
 		normalized.Symbol,
 		normalized.Name,
+		normalized.DisplayName,
 		normalized.Market,
 		normalized.Exchange,
 		normalized.BaseAsset,
@@ -109,6 +109,29 @@ func (r *InstrumentRepository) Upsert(ctx context.Context, value instrument.Inst
 	}
 	if err := tx.Commit(); err != nil {
 		return instrument.Instrument{}, fmt.Errorf("commit instrument upsert: %w", err)
+	}
+	return stored, nil
+}
+
+func (r *InstrumentRepository) SetDisplayName(ctx context.Context, id, displayName string) (instrument.Instrument, error) {
+	if err := r.ready(); err != nil {
+		return instrument.Instrument{}, err
+	}
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return instrument.Instrument{}, &instrument.ValidationError{Field: "id", Message: "is required"}
+	}
+	stored, found, err := scanInstrument(r.db.QueryRowContext(ctx, `
+		UPDATE instruments
+		SET display_name = ?, updated_at = ?
+		WHERE id = ?
+		RETURNING `+instrumentReturning+`
+	`, strings.TrimSpace(displayName), formatInstrumentTime(time.Now().UTC()), id))
+	if err != nil {
+		return instrument.Instrument{}, fmt.Errorf("set display name %s: %w", id, err)
+	}
+	if !found {
+		return instrument.Instrument{}, fmt.Errorf("set display name: instrument %s does not exist", id)
 	}
 	return stored, nil
 }
@@ -211,9 +234,13 @@ func (r *InstrumentRepository) ready() error {
 	return nil
 }
 
+const instrumentReturning = `
+	id, asset_class, symbol, name, display_name, market, exchange, base_asset,
+	quote_currency, status, created_at, updated_at
+`
+
 const instrumentSelect = `
-	SELECT id, asset_class, symbol, name, market, exchange, base_asset,
-	       quote_currency, status, created_at, updated_at
+	SELECT ` + instrumentReturning + `
 	FROM instruments
 `
 
@@ -232,6 +259,7 @@ func scanInstrument(row rowScanner) (instrument.Instrument, bool, error) {
 		&assetClass,
 		&value.Symbol,
 		&value.Name,
+		&value.DisplayName,
 		&value.Market,
 		&value.Exchange,
 		&value.BaseAsset,

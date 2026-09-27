@@ -60,7 +60,7 @@ func filterHotSeeds(seeds []hotSeed, keyword string) []hotSeed {
 
 	filtered := make([]hotSeed, 0, len(seeds))
 	for _, seed := range seeds {
-		if strings.Contains(strings.ToLower(seed.Name), keyword) || strings.Contains(strings.ToLower(seed.Symbol), keyword) {
+		if hotKeywordMatches(seed.Name, seed.Symbol, keyword) {
 			filtered = append(filtered, seed)
 		}
 	}
@@ -78,11 +78,22 @@ func filterHotItems(items []core.HotItem, keyword string) []core.HotItem {
 
 	filtered := make([]core.HotItem, 0, len(items))
 	for _, item := range items {
-		if strings.Contains(strings.ToLower(item.Name), keyword) || strings.Contains(strings.ToLower(item.Symbol), keyword) {
+		if hotKeywordMatches(item.Name, item.Symbol, keyword) {
 			filtered = append(filtered, item)
 		}
 	}
 	return filtered
+}
+
+// hotKeywordMatches reports whether name or symbol contains keyword.
+// US share-class tickers are stored as BRK.B in the local pool and BRK-B by
+// Yahoo; treat '.' and '-' as the same character in the symbol.
+func hotKeywordMatches(name, symbol, keyword string) bool {
+	if strings.Contains(strings.ToLower(name), keyword) {
+		return true
+	}
+	foldedKeyword := strings.ReplaceAll(keyword, ".", "-")
+	return strings.Contains(strings.ReplaceAll(strings.ToLower(symbol), ".", "-"), foldedKeyword)
 }
 
 // mergeHotSeeds merges two hotSeed slices and returns a deduplicated new list.

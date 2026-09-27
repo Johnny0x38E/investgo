@@ -12,8 +12,13 @@ import (
 
 // applyQuoteToItem writes the latest quote data onto the given item in place.
 func applyQuoteToItem(item *core.WatchlistItem, quote core.Quote) {
-	if strings.TrimSpace(quote.Name) != "" {
-		item.Name = quote.Name
+	if name := strings.TrimSpace(quote.Name); name != "" {
+		if item.HasCustomName {
+			item.DefaultName = name
+		} else {
+			item.Name = name
+			item.DefaultName = name
+		}
 	}
 	item.CurrentPrice = quote.CurrentPrice
 	item.PreviousClose = quote.PreviousClose
@@ -42,6 +47,50 @@ func inheritLiveFields(item core.WatchlistItem, existing core.WatchlistItem) cor
 	}
 
 	return item
+}
+
+func resolveSavedDisplay(item *core.WatchlistItem, existing *core.WatchlistItem, requestedName string) {
+	official := strings.TrimSpace(item.DefaultName)
+	if official == "" {
+		official = strings.TrimSpace(item.Name)
+	}
+	if official == "" && existing != nil {
+		official = strings.TrimSpace(existing.DefaultName)
+		if official == "" {
+			official = strings.TrimSpace(existing.Name)
+		}
+	}
+	if official == "" {
+		official = requestedName
+	}
+	if official == "" {
+		official = item.Symbol
+	}
+
+	existingDefault := ""
+	if existing != nil {
+		existingDefault = strings.TrimSpace(existing.DefaultName)
+		if existingDefault == "" {
+			existingDefault = strings.TrimSpace(existing.Name)
+		}
+	}
+
+	custom := item.HasCustomName && requestedName != ""
+	if !custom && existing != nil && requestedName != "" && requestedName != existingDefault && requestedName != strings.TrimSpace(existing.Name) {
+		custom = true
+	}
+	if existing != nil && !item.HasCustomName && requestedName == existingDefault {
+		custom = false
+	}
+	if custom && requestedName != "" && requestedName != official {
+		item.Name = requestedName
+		item.DefaultName = official
+		item.HasCustomName = true
+		return
+	}
+	item.Name = official
+	item.DefaultName = official
+	item.HasCustomName = false
 }
 
 // countLiveQuotes returns the number of items that have received at least one live price update.

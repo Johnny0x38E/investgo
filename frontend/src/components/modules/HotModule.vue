@@ -28,11 +28,12 @@
         autoRefreshToken: number;
     }>();
 
-    defineEmits<{
+    const emit = defineEmits<{
         (event: 'watch-item', item: HotItem): void;
         (event: 'unwatch-item', item: HotItem): void;
         (event: 'open-position', item: HotItem): void;
         (event: 'update:marketGroup', value: HotMarketGroup): void;
+        (event: 'state-changed'): void;
     }>();
 
     const category = ref<HotCategory>('cn-a');
@@ -351,6 +352,11 @@
         await resetAndLoadWithOptions(forceRefresh);
     }
 
+    function onPoolChanged(): void {
+        void refreshHot(true);
+        emit('state-changed');
+    }
+
     function bindObserver(): void {
         if (!sentinelRef.value || typeof IntersectionObserver === 'undefined') {
             return;
@@ -567,7 +573,7 @@
         <PoolManagerDialog
             v-model:visible="managePoolsVisible"
             :market-group="marketGroup"
-            @changed="refreshHot(true)"
+            @changed="onPoolChanged"
         />
     </section>
 </template>

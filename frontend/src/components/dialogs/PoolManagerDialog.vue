@@ -280,16 +280,18 @@
         editName.value = '';
     }
 
-    async function saveEdit(member: PoolMember): Promise<void> {
-        if (editingId.value !== member.instrument.id) return;
+    async function saveEdit(member: PoolMember, resetName = false): Promise<void> {
+        if (editingId.value !== member.instrument.id && !resetName) return;
         const payload: UpdatePoolMemberRequest = {};
-        if (editSymbol.value.trim() && editSymbol.value.trim() !== member.instrument.symbol) {
+        if (!resetName && editSymbol.value.trim() && editSymbol.value.trim() !== member.instrument.symbol) {
             payload.symbol = editSymbol.value.trim();
         }
-        if (editName.value.trim() && editName.value.trim() !== member.instrument.name) {
+        if (resetName) {
+            payload.resetName = true;
+        } else if (editName.value.trim() && editName.value.trim() !== member.instrument.name) {
             payload.name = editName.value.trim();
         }
-        if (!payload.symbol && !payload.name) {
+        if (!payload.symbol && !payload.name && !payload.resetName) {
             cancelEdit();
             return;
         }
@@ -352,10 +354,11 @@
     <Dialog
         v-model:visible="visibleProxy"
         modal
+        :closable="false"
         :header="t('poolManager.title')"
         :style="{ width: 'min(860px, 94vw)' }"
         :breakpoints="{ '760px': '96vw' }"
-        class="pool-manager-dialog"
+        class="desk-dialog"
     >
         <div class="pool-manager-layout">
             <aside class="pool-manager-sidebar">
@@ -512,6 +515,14 @@
                             </template>
                             <template v-else-if="memberStatus === 'active'">
                                 <Button
+                                    v-if="member.instrument.hasCustomName"
+                                    size="small"
+                                    text
+                                    :label="t('poolManager.resetName')"
+                                    :disabled="Boolean(mutatingId)"
+                                    @click="saveEdit(member, true)"
+                                />
+                                <Button
                                     size="small"
                                     text
                                     icon="pi pi-pencil"
@@ -579,6 +590,9 @@
                 />
             </section>
         </div>
+        <template #footer>
+            <Button size="small" text :label="t('common.close')" @click="visibleProxy = false" />
+        </template>
     </Dialog>
 </template>
 
@@ -587,7 +601,6 @@
         display: grid;
         grid-template-columns: minmax(190px, 0.75fr) minmax(0, 2fr);
         min-height: 520px;
-        border-top: 1px solid var(--border);
     }
 
     .pool-manager-sidebar {

@@ -8,6 +8,7 @@ type Repository interface {
 	Get(ctx context.Context, id string) (Instrument, bool, error)
 	Find(ctx context.Context, identity Identity) (Instrument, bool, error)
 	Upsert(ctx context.Context, value Instrument) (Instrument, error)
+	SetDisplayName(ctx context.Context, id, displayName string) (Instrument, error)
 	GetProviderSymbol(ctx context.Context, instrumentID, providerID string) (ProviderSymbol, bool, error)
 	UpsertProviderSymbol(ctx context.Context, value ProviderSymbol) (ProviderSymbol, error)
 	DeleteProviderSymbol(ctx context.Context, instrumentID, providerID string) error

@@ -29,10 +29,11 @@ const (
 const sinaPoolConcurrency = 4
 
 type hotSeed struct {
-	Symbol   string
-	Name     string
-	Market   string
-	Currency string
+	Symbol     string
+	Name       string
+	Market     string
+	Currency   string
+	CustomName bool
 }
 
 // fetchPoolQuotes requests real-time quotes in batch for the predefined hot category constituent pool and returns them in a unified format.
