@@ -1,3 +1,12 @@
+:root {
+    /* 左右留白 = 外壳沟槽 + 表壳边框 + 单元格横向内边距。热门榜和持仓表共用，避免两边各写一个数。 */
+    --table-pad-x: 12px;
+    --table-pad-y: 10px;
+    --table-head-pad-y: 9px;
+    --table-action-size: 28px;
+    --table-action-gap: 4px;
+}
+
 .table-shell {
     min-height: 0;
     flex: 1 1 auto;
@@ -6,6 +15,13 @@
     border: 1px solid var(--border);
     background: var(--panel-strong);
     box-shadow: var(--shadow-soft);
+}
+
+.table-shell,
+.hot-table-shell {
+    /* 经典滚动条只占右侧，会把操作图标再往里推。两侧预留等宽槽后，图标到窗口边才对齐「标的」到侧栏分隔线。
+       macOS 叠加滚动条不占位，这条不会额外加宽。 */
+    scrollbar-gutter: stable both-edges;
 }
 
 .table-meta-row {
@@ -30,7 +46,7 @@
     position: sticky;
     top: 0;
     z-index: 1;
-    padding: 9px 12px;
+    padding: var(--table-head-pad-y) var(--table-pad-x);
     background: var(--panel-soft);
     color: var(--muted);
     font-size: 12px;
@@ -42,7 +58,7 @@
 
 .watch-table td,
 .hot-table td {
-    padding: 10px 12px;
+    padding: var(--table-pad-y) var(--table-pad-x);
     border-top: 1px solid var(--border);
     vertical-align: middle;
     background: var(--panel-strong);
@@ -50,14 +66,10 @@
 
 .watch-table td.watch-table-cell-dca,
 .watch-table td.table-action-cell,
-.hot-table td.table-action-cell {
-    padding-left: 12px;
-    padding-right: 12px;
-}
-
+.hot-table td.table-action-cell,
 .watch-table td.watch-table-sticky-actions {
-    padding-left: 16px;
-    padding-right: 16px;
+    padding-left: var(--table-pad-x);
+    padding-right: var(--table-pad-x);
 }
 
 .watch-table-sticky,
