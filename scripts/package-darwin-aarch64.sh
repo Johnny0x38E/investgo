@@ -9,6 +9,8 @@ set -euo pipefail
 # Notes:
 # - Version is injected at build/package time and is used for the app metadata and DMG filename.
 # - Use --dev when you want the packaged app to support F12 Web Inspector.
+# - The macOS build includes -tags private_mac_apis so Liquid Glass and OpenDevTools
+#   are not no-ops. Set PRIVATE_MAC_APIS=0 for an App Store or public-API-only binary.
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DARWIN_PLATFORM_NAME="${DARWIN_PLATFORM_NAME:-aarch64}"
@@ -47,7 +49,9 @@ print_usage() {
     '' \
     'Notes:' \
     '  - Version is injected at build/package time and is also used in the DMG filename.' \
-    '  - Use --dev to package an app that supports F12 Web Inspector.'
+    '  - Use --dev to package an app that supports F12 Web Inspector.' \
+    '  - Packaging includes -tags private_mac_apis so Liquid Glass and OpenDevTools work.' \
+    '    Set PRIVATE_MAC_APIS=0 to omit that tag for an App Store or public-API-only binary.'
 }
 
 while [[ $# -gt 0 ]]; do

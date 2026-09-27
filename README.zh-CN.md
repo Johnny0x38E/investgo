@@ -14,7 +14,7 @@
 
 ## 技术栈
 
-- Go 1.27 与 Wails v3 alpha.54
+- Go 1.27 与 Wails v3 beta.26
 - Vue 3、TypeScript、PrimeVue、Vite 和 Chart.js
 - 多个行情数据 provider，以及用于汇率数据的 Frankfurter
 
@@ -59,9 +59,15 @@ VERSION=1.0.0 ./scripts/package-darwin-x86_64.sh    # Intel
 
 需要 Web Inspector 时，给 macOS 脚本加上 `--dev`。产物写入 `build/bin/`。Windows 当前只生成可运行的 `.exe`，暂未提供安装程序。
 
+macOS 桌面构建会带上 `-tags private_mac_apis`。从 Wails v3 beta.19 起，没有这个 tag 时，Liquid Glass 的 webview 透明和 `OpenDevTools` 会被编译成空操作，所以 Apple Silicon 和 Intel 脚本默认都会带上它（包括发布用的 DMG）。`--dev` 仍会额外加上 `devtools` tag；在 macOS 上，检查器同样依赖 `private_mac_apis`。App Store 或仅使用公开 API 的构建可以关掉它：
+
+```bash
+PRIVATE_MAC_APIS=0 VERSION=1.0.0 ./scripts/package-darwin-aarch64.sh
+```
+
 ## 说明
 
-- Wails v3 仍处于 alpha 阶段，API 和打包细节可能变化。
+- Wails v3 仍处于 beta 阶段，API 和打包细节可能变化。
 - 公开的 macOS 构建未签名。可信应用首次被 macOS 拦截时，先到“系统设置 > 隐私与安全性”选择“仍要打开”。如果仍然无法打开，可执行：
 
     ```bash

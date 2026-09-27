@@ -9,6 +9,9 @@ set -euo pipefail
 # Notes:
 # - Version is injected at build time. If VERSION/APP_VERSION is omitted, the app shows "dev".
 # - Use --dev when you want the binary to support F12 Web Inspector.
+# - Desktop builds pass -tags private_mac_apis. From Wails v3 beta.19, Liquid Glass
+#   webview transparency and OpenDevTools are no-ops without that tag. Set
+#   PRIVATE_MAC_APIS=0 for an App Store or public-API-only binary.
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DARWIN_GOARCH="${DARWIN_GOARCH:-arm64}"
@@ -28,7 +31,9 @@ print_usage() {
     '' \
     'Notes:' \
     '  - Version is injected at build time. Without VERSION/APP_VERSION, the app shows "dev".' \
-    '  - Use --dev to enable F12 Web Inspector support in the built app.'
+    '  - Use --dev to enable F12 Web Inspector support in the built app.' \
+    '  - Builds include -tags private_mac_apis so Liquid Glass and OpenDevTools work.' \
+    '    Set PRIVATE_MAC_APIS=0 to omit that tag for an App Store or public-API-only binary.'
 }
 
 while [[ $# -gt 0 ]]; do
@@ -66,12 +71,18 @@ export CGO_CFLAGS="${CGO_CFLAGS:--mmacosx-version-min=$MACOS_MIN_VERSION}"
 export CGO_LDFLAGS="${CGO_LDFLAGS:--mmacosx-version-min=$MACOS_MIN_VERSION}"
 
 LDFLAGS="-s -w -X main.appVersion=$APP_VERSION"
+# private_mac_apis keeps the private WKWebView calls Wails needs for Liquid Glass
+# transparency and the inspector. Without it those calls compile to no-ops.
+PRIVATE_MAC_APIS="${PRIVATE_MAC_APIS:-1}"
 BUILD_TAGS="production"
+if [[ "$PRIVATE_MAC_APIS" != "0" ]]; then
+  BUILD_TAGS="$BUILD_TAGS private_mac_apis"
+fi
 if [[ "$DEV_BUILD" == "1" ]]; then
   LDFLAGS="$LDFLAGS -X main.defaultTerminalLogging=1 -X main.defaultDevToolsBuild=1"
-  BUILD_TAGS="production devtools"
+  BUILD_TAGS="$BUILD_TAGS devtools"
 fi
 
 go build -tags "$BUILD_TAGS" -trimpath -ldflags="$LDFLAGS" -o "$OUTPUT_FILE" .
 
-printf 'Built %s\n' "$OUTPUT_FILE"
+printf 'Built %s (tags: %s)\n' "$OUTPUT_FILE" "$BUILD_TAGS"
