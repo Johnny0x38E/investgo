@@ -18,7 +18,7 @@
     import { useItemDialog } from './composables/useItemDialog';
     import { useAlertDialog } from './composables/useAlertDialog';
     import { useConfirmDialog } from './composables/useConfirmDialog';
-    import { defaultSettings, normaliseSettings } from './forms';
+    import { defaultSettings, maxHotCacheTTLSeconds, minHotCacheTTLSeconds, normaliseSettings } from './forms';
     import { setFormatterSettings } from './format';
     import { setI18nLocale, translate } from './i18n';
     import { applyPrimeVueColorTheme } from './theme';
@@ -224,7 +224,8 @@
     }
 
     function autoRefreshIntervalMs(): number {
-        return Math.max(10, settings.value.hotCacheTTLSeconds || defaultSettings.hotCacheTTLSeconds) * 1000;
+        const seconds = settings.value.hotCacheTTLSeconds || defaultSettings.hotCacheTTLSeconds;
+        return Math.min(maxHotCacheTTLSeconds, Math.max(minHotCacheTTLSeconds, seconds)) * 1000;
     }
 
     function scheduleAutoRefresh(): void {

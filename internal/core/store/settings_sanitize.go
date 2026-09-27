@@ -15,7 +15,9 @@ import (
 // keeps the stored value. The Vue settings form sends every field on save, so
 // an empty proxyURL or API key is an intentional clear. Other empty strings
 // are ignored because those settings are required enums. A present
-// hotCacheTTLSeconds replaces the stored TTL and must be at least 10 seconds.
+// hotCacheTTLSeconds replaces the stored TTL. Values below
+// core.MinHotCacheTTLSeconds are rejected. Values above
+// core.MaxHotCacheTTLSeconds (one hour) are clamped.
 // developerMode and useNativeTitleBar change only when the JSON includes them,
 // so a partial body cannot reset them to false.
 type SettingsUpdate struct {
@@ -78,9 +80,10 @@ func sanitiseSettings(
 		settings.UseNativeTitleBar = *input.UseNativeTitleBar
 	}
 
-	if settings.HotCacheTTLSeconds < 10 {
+	if settings.HotCacheTTLSeconds < core.MinHotCacheTTLSeconds {
 		return core.AppSettings{}, errors.New("Cache TTL must be at least 10 seconds")
 	}
+	settings.HotCacheTTLSeconds = core.ClampHotCacheTTLSeconds(settings.HotCacheTTLSeconds)
 	settings.CNQuoteSource = normaliseQuoteSourceIDForSettings(settings.CNQuoteSource, "CN-A", quoteProviders, quoteSourceOptions)
 	settings.HKQuoteSource = normaliseQuoteSourceIDForSettings(settings.HKQuoteSource, "HK-MAIN", quoteProviders, quoteSourceOptions)
 	settings.USQuoteSource = normaliseQuoteSourceIDForSettings(settings.USQuoteSource, "US-STOCK", quoteProviders, quoteSourceOptions)

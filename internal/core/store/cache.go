@@ -31,8 +31,8 @@ func (s *Store) derivedCacheTTL() time.Duration {
 }
 
 func (s *Store) derivedCacheTTLLocked() time.Duration {
-	seconds := s.state.Settings.HotCacheTTLSeconds
-	if seconds < 10 {
+	seconds := core.ClampHotCacheTTLSeconds(s.state.Settings.HotCacheTTLSeconds)
+	if seconds < core.MinHotCacheTTLSeconds {
 		seconds = 60
 	}
 	return time.Duration(seconds) * time.Second

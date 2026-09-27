@@ -11,6 +11,12 @@ import type {
     WatchlistItem,
 } from './types';
 
+// Hot-cache / auto-refresh TTL bounds, in seconds.
+// Keep in sync with MinHotCacheTTLSeconds and MaxHotCacheTTLSeconds in internal/core/hot_cache_ttl.go.
+// The maximum is one hour so quote, overview, and hot caches cannot stay stale longer than that.
+export const minHotCacheTTLSeconds = 10;
+export const maxHotCacheTTLSeconds = 3600;
+
 // Default settings used during frontend initialization; must stay in sync with backend defaults.
 export const defaultSettings: AppSettings = {
     hotCacheTTLSeconds: 60,
@@ -36,10 +42,17 @@ export const defaultSettings: AppSettings = {
     useNativeTitleBar: false,
 };
 
+function boundHotCacheTTLSeconds(seconds: number | null | undefined): number {
+    if (seconds == null || !Number.isFinite(seconds)) {
+        return defaultSettings.hotCacheTTLSeconds;
+    }
+    return Math.min(maxHotCacheTTLSeconds, seconds);
+}
+
 // Normalize a backend settings snapshot into the frontend-owned settings shape.
 export function normaliseSettings(input: Partial<AppSettings> | null | undefined): AppSettings {
     return {
-        hotCacheTTLSeconds: input?.hotCacheTTLSeconds ?? defaultSettings.hotCacheTTLSeconds,
+        hotCacheTTLSeconds: boundHotCacheTTLSeconds(input?.hotCacheTTLSeconds),
         cnQuoteSource: input?.cnQuoteSource ?? defaultSettings.cnQuoteSource,
         hkQuoteSource: input?.hkQuoteSource ?? defaultSettings.hkQuoteSource,
         usQuoteSource: input?.usQuoteSource ?? defaultSettings.usQuoteSource,

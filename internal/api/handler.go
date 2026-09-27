@@ -144,7 +144,7 @@ func (h *Handler) handleHot(writer http.ResponseWriter, request *http.Request) {
 		options.CNQuoteSource = settings.CNQuoteSource
 		options.HKQuoteSource = settings.HKQuoteSource
 		options.USQuoteSource = settings.USQuoteSource
-		options.CacheTTL = time.Duration(settings.HotCacheTTLSeconds) * time.Second
+		options.CacheTTL = time.Duration(core.ClampHotCacheTTLSeconds(settings.HotCacheTTLSeconds)) * time.Second
 	}
 	options.BypassCache = parseBoolQuery(request.URL.Query().Get("force"))
 
