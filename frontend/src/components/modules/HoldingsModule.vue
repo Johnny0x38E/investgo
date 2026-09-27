@@ -242,9 +242,10 @@
         vertical-align: middle;
     }
 
+    /* 与热门榜相同：首列吸收剩余宽度，避免 fixed 布局把操作列拉宽后图标偏离右缘。 */
     .watch-table th:first-child,
     .watch-table td:first-child {
-        width: 34%;
+        width: auto;
     }
 
     .watch-table th:nth-child(2),
@@ -285,22 +286,26 @@
         max-width: 124px;
     }
 
-    .watch-table td.watch-table-cell-dca,
+    .watch-table td.watch-table-cell-dca {
+        padding-left: var(--table-pad-x);
+        padding-right: var(--table-pad-x);
+    }
+
     .watch-table td.table-action-cell {
-        padding-left: 14px;
-        padding-right: 14px;
+        padding-left: var(--table-pad-x);
+        padding-right: calc(var(--table-pad-x) - (var(--table-action-size) - var(--table-icon-size)) / 2);
     }
 
     .watch-table th.watch-table-sticky-dca {
-        padding-left: 14px;
+        padding-left: var(--table-pad-x);
         padding-right: 8px;
         white-space: nowrap;
     }
 
     .watch-table .table-action-stack {
         width: 100%;
-        justify-content: center;
-        gap: 6px;
+        justify-content: flex-end;
+        gap: var(--table-action-gap);
     }
 
     .watch-table .table-action-stack-centered {

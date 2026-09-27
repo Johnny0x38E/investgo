@@ -683,6 +683,10 @@
 
     .hot-table {
         min-width: 900px;
+        --hot-metric-width: 124px;
+        --hot-cap-width: 136px;
+        /* 两枚图标 + 间距 + 两侧内边距。sticky 的 right 必须用同一个宽度，横向滚动才不会重叠。 */
+        --hot-actions-width: calc(var(--table-pad-x) * 2 + var(--table-action-size) * 2 + var(--table-action-gap));
     }
 
     .hot-feedback,
@@ -717,64 +721,59 @@
         line-height: 1;
     }
 
+    /* 首列吸收剩余宽度。写成百分比时，fixed 布局会按比例拉宽后面的列，
+       操作图标居中后就会比「标的」文字离边缘更远。 */
     .hot-table th:first-child,
     .hot-table td:first-child {
-        width: 42%;
+        width: auto;
     }
 
     .hot-table th:nth-child(2),
-    .hot-table td:nth-child(2) {
-        width: 124px;
-    }
-
+    .hot-table td:nth-child(2),
     .hot-table th:nth-child(3),
     .hot-table td:nth-child(3) {
-        width: 124px;
+        width: var(--hot-metric-width);
     }
 
     .hot-table th:nth-child(4),
     .hot-table td:nth-child(4) {
-        width: 136px;
+        width: var(--hot-cap-width);
     }
 
     .hot-table th.hot-table-sticky-volume,
     .hot-table td.hot-table-sticky-volume {
-        right: 88px;
-        width: 124px;
-        min-width: 124px;
-        max-width: 124px;
+        right: var(--hot-actions-width);
+        width: var(--hot-metric-width);
+        min-width: var(--hot-metric-width);
+        max-width: var(--hot-metric-width);
     }
 
     .hot-table th.hot-table-sticky-actions,
     .hot-table td.hot-table-sticky-actions {
         right: 0;
-        width: 88px;
-        min-width: 88px;
-        max-width: 88px;
+        width: var(--hot-actions-width);
+        min-width: var(--hot-actions-width);
+        max-width: var(--hot-actions-width);
     }
 
-    .hot-table td.table-action-cell {
-        padding-left: 12px;
-        padding-right: 12px;
-    }
-
+    /* 右对齐，避免列内多余空间把图标从窗口边往里推。字形补偿在表格样式的右内边距里。 */
     .hot-table .table-action-stack {
         width: 100%;
-        justify-content: center;
-        gap: 4px;
+        justify-content: flex-end;
+        gap: var(--table-action-gap);
     }
 
     .hot-table .table-action-cell :deep(.p-button) {
-        width: 28px;
-        height: 28px;
-        min-width: 28px;
+        width: var(--table-action-size);
+        height: var(--table-action-size);
+        min-width: var(--table-action-size);
         padding: 0;
     }
 
     .hot-table .table-action-cell :deep(.hot-add-button.p-button) {
         width: auto;
         min-width: 0;
-        height: 28px;
+        height: var(--table-action-size);
         padding: 0.25rem 0.7rem;
         gap: 0.35rem;
     }
