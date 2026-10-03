@@ -44,6 +44,11 @@ func EnsureSQLiteState(ctx context.Context, jsonPath, databasePath string) (Migr
 		return result, fmt.Errorf("load legacy JSON state: %w", err)
 	}
 
+	// Automatic update checks are on by default. A database created here has no
+	// stored preference yet, so seed the default now; databases upgraded from an
+	// older schema get the same default from migration 004.
+	legacyState.Settings.AutoUpdateEnabled = true
+
 	temporaryPath := databasePath + ".tmp"
 	cleanupSQLiteFiles(temporaryPath)
 	published := false

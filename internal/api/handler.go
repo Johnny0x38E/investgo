@@ -220,6 +220,10 @@ func (h *Handler) handleUpdateSettings(writer http.ResponseWriter, request *http
 		writeClassifiedError(writer, request, err)
 		return
 	}
+	if h.update != nil {
+		// Re-evaluate the automatic check schedule with the saved toggles.
+		h.update.SettingsChanged()
+	}
 	if h.proxyTransport != nil {
 		if snapshot.Settings.ProxyMode == "system" {
 			platform.ApplySystemProxy(h.logs)

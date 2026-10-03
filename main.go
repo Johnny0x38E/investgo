@@ -10,7 +10,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
+	"time"
 
 	"investgo/internal/api"
 	"investgo/internal/core"
@@ -21,8 +23,11 @@ import (
 	"investgo/internal/logger"
 	"investgo/internal/platform"
 	sqlitestorage "investgo/internal/storage/sqlite"
+	"investgo/internal/update"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
+	wailsupdater "github.com/wailsapp/wails/v3/pkg/updater"
+	"github.com/wailsapp/wails/v3/pkg/updater/providers/github"
 )
 
 var (
@@ -42,6 +47,10 @@ var frontendAssets embed.FS
 var appIcon []byte
 
 func main() {
+	// The updater helper replaces the binary and relaunches the app. It must run
+	// before any application state is touched.
+	wailsupdater.HandleHelperMode()
+
 	logs := logger.NewLogBook(400)
 	if terminalLoggingEnabled() {
 		logs.EnableConsole(os.Stderr)
@@ -145,9 +154,21 @@ func main() {
 		log.Fatalf("load frontend assets: %v", err)
 	}
 
+	apiHandler := api.NewHandler(appStore, hotService, logs, proxyTransport, poolService)
 	mux := http.NewServeMux()
-	mux.Handle("/api/", api.NewHandler(appStore, hotService, logs, proxyTransport, poolService))
+	mux.Handle("/api/", apiHandler)
 	mux.Handle("/", application.BundledAssetFileServer(frontendFS))
+
+	// Update checks are enabled by default and controlled by settings. The
+	// service owns the schedule; the Wails updater performs lookup, download,
+	// verification, and restart.
+	updateCtx, cancelUpdate := context.WithCancel(context.Background())
+	defer cancelUpdate()
+	updateService := update.New(update.Options{
+		CurrentVersion: appVersion,
+		Settings:       appStore.CurrentSettings,
+		Logs:           logs,
+	})
 
 	app := application.New(application.Options{
 		Name:        "InvestGo",
@@ -166,6 +187,7 @@ func main() {
 		},
 		OnShutdown: func() {
 			logs.Info("backend", "app", "shutdown requested")
+			updateService.Stop()
 			// Flush pending writes before closing SQLite so dirty state is not lost.
 			if err := appStore.Flush(); err != nil {
 				logs.Error("backend", "storage", fmt.Sprintf("flush state on shutdown failed: %v", err))
@@ -175,6 +197,32 @@ func main() {
 			}
 		},
 	})
+
+	// Development builds cannot compare against release tags, so they stay on
+	// the unsupported path and the settings UI explains why.
+	if versionIsRelease(appVersion) {
+		updateProvider, providerErr := github.New(github.Config{
+			Repository:    "Johnny0x38E/investgo",
+			ChecksumAsset: "checksums.txt",
+			AssetMatcher:  updateAssetMatcher,
+			// Update downloads are much larger than API requests; reuse the
+			// shared proxy transport with a longer overall timeout.
+			HTTPClient: &http.Client{Timeout: 10 * time.Minute, Transport: proxyTransport},
+		})
+		if providerErr != nil {
+			logs.Error("backend", "update", fmt.Sprintf("configure update provider failed: %v", providerErr))
+		} else if initErr := app.Updater.Init(wailsupdater.Config{
+			CurrentVersion: appVersion,
+			Providers:      []wailsupdater.Provider{update.WithProgress(updateProvider, updateService.ReportProgress)},
+			Window:         wailsupdater.WindowNone,
+		}); initErr != nil {
+			logs.Error("backend", "update", fmt.Sprintf("initialise updater failed: %v", initErr))
+		} else {
+			updateService.Attach(app.Updater)
+		}
+	}
+	updateService.Start(updateCtx)
+	apiHandler.SetUpdateService(updateService)
 
 	useNativeTitleBar := settings.UseNativeTitleBar
 	windowOptions := platform.BuildMainWindowOptions(useNativeTitleBar)
@@ -252,4 +300,45 @@ func terminalLoggingEnabled() bool {
 // devToolsBuildEnabled returns whether the current binary has DevTools support enabled.
 func devToolsBuildEnabled() bool {
 	return defaultDevToolsBuild == "1"
+}
+
+// versionIsRelease reports whether appVersion is a release version. Development
+// builds ("dev" or empty) cannot compare against release tags.
+func versionIsRelease(version string) bool {
+	return version != "" && version != "dev"
+}
+
+// updateAssetMatcher selects the artifact the updater can swap in place: the
+// zip app bundle on macOS and the executable on Windows. The default matcher
+// would also accept the DMG, which the updater cannot unpack.
+func updateAssetMatcher(request wailsupdater.CheckRequest, assets []github.ReleaseAsset) int {
+	suffix := updateAssetSuffix(request.Platform, request.Arch)
+	if suffix == "" {
+		return github.DefaultAssetMatcher(request, assets)
+	}
+	for index, asset := range assets {
+		if strings.HasSuffix(strings.ToLower(asset.Name), suffix) {
+			return index
+		}
+	}
+	return -1
+}
+
+// updateAssetSuffix returns the release asset suffix for the running platform,
+// matching the artifact names produced by the packaging scripts.
+func updateAssetSuffix(platform, arch string) string {
+	switch strings.ToLower(platform) {
+	case "darwin":
+		switch strings.ToLower(arch) {
+		case "arm64":
+			return "-darwin-aarch64.zip"
+		case "amd64":
+			return "-darwin-x86_64.zip"
+		}
+	case "windows":
+		if strings.ToLower(arch) == "amd64" {
+			return "-windows-amd64.exe"
+		}
+	}
+	return ""
 }

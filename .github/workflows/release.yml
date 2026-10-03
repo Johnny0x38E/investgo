@@ -90,7 +90,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: investgo-${{ needs.version.outputs.version }}-${{ matrix.name }}
-          path: build/bin/*.dmg
+          path: |
+            build/bin/*.dmg
+            build/bin/*.zip
           if-no-files-found: error
 
   package-windows:
@@ -158,14 +160,16 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           shopt -s nullglob
-          files=(dist/*.dmg dist/*.exe)
+          files=(dist/*.dmg dist/*.exe dist/*.zip)
           if [[ ${#files[@]} -eq 0 ]]; then
             echo "No release files found in dist/" >&2
             ls -la dist >&2 || true
             exit 1
           fi
+          (cd dist && sha256sum "${files[@]##*/}" >checksums.txt)
           gh release create "$GITHUB_REF_NAME" \
             --title "$GITHUB_REF_NAME" \
             --generate-notes \
             --verify-tag \
-            "${files[@]}"
+            "${files[@]}" \
+            dist/checksums.txt

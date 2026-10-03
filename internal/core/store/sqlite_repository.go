@@ -129,12 +129,15 @@ func (r *SQLiteRepository) loadMetadata() (PersistedState, bool, error) {
 func (r *SQLiteRepository) loadSettings(state *PersistedState) error {
 	var developerMode int
 	var useNativeTitleBar int
+	var autoUpdateEnabled int
+	var autoUpdateBackgroundDownload int
 	err := r.db.QueryRow(`
         SELECT hot_cache_ttl_seconds, cn_quote_source, hk_quote_source, us_quote_source,
                theme_mode, color_theme, font_preset, amount_display, currency_display,
                price_color_scheme, locale, proxy_mode, proxy_url, alpha_vantage_api_key,
                twelve_data_api_key, finnhub_api_key, tiingo_api_key, polygon_api_key,
-               developer_mode, dashboard_currency, use_native_title_bar
+               developer_mode, dashboard_currency, use_native_title_bar,
+               auto_update_enabled, auto_update_background_download
         FROM settings
         WHERE id = 1
     `).Scan(
@@ -159,12 +162,16 @@ func (r *SQLiteRepository) loadSettings(state *PersistedState) error {
 		&developerMode,
 		&state.Settings.DashboardCurrency,
 		&useNativeTitleBar,
+		&autoUpdateEnabled,
+		&autoUpdateBackgroundDownload,
 	)
 	if err != nil {
 		return fmt.Errorf("load sqlite settings: %w", err)
 	}
 	state.Settings.DeveloperMode = developerMode != 0
 	state.Settings.UseNativeTitleBar = useNativeTitleBar != 0
+	state.Settings.AutoUpdateEnabled = autoUpdateEnabled != 0
+	state.Settings.AutoUpdateBackgroundDownload = autoUpdateBackgroundDownload != 0
 	return nil
 }
 
@@ -406,14 +413,15 @@ func clearPersistedState(tx *sql.Tx) error {
 
 func saveSettings(tx *sql.Tx, settings core.AppSettings, updatedAt time.Time) error {
 	_, err := tx.Exec(`
-        INSERT INTO settings(
-            id, hot_cache_ttl_seconds, cn_quote_source, hk_quote_source, us_quote_source,
-            theme_mode, color_theme, font_preset, amount_display, currency_display,
-            price_color_scheme, locale, proxy_mode, proxy_url, alpha_vantage_api_key,
-            twelve_data_api_key, finnhub_api_key, tiingo_api_key, polygon_api_key,
-            developer_mode, dashboard_currency, use_native_title_bar, updated_at
-        ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `,
+        		INSERT INTO settings(
+        			id, hot_cache_ttl_seconds, cn_quote_source, hk_quote_source, us_quote_source,
+        			theme_mode, color_theme, font_preset, amount_display, currency_display,
+        			price_color_scheme, locale, proxy_mode, proxy_url, alpha_vantage_api_key,
+        			twelve_data_api_key, finnhub_api_key, tiingo_api_key, polygon_api_key,
+        			developer_mode, dashboard_currency, use_native_title_bar,
+        			auto_update_enabled, auto_update_background_download, updated_at
+        		) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        	`,
 		settings.HotCacheTTLSeconds,
 		settings.CNQuoteSource,
 		settings.HKQuoteSource,
@@ -435,6 +443,8 @@ func saveSettings(tx *sql.Tx, settings core.AppSettings, updatedAt time.Time) er
 		boolInt(settings.DeveloperMode),
 		settings.DashboardCurrency,
 		boolInt(settings.UseNativeTitleBar),
+		boolInt(settings.AutoUpdateEnabled),
+		boolInt(settings.AutoUpdateBackgroundDownload),
 		formatTime(updatedAt),
 	)
 	if err != nil {

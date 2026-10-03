@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { computed } from 'vue';
+    import { computed, onUnmounted, ref, watch } from 'vue';
     import Button from 'primevue/button';
     import InputText from 'primevue/inputtext';
     import InputNumber from 'primevue/inputnumber';
@@ -25,7 +25,14 @@
     import { maxHotCacheTTLSeconds, minHotCacheTTLSeconds } from '../../forms';
     import { formatDateTime } from '../../format';
     import { useI18n } from '../../i18n';
-    import type { AppSettings, DeveloperLogEntry, QuoteSourceOption, RuntimeStatus, SettingsTabKey } from '../../types';
+    import type {
+        AppSettings,
+        DeveloperLogEntry,
+        QuoteSourceOption,
+        RuntimeStatus,
+        SettingsTabKey,
+        UpdateStatus,
+    } from '../../types';
 
     const props = defineProps<{
         settingsTab: SettingsTabKey;
@@ -82,6 +89,98 @@
             body: JSON.stringify({ url }),
         });
     }
+
+    const updateStatus = ref<UpdateStatus | null>(null);
+    const updateActionError = ref('');
+    let updatePollTimer: number | null = null;
+
+    const updateState = computed(() => updateStatus.value?.state ?? 'idle');
+    const updateSupported = computed(() => updateStatus.value?.supported ?? false);
+    const updateActive = computed(() => updateState.value === 'checking' || updateState.value === 'downloading');
+    const updatePercent = computed(() => {
+        const progress = updateStatus.value?.progress;
+        if (!progress || progress.total <= 0) {
+            return null;
+        }
+        return Math.min(100, Math.max(0, Math.round((progress.written / progress.total) * 100)));
+    });
+    const updateStateText = computed(() => {
+        const status = updateStatus.value;
+        if (!status) {
+            return '';
+        }
+        switch (status.state) {
+            case 'checking':
+                return t('settings.update.checking');
+            case 'up-to-date':
+                return t('settings.update.upToDate');
+            case 'available':
+                return t('settings.update.available', { version: status.availableVersion ?? '' });
+            case 'downloading':
+                if (updatePercent.value === null) {
+                    return t('settings.update.downloading');
+                }
+                return t('settings.update.downloadingPercent', { percent: updatePercent.value });
+            case 'ready':
+                return t('settings.update.ready');
+            case 'error':
+                return t('settings.update.error', { error: status.errorMessage ?? '' });
+            default:
+                return '';
+        }
+    });
+
+    async function refreshUpdateStatus(): Promise<void> {
+        try {
+            updateStatus.value = await api<UpdateStatus>('/api/update/status');
+        } catch {
+            // Keep the last known state; the next poll retries.
+        }
+    }
+
+    function scheduleUpdatePoll(): void {
+        if (updatePollTimer !== null) {
+            window.clearTimeout(updatePollTimer);
+        }
+        updatePollTimer = window.setTimeout(
+            async () => {
+                await refreshUpdateStatus();
+                scheduleUpdatePoll();
+            },
+            updateActive.value ? 1000 : 3000,
+        );
+    }
+
+    function stopUpdatePolling(): void {
+        if (updatePollTimer !== null) {
+            window.clearTimeout(updatePollTimer);
+            updatePollTimer = null;
+        }
+    }
+
+    async function runUpdateAction(path: string): Promise<void> {
+        updateActionError.value = '';
+        try {
+            await api(path, { method: 'POST' });
+        } catch (error) {
+            updateActionError.value = error instanceof Error ? error.message : String(error);
+        }
+        await refreshUpdateStatus();
+    }
+
+    watch(
+        settingsTabProxy,
+        (tab) => {
+            if (tab !== 'about') {
+                stopUpdatePolling();
+                return;
+            }
+            void refreshUpdateStatus();
+            scheduleUpdatePoll();
+        },
+        { immediate: true },
+    );
+    onUnmounted(stopUpdatePolling);
 </script>
 
 <template>
@@ -552,6 +651,73 @@
                                 {{ t('settings.about.disclaimerParagraph3') }}
                             </p>
                         </section>
+                    </div>
+
+                    <div v-if="updateStatus" class="settings-section">
+                        <h4>{{ t('settings.sections.update') }}</h4>
+                        <template v-if="updateSupported">
+                            <label class="developer-toggle">
+                                <div>
+                                    <span>{{ t('settings.update.autoCheck') }}</span>
+                                    <small class="settings-update-hint">{{ t('settings.update.autoCheckHint') }}</small>
+                                </div>
+                                <ToggleSwitch v-model="settingsDraft.autoUpdateEnabled" />
+                            </label>
+                            <label class="developer-toggle">
+                                <div>
+                                    <span>{{ t('settings.update.backgroundDownload') }}</span>
+                                    <small class="settings-update-hint">
+                                        {{ t('settings.update.backgroundDownloadHint') }}
+                                    </small>
+                                </div>
+                                <ToggleSwitch
+                                    v-model="settingsDraft.autoUpdateBackgroundDownload"
+                                    :disabled="!settingsDraft.autoUpdateEnabled"
+                                />
+                            </label>
+                            <div class="settings-update-status">
+                                <span class="settings-update-state">{{ updateStateText }}</span>
+                                <span v-if="updateStatus.lastCheckedAt" class="settings-update-time">
+                                    {{
+                                        t('settings.update.lastChecked', {
+                                            time: formatDateTime(updateStatus.lastCheckedAt),
+                                        })
+                                    }}
+                                </span>
+                            </div>
+                            <div v-if="updateActive" class="settings-update-progress">
+                                <div
+                                    class="settings-update-progress-bar"
+                                    :style="{ width: (updatePercent ?? 0) + '%' }"
+                                ></div>
+                            </div>
+                            <div class="settings-update-actions">
+                                <Button
+                                    size="small"
+                                    outlined
+                                    :label="t('settings.update.checkNow')"
+                                    :loading="updateState === 'checking'"
+                                    @click="runUpdateAction('/api/update/check')"
+                                />
+                                <Button
+                                    v-if="updateState === 'available'"
+                                    size="small"
+                                    :label="t('settings.update.download')"
+                                    @click="runUpdateAction('/api/update/download')"
+                                />
+                                <Button
+                                    v-if="updateState === 'ready'"
+                                    size="small"
+                                    severity="warn"
+                                    :label="t('settings.update.restart')"
+                                    @click="runUpdateAction('/api/update/restart')"
+                                />
+                            </div>
+                            <p v-if="updateActionError" class="settings-update-error">{{ updateActionError }}</p>
+                        </template>
+                        <p v-else class="settings-update-note">
+                            {{ t('settings.update.unsupported') }}
+                        </p>
                     </div>
                 </div>
             </section>
@@ -1066,6 +1232,62 @@
         color: var(--muted);
         line-height: 1.68;
         font-size: 12px;
+    }
+
+    .settings-update-hint {
+        display: block;
+        margin-top: 2px;
+        color: var(--muted);
+        font: 400 11px/1.5 var(--font-ui);
+    }
+
+    .settings-update-status {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 8px 12px;
+        margin-top: 12px;
+        color: var(--muted);
+        font: 400 12px/1.5 var(--font-ui);
+    }
+
+    .settings-update-state {
+        color: var(--ink);
+        font-weight: 500;
+    }
+
+    .settings-update-progress {
+        margin-top: 8px;
+        height: 6px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--border-strong) 60%, transparent);
+        overflow: hidden;
+    }
+
+    .settings-update-progress-bar {
+        height: 100%;
+        border-radius: inherit;
+        background: var(--accent);
+        transition: width 0.2s ease;
+    }
+
+    .settings-update-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .settings-update-error {
+        margin: 8px 0 0;
+        color: var(--fall);
+        font: 400 12px/1.5 var(--font-ui);
+    }
+
+    .settings-update-note {
+        margin: 0;
+        color: var(--muted);
+        font: 400 12px/1.5 var(--font-ui);
     }
 
     @media (max-width: 1180px) {

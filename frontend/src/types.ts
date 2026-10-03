@@ -137,6 +137,28 @@ export interface AppSettings {
     developerMode: boolean;
     dashboardCurrency: string;
     useNativeTitleBar: boolean;
+    autoUpdateEnabled: boolean;
+    autoUpdateBackgroundDownload: boolean;
+}
+
+export type UpdateState =
+    'unconfigured' | 'idle' | 'checking' | 'up-to-date' | 'available' | 'downloading' | 'ready' | 'error';
+
+export interface UpdateProgress {
+    written: number;
+    total: number;
+}
+
+// GET /api/update/status — backend-owned update state for the settings UI.
+export interface UpdateStatus {
+    supported: boolean;
+    currentVersion: string;
+    state: UpdateState;
+    availableVersion?: string;
+    releaseNotes?: string;
+    errorMessage?: string;
+    lastCheckedAt?: string;
+    progress?: UpdateProgress;
 }
 
 export interface QuoteSourceOption {

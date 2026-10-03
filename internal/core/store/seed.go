@@ -84,6 +84,7 @@ func seedState() PersistedState {
 			DeveloperMode:      false,
 			DashboardCurrency:  "CNY",
 			UseNativeTitleBar:  false,
+			AutoUpdateEnabled:  true,
 		},
 	}
 

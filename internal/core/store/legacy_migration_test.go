@@ -98,6 +98,8 @@ func TestEnsureSQLiteStateMigratesJSONAndPreservesBackup(t *testing.T) {
 	wantSQLite := want
 	wantSQLite.Items = append([]core.WatchlistItem(nil), want.Items...)
 	wantSQLite.Items[0].Symbol = "00700"
+	// A database created from legacy JSON seeds the auto-update default.
+	wantSQLite.Settings.AutoUpdateEnabled = true
 	if !found || !reflect.DeepEqual(got, wantSQLite) {
 		t.Fatalf("migrated state mismatch\ngot:  %#v\nwant: %#v", got, wantSQLite)
 	}
@@ -130,8 +132,8 @@ func TestEnsureSQLiteStateCreatesSchemaWithoutLegacyJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("SchemaVersion() error = %v", err)
 	}
-	if version != 3 {
-		t.Fatalf("SchemaVersion() = %d; want 3", version)
+	if version != 4 {
+		t.Fatalf("SchemaVersion() = %d; want 4", version)
 	}
 	_, found, err := NewSQLiteRepository(db, databasePath).Load()
 	if err != nil {
@@ -341,8 +343,11 @@ func TestEnsureSQLiteStateMigrationIsIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load migrated database: %v", err)
 	}
-	if !found || !reflect.DeepEqual(got, initial) {
-		t.Fatalf("idempotent state mismatch\ngot:  %#v\nwant: %#v", got, initial)
+	// The first migration seeds the auto-update default, which then persists.
+	want := initial
+	want.Settings.AutoUpdateEnabled = true
+	if !found || !reflect.DeepEqual(got, want) {
+		t.Fatalf("idempotent state mismatch\ngot:  %#v\nwant: %#v", got, want)
 	}
 }
 

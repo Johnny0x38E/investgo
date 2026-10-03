@@ -140,6 +140,9 @@ type AppSettings struct {
 	DeveloperMode      bool   `json:"developerMode"`
 	DashboardCurrency  string `json:"dashboardCurrency"`
 	UseNativeTitleBar  bool   `json:"useNativeTitleBar"`
+
+	AutoUpdateEnabled            bool `json:"autoUpdateEnabled"`
+	AutoUpdateBackgroundDownload bool `json:"autoUpdateBackgroundDownload"`
 }
 
 // DashboardSummary represents aggregated data to be displayed on the dashboard.

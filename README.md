@@ -46,6 +46,8 @@ git push origin v0.3.0
 
 GitHub Actions then builds the Apple Silicon DMG, Intel DMG, and Windows `.exe`, and attaches them to a GitHub Release. You can also run **Release** from the Actions tab without creating a tag; artifacts stay on that workflow run.
 
+Tagged releases also publish macOS updater zips and a `checksums.txt`, which the in-app auto-updater uses. Updates are checked automatically by default and can be configured in **Settings → About**; note that macOS builds must run from a writable location (for example `/Applications`) to be replaced in place.
+
 To package locally instead:
 
 ```bash

@@ -18,8 +18,8 @@ import (
 // hotCacheTTLSeconds replaces the stored TTL. Values below
 // core.MinHotCacheTTLSeconds are rejected. Values above
 // core.MaxHotCacheTTLSeconds (one hour) are clamped.
-// developerMode and useNativeTitleBar change only when the JSON includes them,
-// so a partial body cannot reset them to false.
+// developerMode, useNativeTitleBar, and the auto-update flags change only when
+// the JSON includes them, so a partial body cannot reset them to false.
 type SettingsUpdate struct {
 	HotCacheTTLSeconds *int    `json:"hotCacheTTLSeconds"`
 	CNQuoteSource      *string `json:"cnQuoteSource"`
@@ -42,6 +42,9 @@ type SettingsUpdate struct {
 	DeveloperMode      *bool   `json:"developerMode"`
 	DashboardCurrency  *string `json:"dashboardCurrency"`
 	UseNativeTitleBar  *bool   `json:"useNativeTitleBar"`
+
+	AutoUpdateEnabled            *bool `json:"autoUpdateEnabled"`
+	AutoUpdateBackgroundDownload *bool `json:"autoUpdateBackgroundDownload"`
 }
 
 // sanitiseSettings merges a partial settings update with current configuration and validates the result.
@@ -82,6 +85,12 @@ func sanitiseSettings(
 	}
 	if input.UseNativeTitleBar != nil {
 		settings.UseNativeTitleBar = *input.UseNativeTitleBar
+	}
+	if input.AutoUpdateEnabled != nil {
+		settings.AutoUpdateEnabled = *input.AutoUpdateEnabled
+	}
+	if input.AutoUpdateBackgroundDownload != nil {
+		settings.AutoUpdateBackgroundDownload = *input.AutoUpdateBackgroundDownload
 	}
 
 	if settings.HotCacheTTLSeconds < core.MinHotCacheTTLSeconds {

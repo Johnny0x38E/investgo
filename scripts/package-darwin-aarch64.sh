@@ -39,6 +39,7 @@ ICNS_FILE="$BUILD_DIR/InvestGo.icns"
 PLIST_TEMPLATE="${PLIST_TEMPLATE:-$ROOT_DIR/scripts/Info.plist.template}"
 STAGING_DIR="$BUILD_DIR/dmg-staging"
 DMG_PATH="$BUILD_DIR/bin/investgo-$VERSION-darwin-$DARWIN_PLATFORM_NAME.dmg"
+ZIP_PATH="$BUILD_DIR/bin/investgo-$VERSION-darwin-$DARWIN_PLATFORM_NAME.zip"
 
 print_usage() {
   printf '%s\n' \
@@ -256,6 +257,19 @@ create_dmg() {
   notarize_dmg_if_configured
 }
 
+create_zip() {
+  if [[ ! -d "$APP_DIR" ]]; then
+    printf 'Missing app bundle: %s\n' "$APP_DIR" >&2
+    exit 1
+  fi
+
+  mkdir -p "$(dirname "$ZIP_PATH")"
+  rm -f "$ZIP_PATH"
+  # The in-app updater requires a zip with the .app bundle as its single
+  # top-level entry, so --keepParent is deliberate.
+  ditto -c -k --keepParent "$APP_DIR" "$ZIP_PATH"
+}
+
 if [[ "$SKIP_APP_BUILD" != "1" ]]; then
   require_command pnpm
   require_command go
@@ -290,10 +304,12 @@ fi
 
 if [[ "$SKIP_DMG_CREATE" != "1" ]]; then
   create_dmg
+  create_zip
 fi
 
 printf 'Built app bundle: %s\n' "$APP_DIR"
 
 if [[ "$SKIP_DMG_CREATE" != "1" ]]; then
   printf 'Built dmg: %s\n' "$DMG_PATH"
+  printf 'Built update zip: %s\n' "$ZIP_PATH"
 fi

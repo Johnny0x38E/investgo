@@ -40,6 +40,8 @@ export const defaultSettings: AppSettings = {
     developerMode: false,
     dashboardCurrency: 'CNY',
     useNativeTitleBar: false,
+    autoUpdateEnabled: true,
+    autoUpdateBackgroundDownload: false,
 };
 
 function boundHotCacheTTLSeconds(seconds: number | null | undefined): number {
@@ -73,6 +75,9 @@ export function normaliseSettings(input: Partial<AppSettings> | null | undefined
         developerMode: input?.developerMode ?? defaultSettings.developerMode,
         dashboardCurrency: input?.dashboardCurrency ?? defaultSettings.dashboardCurrency,
         useNativeTitleBar: input?.useNativeTitleBar ?? defaultSettings.useNativeTitleBar,
+        autoUpdateEnabled: input?.autoUpdateEnabled ?? defaultSettings.autoUpdateEnabled,
+        autoUpdateBackgroundDownload:
+            input?.autoUpdateBackgroundDownload ?? defaultSettings.autoUpdateBackgroundDownload,
     };
 }
 
@@ -103,11 +108,7 @@ export function todayDateString(): string {
     return `${y}-${m}-${day}`;
 }
 
-export function applySymbolLookup(
-    form: ItemFormModel,
-    result: SymbolLookup,
-    options: { watchOnly: boolean },
-): void {
+export function applySymbolLookup(form: ItemFormModel, result: SymbolLookup, options: { watchOnly: boolean }): void {
     const previousSymbol = form.symbol.trim();
     const nextName = result.name.trim();
     const prettyName = nextName !== '' && nextName.toUpperCase() !== result.symbol.toUpperCase();

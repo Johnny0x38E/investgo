@@ -14,6 +14,7 @@ import (
 	"investgo/internal/core/store"
 	"investgo/internal/logger"
 	"investgo/internal/platform"
+	"investgo/internal/update"
 )
 
 // Handler handles `/api/*` requests and coordinates backend services.
@@ -23,6 +24,7 @@ type Handler struct {
 	pools          *pool.Service
 	logs           *logger.LogBook
 	proxyTransport *platform.ProxyTransport
+	update         *update.Service
 	mux            *http.ServeMux // internal router (Go 1.22+ pattern matching)
 }
 
@@ -65,6 +67,11 @@ func NewHandler(
 	return h
 }
 
+// SetUpdateService connects the update service after the Wails updater is initialised.
+func (h *Handler) SetUpdateService(service *update.Service) {
+	h.update = service
+}
+
 // buildMux registers all API routes on an http.ServeMux.
 // Path parameters (e.g. {id}) are retrieved via r.PathValue("id") inside handlers.
 func (h *Handler) buildMux() *http.ServeMux {
@@ -87,6 +94,10 @@ func (h *Handler) buildMux() *http.ServeMux {
 	mux.HandleFunc("POST /refresh", h.handleRefresh)
 	mux.HandleFunc("POST /open-external", h.handleOpenExternal)
 	mux.HandleFunc("PUT /settings", h.handleUpdateSettings)
+	mux.HandleFunc("GET /update/status", h.handleUpdateStatus)
+	mux.HandleFunc("POST /update/check", h.handleUpdateCheck)
+	mux.HandleFunc("POST /update/download", h.handleUpdateDownload)
+	mux.HandleFunc("POST /update/restart", h.handleUpdateRestart)
 	mux.HandleFunc("POST /items", h.handleCreateItem)
 	mux.HandleFunc("POST /items/{id}/refresh", h.handleRefreshItem)
 	mux.HandleFunc("PUT /items/{id}", h.handleUpdateItem)

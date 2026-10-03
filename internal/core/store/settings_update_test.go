@@ -109,3 +109,48 @@ func TestLoadClampsOversizedHotCacheTTL(t *testing.T) {
 		t.Fatalf("loaded hotCacheTTLSeconds = %d, want %d", got, core.MaxHotCacheTTLSeconds)
 	}
 }
+
+func TestUpdateSettingsAutoUpdateFlags(t *testing.T) {
+	appStore := newLookupTestStore(t, &lookupStubProvider{name: "Yahoo Finance"})
+
+	enabled := true
+	background := true
+	if _, err := appStore.UpdateSettings(SettingsUpdate{
+		AutoUpdateEnabled:            &enabled,
+		AutoUpdateBackgroundDownload: &background,
+	}); err != nil {
+		t.Fatalf("enable auto-update: %v", err)
+	}
+
+	theme := "dark"
+	if _, err := appStore.UpdateSettings(SettingsUpdate{ThemeMode: &theme}); err != nil {
+		t.Fatalf("partial theme update: %v", err)
+	}
+
+	settings := appStore.CurrentSettings()
+	if !settings.AutoUpdateEnabled || !settings.AutoUpdateBackgroundDownload {
+		t.Fatalf(
+			"auto-update flags = (%t, %t), want both true after an unrelated partial update",
+			settings.AutoUpdateEnabled,
+			settings.AutoUpdateBackgroundDownload,
+		)
+	}
+
+	disabled := false
+	if _, err := appStore.UpdateSettings(SettingsUpdate{AutoUpdateEnabled: &disabled}); err != nil {
+		t.Fatalf("disable auto-update: %v", err)
+	}
+	settings = appStore.CurrentSettings()
+	if settings.AutoUpdateEnabled {
+		t.Fatal("autoUpdateEnabled was not cleared")
+	}
+	if !settings.AutoUpdateBackgroundDownload {
+		t.Fatal("background download flag was reset by an unrelated update")
+	}
+}
+
+func TestSeedStateEnablesAutoUpdateByDefault(t *testing.T) {
+	if !seedState().Settings.AutoUpdateEnabled {
+		t.Fatal("seed state must enable automatic update checks")
+	}
+}

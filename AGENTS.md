@@ -6,7 +6,8 @@ InvestGo is a Go/Wails desktop application. `main.go` boots the app and embeds
 the built frontend plus `build/appicon.png`. Backend code lives in `internal/`:
 `api` contains HTTP routes, `core` contains domain, store, pool, provider,
 market-data, and FX logic, `storage/sqlite` is the live persistence layer,
-`platform` handles OS/window/proxy integration, and `logger` owns diagnostics.
+`platform` handles OS/window/proxy integration, `update` schedules in-app
+auto-updates, and `logger` owns diagnostics.
 The Vue/TypeScript UI is under `frontend/src`, especially `components`,
 `composables`, `styles`, `api.ts`, and `types.ts`. Platform build/package
 scripts and the icon pipeline are in `scripts/`; source artwork is in
