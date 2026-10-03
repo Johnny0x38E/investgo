@@ -224,9 +224,7 @@ const messages: Record<SupportedLocale, TranslationTree> = {
             },
             update: {
                 autoCheck: '自动检查更新',
-                autoCheckHint: '启动后自动检查新版本，默认开启。',
                 backgroundDownload: '后台自动下载',
-                backgroundDownloadHint: '发现新版本后自动下载，下载完成后提示重启。',
                 checkNow: '检查更新',
                 download: '下载更新',
                 restart: '重启并更新',
@@ -855,9 +853,7 @@ const messages: Record<SupportedLocale, TranslationTree> = {
             },
             update: {
                 autoCheck: 'Automatically check for updates',
-                autoCheckHint: 'Checks for new versions on startup. Enabled by default.',
                 backgroundDownload: 'Download in the background',
-                backgroundDownloadHint: 'Downloads new versions automatically and asks to restart when ready.',
                 checkNow: 'Check Now',
                 download: 'Download Update',
                 restart: 'Restart & Update',

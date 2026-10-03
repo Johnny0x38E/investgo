@@ -659,16 +659,12 @@
                             <label class="developer-toggle">
                                 <div>
                                     <span>{{ t('settings.update.autoCheck') }}</span>
-                                    <small class="settings-update-hint">{{ t('settings.update.autoCheckHint') }}</small>
                                 </div>
                                 <ToggleSwitch v-model="settingsDraft.autoUpdateEnabled" />
                             </label>
                             <label class="developer-toggle">
                                 <div>
                                     <span>{{ t('settings.update.backgroundDownload') }}</span>
-                                    <small class="settings-update-hint">
-                                        {{ t('settings.update.backgroundDownloadHint') }}
-                                    </small>
                                 </div>
                                 <ToggleSwitch
                                     v-model="settingsDraft.autoUpdateBackgroundDownload"
@@ -1232,13 +1228,6 @@
         color: var(--muted);
         line-height: 1.68;
         font-size: 12px;
-    }
-
-    .settings-update-hint {
-        display: block;
-        margin-top: 2px;
-        color: var(--muted);
-        font: 400 11px/1.5 var(--font-ui);
     }
 
     .settings-update-status {
