@@ -77,10 +77,17 @@ func TestExcludedBuiltInUSMemberDisappearsAfterPoolServiceRestart(t *testing.T) 
 		return items, nil
 	}
 
-	response, err := hotService.browsePoolCategory(ctx, core.HotCategoryUSSP500, core.HotSortVolume, 1, 20, HotListOptions{
-		USQuoteSource: "yahoo",
-		BypassCache:   true,
-	})
+	response, err := hotService.browsePoolCategory(
+		ctx,
+		core.HotCategoryUSSP500,
+		core.HotSortVolume,
+		1,
+		20,
+		HotListOptions{
+			USQuoteSource: "yahoo",
+			BypassCache:   true,
+		},
+	)
 	if err != nil {
 		t.Fatalf("browsePoolCategory() error = %v", err)
 	}

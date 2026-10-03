@@ -205,7 +205,10 @@ func (f *EmFloat) UnmarshalJSON(data []byte) error {
 // SetEastMoneyHeaders sets comprehensive browser-like request headers required by EastMoney APIs.
 // Without these headers, EastMoney servers may close the connection immediately (EOF).
 func SetEastMoneyHeaders(req *http.Request, referer string) {
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+	req.Header.Set(
+		"User-Agent",
+		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+	)
 	req.Header.Set("Accept", "*/*")
 	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
 	req.Header.Set("Connection", "keep-alive")

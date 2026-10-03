@@ -46,7 +46,8 @@ func TestServiceExclusionIsPoolScopedAndDoesNotDeleteWatchlist(t *testing.T) {
 	assertInstrumentSymbols(t, nasdaq, []string{"AAPL", "MSFT"})
 
 	var watchlistCount int
-	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM watchlist_entries WHERE id = 'watch-aapl'").Scan(&watchlistCount); err != nil {
+	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM watchlist_entries WHERE id = 'watch-aapl'").
+		Scan(&watchlistCount); err != nil {
 		t.Fatalf("count watchlist entries: %v", err)
 	}
 	if watchlistCount != 1 {
@@ -123,7 +124,12 @@ func TestServiceBaselineUpgradePromotesUserAdditionsAndDropsGhostExclusions(t *t
 	}
 
 	aapl := instruments["AAPL"]
-	if err := pools.ReplaceBuiltInMembers(ctx, pool.PoolIDUSSP500, "v2", []string{aapl.ID, added.Instrument.ID}); err != nil {
+	if err := pools.ReplaceBuiltInMembers(
+		ctx,
+		pool.PoolIDUSSP500,
+		"v2",
+		[]string{aapl.ID, added.Instrument.ID},
+	); err != nil {
 		t.Fatalf("replace baseline: %v", err)
 	}
 
@@ -145,7 +151,8 @@ func TestServiceBaselineUpgradePromotesUserAdditionsAndDropsGhostExclusions(t *t
 	if override, found, err := pools.GetOverride(ctx, pool.PoolIDUSSP500, added.Instrument.ID); err != nil || found {
 		t.Fatalf("NVDA add override = %+v found %v error %v; want deleted", override, found, err)
 	}
-	if _, err := pool.NewService(catalog, pools).ExcludeMember(ctx, pool.PoolIDUSSP500, added.Instrument.ID); err != nil {
+	if _, err := pool.NewService(catalog, pools).
+		ExcludeMember(ctx, pool.PoolIDUSSP500, added.Instrument.ID); err != nil {
 		t.Fatalf("ExcludeMember(promoted NVDA) error = %v", err)
 	}
 }
@@ -338,7 +345,12 @@ func TestServiceUpdateMemberEditsUserMemberAndMovesOverride(t *testing.T) {
 	if edited.Instrument.Symbol != "NVDA2" {
 		t.Fatalf("edited member = %+v", edited)
 	}
-	if override, found, err := pools.GetOverride(ctx, pool.PoolIDUSNasdaq, edited.Instrument.ID); err != nil || !found || override.Action != pool.OverrideActionAdd {
+	if override, found, err := pools.GetOverride(
+		ctx,
+		pool.PoolIDUSNasdaq,
+		edited.Instrument.ID,
+	); err != nil || !found ||
+		override.Action != pool.OverrideActionAdd {
 		t.Fatalf("override after edit = %+v, found %v, error %v", override, found, err)
 	}
 	if override, found, err := pools.GetOverride(ctx, pool.PoolIDUSNasdaq, added.Instrument.ID); err != nil || found {
@@ -441,8 +453,20 @@ func newPoolServiceFixture(t *testing.T) (
 	pools := sqlitestorage.NewPoolRepository(db)
 
 	definitions := []pool.Pool{
-		{ID: pool.PoolIDUSSP500, Name: "S&P 500", Market: "US-STOCK", AssetClass: instrument.AssetClassEquity, Type: pool.TypeIndex},
-		{ID: pool.PoolIDUSNasdaq, Name: "Nasdaq 100", Market: "US-STOCK", AssetClass: instrument.AssetClassEquity, Type: pool.TypeIndex},
+		{
+			ID:         pool.PoolIDUSSP500,
+			Name:       "S&P 500",
+			Market:     "US-STOCK",
+			AssetClass: instrument.AssetClassEquity,
+			Type:       pool.TypeIndex,
+		},
+		{
+			ID:         pool.PoolIDUSNasdaq,
+			Name:       "Nasdaq 100",
+			Market:     "US-STOCK",
+			AssetClass: instrument.AssetClassEquity,
+			Type:       pool.TypeIndex,
+		},
 	}
 	for _, definition := range definitions {
 		if _, err := pools.Upsert(ctx, definition); err != nil {
@@ -464,7 +488,12 @@ func newPoolServiceFixture(t *testing.T) (
 	if err := pools.ReplaceBuiltInMembers(ctx, pool.PoolIDUSSP500, "v1", []string{instruments["AAPL"].ID}); err != nil {
 		t.Fatalf("seed S&P 500: %v", err)
 	}
-	if err := pools.ReplaceBuiltInMembers(ctx, pool.PoolIDUSNasdaq, "v1", []string{instruments["AAPL"].ID, instruments["MSFT"].ID}); err != nil {
+	if err := pools.ReplaceBuiltInMembers(
+		ctx,
+		pool.PoolIDUSNasdaq,
+		"v1",
+		[]string{instruments["AAPL"].ID, instruments["MSFT"].ID},
+	); err != nil {
 		t.Fatalf("seed Nasdaq: %v", err)
 	}
 	return ctx, db, catalog, pools, pool.NewService(catalog, pools), instruments

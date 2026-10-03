@@ -78,7 +78,10 @@ func NewTwelveDataQuoteProvider(client *http.Client, settings func() core.AppSet
 
 func (p *TwelveDataQuoteProvider) Name() string { return "Twelve Data" }
 
-func (p *TwelveDataQuoteProvider) Fetch(ctx context.Context, items []core.WatchlistItem) (map[string]core.Quote, error) {
+func (p *TwelveDataQuoteProvider) Fetch(
+	ctx context.Context,
+	items []core.WatchlistItem,
+) (map[string]core.Quote, error) {
 	apiKey := strings.TrimSpace(p.settings().TwelveDataAPIKey)
 	if apiKey == "" {
 		return nil, errors.New("Twelve Data API key is required")
@@ -126,7 +129,11 @@ func NewTwelveDataHistoryProvider(client *http.Client, settings func() core.AppS
 
 func (p *TwelveDataHistoryProvider) Name() string { return "Twelve Data" }
 
-func (p *TwelveDataHistoryProvider) Fetch(ctx context.Context, item core.WatchlistItem, interval core.HistoryInterval) (core.HistorySeries, error) {
+func (p *TwelveDataHistoryProvider) Fetch(
+	ctx context.Context,
+	item core.WatchlistItem,
+	interval core.HistoryInterval,
+) (core.HistorySeries, error) {
 	apiKey := strings.TrimSpace(p.settings().TwelveDataAPIKey)
 	if apiKey == "" {
 		return core.HistorySeries{}, errors.New("Twelve Data API key is required")
@@ -173,7 +180,12 @@ func fetchTwelveDataQuote(
 	params.Set("symbol", symbol)
 	params.Set("apikey", apiKey)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.URLWithQuery(endpoint.TwelveDataQuoteAPI, params), nil)
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		endpoint.URLWithQuery(endpoint.TwelveDataQuoteAPI, params),
+		nil,
+	)
 	if err != nil {
 		return core.Quote{}, err
 	}
@@ -229,7 +241,12 @@ func fetchTwelveDataHistory(
 	params.Set("interval", twelveDataInterval(interval))
 	params.Set("outputsize", twelveDataOutputSize(interval))
 	params.Set("order", "ASC")
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.URLWithQuery(endpoint.TwelveDataTimeSeriesAPI, params), nil)
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		endpoint.URLWithQuery(endpoint.TwelveDataTimeSeriesAPI, params),
+		nil,
+	)
 	if err != nil {
 		return nil, "", err
 	}

@@ -220,7 +220,8 @@ func NormalizeProviderSymbol(value ProviderSymbol) (ProviderSymbol, error) {
 	}
 	// encoding/json.Valid accepted duplicate names and invalid UTF-8.
 	// jsontext.Value.IsValid follows RFC 7493 unless those checks are relaxed.
-	if !jsontext.Value(value.MetadataJSON).IsValid(jsontext.AllowDuplicateNames(true), jsontext.AllowInvalidUTF8(true)) {
+	if !jsontext.Value(value.MetadataJSON).
+		IsValid(jsontext.AllowDuplicateNames(true), jsontext.AllowInvalidUTF8(true)) {
 		return ProviderSymbol{}, invalid("metadataJson", "must contain valid JSON")
 	}
 	if !value.UpdatedAt.IsZero() {
@@ -286,7 +287,7 @@ func normalizeListingIdentity(symbol, exchange, market string, assetClass AssetC
 
 	switch {
 	case strings.HasPrefix(market, "CN-"):
-		return normalizeCNIdentity(symbol, exchange, market, assetClass)
+		return normalizeCNIdentity(symbol, exchange, assetClass)
 	case strings.HasPrefix(market, "HK-"):
 		return normalizeHKIdentity(symbol, exchange, market)
 	case strings.HasPrefix(market, "US-"):
@@ -298,7 +299,7 @@ func normalizeListingIdentity(symbol, exchange, market string, assetClass AssetC
 	}
 }
 
-func normalizeCNIdentity(symbol, exchange, market string, assetClass AssetClass) (string, string, string, error) {
+func normalizeCNIdentity(symbol, exchange string, assetClass AssetClass) (string, string, string, error) {
 	var symbolExchange string
 	for _, candidate := range []struct {
 		prefix   string
@@ -328,6 +329,8 @@ func normalizeCNIdentity(symbol, exchange, market string, assetClass AssetClass)
 	if err != nil {
 		return "", "", "", err
 	}
+
+	var market string
 	if assetClass == AssetClassETF {
 		if inferredMarket != "CN-ETF" {
 			return "", "", "", invalid("symbol", fmt.Sprintf("%s is not recognized as an onshore ETF", symbol))

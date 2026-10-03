@@ -173,7 +173,10 @@ func fetchYahooSearchFromHost(
 	if err != nil {
 		return yahooSearchResponse{}, err
 	}
-	request.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36")
+	request.Header.Set(
+		"User-Agent",
+		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+	)
 	request.Header.Set("Origin", endpoint.YahooFinanceOrigin)
 	request.Header.Set("Referer", endpoint.YahooFinanceReferer)
 

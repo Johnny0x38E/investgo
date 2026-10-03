@@ -66,7 +66,13 @@ func (p *SinaQuoteProvider) Fetch(ctx context.Context, items []core.WatchlistIte
 	}
 
 	for _, batch := range ChunkStrings(sinaCodes, sinaBatchSize) {
-		text, err := FetchTextWithHeaders(ctx, p.client, endpoint.SinaQuoteAPI+strings.Join(batch, ","), sinaHeaders, true)
+		text, err := FetchTextWithHeaders(
+			ctx,
+			p.client,
+			endpoint.SinaQuoteAPI+strings.Join(batch, ","),
+			sinaHeaders,
+			true,
+		)
 		if err != nil {
 			problems = append(problems, err.Error())
 			continue
@@ -152,7 +158,16 @@ func BuildSinaQuote(item core.WatchlistItem, code string, fields []string) (core
 		current := ParseFloat(PartsAt(fields, 3))
 		high := ParseFloat(PartsAt(fields, 4))
 		low := ParseFloat(PartsAt(fields, 5))
-		quote := BuildQuote(FirstNonEmpty(name, item.Name, item.Symbol), current, previous, open, high, low, time.Now(), "Sina Finance")
+		quote := BuildQuote(
+			FirstNonEmpty(name, item.Name, item.Symbol),
+			current,
+			previous,
+			open,
+			high,
+			low,
+			time.Now(),
+			"Sina Finance",
+		)
 		quote.Currency = FirstNonEmpty(item.Currency, "CNY")
 		if len(fields) > 8 {
 			quote.Volume = ParseFloat(PartsAt(fields, 8))
@@ -172,7 +187,16 @@ func BuildSinaQuote(item core.WatchlistItem, code string, fields []string) (core
 		if updatedAt.IsZero() {
 			updatedAt = time.Now()
 		}
-		quote := BuildQuote(FirstNonEmpty(name, item.Name, item.Symbol), current, previous, open, high, low, updatedAt, "Sina Finance")
+		quote := BuildQuote(
+			FirstNonEmpty(name, item.Name, item.Symbol),
+			current,
+			previous,
+			open,
+			high,
+			low,
+			updatedAt,
+			"Sina Finance",
+		)
 		quote.Currency = FirstNonEmpty(item.Currency, "HKD")
 		if len(fields) > 12 {
 			quote.Volume = ParseFloat(PartsAt(fields, 12))
@@ -191,7 +215,16 @@ func BuildSinaQuote(item core.WatchlistItem, code string, fields []string) (core
 		open := ParseFloat(PartsAt(fields, 5))
 		high := ParseFloat(PartsAt(fields, 6))
 		low := ParseFloat(PartsAt(fields, 7))
-		quote := BuildQuote(FirstNonEmpty(name, item.Name, item.Symbol), current, previous, open, high, low, time.Now(), "Sina Finance")
+		quote := BuildQuote(
+			FirstNonEmpty(name, item.Name, item.Symbol),
+			current,
+			previous,
+			open,
+			high,
+			low,
+			time.Now(),
+			"Sina Finance",
+		)
 		quote.Change = change
 		quote.ChangePercent = changePercent
 		quote.Currency = FirstNonEmpty(item.Currency, "USD")

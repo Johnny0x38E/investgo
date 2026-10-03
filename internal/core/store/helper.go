@@ -76,7 +76,8 @@ func resolveSavedDisplay(item *core.WatchlistItem, existing *core.WatchlistItem,
 	}
 
 	custom := item.HasCustomName && requestedName != ""
-	if !custom && existing != nil && requestedName != "" && requestedName != existingDefault && requestedName != strings.TrimSpace(existing.Name) {
+	if !custom && existing != nil && requestedName != "" && requestedName != existingDefault &&
+		requestedName != strings.TrimSpace(existing.Name) {
 		custom = true
 	}
 	if existing != nil && !item.HasCustomName && requestedName == existingDefault {

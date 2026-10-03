@@ -86,7 +86,8 @@ func TestInstrumentRepositoryRoundTripAndCanonicalUniqueness(t *testing.T) {
 	assertStoredInstrumentEqual(t, byIdentity, second)
 
 	var count int
-	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM instruments WHERE symbol = '600519'").Scan(&count); err != nil {
+	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM instruments WHERE symbol = '600519'").
+		Scan(&count); err != nil {
 		t.Fatalf("count instruments: %v", err)
 	}
 	if count != 1 {
@@ -241,7 +242,8 @@ func TestInstrumentRepositoryProviderSymbolUpsertIsUniquePerProvider(t *testing.
 	}
 
 	var count int
-	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM provider_symbols WHERE instrument_id = ?", stored.ID).Scan(&count); err != nil {
+	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM provider_symbols WHERE instrument_id = ?", stored.ID).
+		Scan(&count); err != nil {
 		t.Fatalf("count provider symbols: %v", err)
 	}
 	if count != 2 {

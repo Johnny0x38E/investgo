@@ -113,7 +113,10 @@ var localizedPrefixMessages = []struct {
 	{prefix: "EastMoney quote response returned rc=", zhPrefix: "东方财富行情返回 rc="},
 	{prefix: "Did not receive EastMoney quote for ", zhPrefix: "未收到 ", recursive: false},
 	{prefix: "A-share / ETF symbol format is invalid: ", zhPrefix: "A股/ETF代码格式错误: "},
-	{prefix: "Realtime quotes are not supported for Beijing Exchange symbols in EastMoney: ", zhPrefix: "东方财富暂不支持北交所实时行情: "},
+	{
+		prefix:   "Realtime quotes are not supported for Beijing Exchange symbols in EastMoney: ",
+		zhPrefix: "东方财富暂不支持北交所实时行情: ",
+	},
 	{prefix: "Hong Kong symbol format is invalid: ", zhPrefix: "港股代码格式错误: "},
 	{prefix: "US symbol format is invalid: ", zhPrefix: "美股代码格式错误: "},
 	{prefix: "Market type is unsupported: ", zhPrefix: "不支持的市场类型: "},

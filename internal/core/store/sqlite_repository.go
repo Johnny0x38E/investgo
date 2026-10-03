@@ -70,7 +70,7 @@ func (r *SQLiteRepository) Save(state PersistedState) error {
 	if err != nil {
 		return fmt.Errorf("begin sqlite state save: %w", err)
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback() }() //nolint:errcheck
 
 	if err := clearPersistedState(tx); err != nil {
 		return err
@@ -182,7 +182,7 @@ func (r *SQLiteRepository) loadItems(state *PersistedState) (map[string]int, err
 	if err != nil {
 		return nil, fmt.Errorf("query sqlite watchlist items: %w", err)
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	state.Items = []core.WatchlistItem{}
 	itemIndex := make(map[string]int)
@@ -277,7 +277,7 @@ func (r *SQLiteRepository) loadDCAEntries(state *PersistedState, itemIndex map[s
 	if err != nil {
 		return fmt.Errorf("query sqlite DCA entries: %w", err)
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	for rows.Next() {
 		var itemID string
@@ -342,7 +342,7 @@ func (r *SQLiteRepository) loadAlerts(state *PersistedState) error {
 	if err != nil {
 		return fmt.Errorf("query sqlite alerts: %w", err)
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	state.Alerts = []core.AlertRule{}
 	for rows.Next() {

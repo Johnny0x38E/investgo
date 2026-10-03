@@ -165,7 +165,12 @@ func (h *Handler) handleHistory(writer http.ResponseWriter, request *http.Reques
 		interval = core.HistoryRange1d
 	}
 
-	series, err := h.store.ItemHistory(request.Context(), itemID, interval, parseBoolQuery(request.URL.Query().Get("force")))
+	series, err := h.store.ItemHistory(
+		request.Context(),
+		itemID,
+		interval,
+		parseBoolQuery(request.URL.Query().Get("force")),
+	)
 	if err != nil {
 		writeClassifiedError(writer, request, err)
 		return
@@ -187,7 +192,11 @@ func (h *Handler) handleRefresh(writer http.ResponseWriter, request *http.Reques
 
 // handleRefreshItem refreshes only the specified tracked item.
 func (h *Handler) handleRefreshItem(writer http.ResponseWriter, request *http.Request) {
-	snapshot, err := h.store.RefreshItem(request.Context(), request.PathValue("id"), parseBoolQuery(request.URL.Query().Get("force")))
+	snapshot, err := h.store.RefreshItem(
+		request.Context(),
+		request.PathValue("id"),
+		parseBoolQuery(request.URL.Query().Get("force")),
+	)
 	if err != nil {
 		writeClassifiedError(writer, request, err)
 		return

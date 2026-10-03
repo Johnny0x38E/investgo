@@ -151,7 +151,14 @@ func TestEnsureSQLiteStateReusesExistingDatabase(t *testing.T) {
 	updatedAt := time.Date(2026, time.August, 31, 17, 0, 0, 0, time.UTC)
 	databaseState := PersistedState{
 		Items: []core.WatchlistItem{
-			{ID: "item-db", Symbol: "AAPL", Name: "database", Market: "US-STOCK", Currency: "USD", UpdatedAt: updatedAt},
+			{
+				ID:        "item-db",
+				Symbol:    "AAPL",
+				Name:      "database",
+				Market:    "US-STOCK",
+				Currency:  "USD",
+				UpdatedAt: updatedAt,
+			},
 		},
 		Alerts:    []core.AlertRule{},
 		Settings:  core.AppSettings{ProxyMode: "none"},
@@ -159,7 +166,14 @@ func TestEnsureSQLiteStateReusesExistingDatabase(t *testing.T) {
 	}
 	jsonState := PersistedState{
 		Items: []core.WatchlistItem{
-			{ID: "item-json", Symbol: "MSFT", Name: "legacy JSON", Market: "US-STOCK", Currency: "USD", UpdatedAt: updatedAt},
+			{
+				ID:        "item-json",
+				Symbol:    "MSFT",
+				Name:      "legacy JSON",
+				Market:    "US-STOCK",
+				Currency:  "USD",
+				UpdatedAt: updatedAt,
+			},
 		},
 		Alerts:    []core.AlertRule{},
 		Settings:  core.AppSettings{ProxyMode: "system"},

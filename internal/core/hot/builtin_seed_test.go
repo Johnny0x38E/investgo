@@ -92,7 +92,8 @@ func TestSeedBuiltInPoolsIsIdempotentAndUpdatesVersionedMembership(t *testing.T)
 		t.Fatalf("override action = %q, want exclude", overrideAction)
 	}
 	var dataVersion string
-	if err := db.QueryRowContext(ctx, "SELECT data_version FROM pools WHERE id = ?", pool.PoolIDUSSP500).Scan(&dataVersion); err != nil {
+	if err := db.QueryRowContext(ctx, "SELECT data_version FROM pools WHERE id = ?", pool.PoolIDUSSP500).
+		Scan(&dataVersion); err != nil {
 		t.Fatalf("load pool data version: %v", err)
 	}
 	if dataVersion != "v2" {

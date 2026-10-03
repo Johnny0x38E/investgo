@@ -92,7 +92,7 @@ func main() {
 		Instruments: instrumentRepository,
 		Pools:       poolRepository,
 	}, hot.BuiltInPoolDataVersion); err != nil {
-		_ = appDatabase.Close()
+		_ = appDatabase.Close() // nolint:errcheck
 		log.Fatalf("seed built-in instrument pools: %v", err)
 	}
 	var closeDatabaseOnce sync.Once
@@ -114,7 +114,7 @@ func main() {
 		httpClient, // shared http.Client so FX rate requests respect the configured proxy transport
 	)
 	if err != nil {
-		_ = closeDatabase()
+		_ = closeDatabase() // nolint:errcheck
 		log.Fatalf("initialise store: %v", err)
 	}
 

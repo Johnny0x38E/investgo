@@ -41,7 +41,7 @@ func Open(path string) (*sql.DB, error) {
 
 	closeWithError := func(openErr error) (*sql.DB, error) {
 		if closeErr := db.Close(); closeErr != nil {
-			return nil, fmt.Errorf("%w; close sqlite database: %v", openErr, closeErr)
+			return nil, fmt.Errorf("%w; close sqlite database: %w", openErr, closeErr)
 		}
 		return nil, openErr
 	}

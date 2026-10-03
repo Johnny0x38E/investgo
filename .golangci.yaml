@@ -11,7 +11,6 @@ linters:
         - errorlint
         - nilerr
         - sqlclosecheck
-
     settings:
         errcheck:
             check-type-assertions: true
@@ -24,7 +23,6 @@ linters:
                 - -ST1005
                 - -ST1020
                 - -ST1021
-
     exclusions:
         generated: lax
         rules:
@@ -34,6 +32,10 @@ linters:
 formatters:
     enable:
         - gofmt
+        - golines
+    settings:
+        golines:
+            max-len: 120
 
 issues:
     max-issues-per-linter: 0

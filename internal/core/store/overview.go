@@ -37,7 +37,11 @@ type overviewTrendCandidate struct {
 
 const overviewHistoryConcurrency = 4
 
-func newOverviewCalculator(fx *fx.FxRates, displayCurrency string, loadHistory overviewHistoryLoader) overviewCalculator {
+func newOverviewCalculator(
+	fx *fx.FxRates,
+	displayCurrency string,
+	loadHistory overviewHistoryLoader,
+) overviewCalculator {
 	if strings.TrimSpace(displayCurrency) == "" {
 		displayCurrency = "CNY"
 	}
@@ -202,7 +206,10 @@ func (c overviewCalculator) buildTrend(ctx context.Context, items []core.Watchli
 	}, nil
 }
 
-func (c overviewCalculator) loadTrendSeeds(ctx context.Context, candidates []overviewTrendCandidate) ([]overviewTrendSeed, []string) {
+func (c overviewCalculator) loadTrendSeeds(
+	ctx context.Context,
+	candidates []overviewTrendCandidate,
+) ([]overviewTrendSeed, []string) {
 	if len(candidates) == 0 {
 		return nil, nil
 	}

@@ -190,7 +190,11 @@ func TestTiingoHistoryProviderDaily(t *testing.T) {
 func TestTiingoDecodeErrorUsesPlainTextBody(t *testing.T) {
 	t.Parallel()
 
-	err := tiingoDecodeError("quote", []byte("You have run over your 500 symbol look up for this month. Please upgrade."), errors.New("boom"))
+	err := tiingoDecodeError(
+		"quote",
+		[]byte("You have run over your 500 symbol look up for this month. Please upgrade."),
+		errors.New("boom"),
+	)
 	if err == nil || !strings.Contains(err.Error(), "You have run over your 500 symbol") {
 		t.Fatalf("unexpected error: %v", err)
 	}

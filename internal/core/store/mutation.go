@@ -16,6 +16,8 @@ const quoteUpsertTimeout = 8 * time.Second
 
 // UpsertItem saves or updates a tracked item and fetches a fresh quote when a live provider is available.
 // ctx bounds the quote fetch. A nil ctx is treated as context.Background().
+//
+//nolint:contextcheck // A nil ctx deliberately falls back to context.Background().
 func (s *Store) UpsertItem(ctx context.Context, input core.WatchlistItem) (core.StateSnapshot, error) {
 	item, err := sanitiseItem(input)
 	if err != nil {
@@ -35,7 +37,11 @@ func (s *Store) UpsertItem(ctx context.Context, input core.WatchlistItem) (core.
 		for _, it := range s.state.Items {
 			if it.Symbol == item.Symbol && it.Market == item.Market {
 				s.mu.RUnlock()
-				return core.StateSnapshot{}, fmt.Errorf("Item already exists in the list: %s (%s)", item.Symbol, item.Market)
+				return core.StateSnapshot{}, fmt.Errorf(
+					"Item already exists in the list: %s (%s)",
+					item.Symbol,
+					item.Market,
+				)
 			}
 		}
 	}
@@ -49,7 +55,8 @@ func (s *Store) UpsertItem(ctx context.Context, input core.WatchlistItem) (core.
 		} else {
 			item.PinnedAt = nil
 		}
-		if existing.HasCustomName && !item.HasCustomName && requestedName != "" && requestedName != strings.TrimSpace(existing.DefaultName) {
+		if existing.HasCustomName && !item.HasCustomName && requestedName != "" &&
+			requestedName != strings.TrimSpace(existing.DefaultName) {
 			item.HasCustomName = true
 		}
 	}
@@ -404,7 +411,16 @@ func sanitiseItem(input core.WatchlistItem) (core.WatchlistItem, error) {
 	}
 
 	if item.AcquiredAt != nil {
-		normalized := time.Date(item.AcquiredAt.Year(), item.AcquiredAt.Month(), item.AcquiredAt.Day(), 0, 0, 0, 0, time.UTC)
+		normalized := time.Date(
+			item.AcquiredAt.Year(),
+			item.AcquiredAt.Month(),
+			item.AcquiredAt.Day(),
+			0,
+			0,
+			0,
+			0,
+			time.UTC,
+		)
 		item.AcquiredAt = &normalized
 	}
 

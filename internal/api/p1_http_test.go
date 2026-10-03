@@ -46,7 +46,11 @@ type failingHistoryProvider struct{}
 
 func (failingHistoryProvider) Name() string { return "Yahoo Finance" }
 
-func (failingHistoryProvider) Fetch(context.Context, core.WatchlistItem, core.HistoryInterval) (core.HistorySeries, error) {
+func (failingHistoryProvider) Fetch(
+	context.Context,
+	core.WatchlistItem,
+	core.HistoryInterval,
+) (core.HistorySeries, error) {
 	return core.HistorySeries{}, errors.New("Yahoo quote request failed: status 502")
 }
 
@@ -144,7 +148,11 @@ func TestCreateItemUsesRequestContext(t *testing.T) {
 	appStore, err := store.NewStoreWithRepository(
 		&memoryStateRepository{state: store.PersistedState{Settings: storeSettings()}},
 		map[string]core.QuoteProvider{"sina": provider, "yahoo": provider, "xueqiu": provider},
-		[]core.QuoteSourceOption{{ID: "sina", Name: "Sina Finance"}, {ID: "yahoo", Name: "Yahoo Finance"}, {ID: "xueqiu", Name: "Xueqiu"}},
+		[]core.QuoteSourceOption{
+			{ID: "sina", Name: "Sina Finance"},
+			{ID: "yahoo", Name: "Yahoo Finance"},
+			{ID: "xueqiu", Name: "Xueqiu"},
+		},
 		nil,
 		nil,
 		"test",
@@ -156,7 +164,11 @@ func TestCreateItemUsesRequestContext(t *testing.T) {
 	handler := NewHandler(appStore, nil, nil, nil)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	request := httptest.NewRequest(http.MethodPost, "/api/items", strings.NewReader(`{"symbol":"600519","name":"贵州茅台","market":"CN-A","currency":"CNY"}`))
+	request := httptest.NewRequest(
+		http.MethodPost,
+		"/api/items",
+		strings.NewReader(`{"symbol":"600519","name":"贵州茅台","market":"CN-A","currency":"CNY"}`),
+	)
 	request = request.WithContext(ctx)
 	request.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
@@ -209,7 +221,13 @@ func TestUpdatePoolMemberSurfacesDisplaySyncFailure(t *testing.T) {
 	appStore := mustStore(t, repo)
 	handler := NewHandler(appStore, hot.NewHotService(nil, nil, nil, poolService), nil, nil, poolService)
 
-	created := performAPIRequest(t, handler, http.MethodPost, "/api/pools/"+pool.PoolIDCNA+"/members", `{"assetClass":"equity","symbol":"600519","name":"贵州茅台","market":"CN-A","quoteCurrency":"CNY"}`)
+	created := performAPIRequest(
+		t,
+		handler,
+		http.MethodPost,
+		"/api/pools/"+pool.PoolIDCNA+"/members",
+		`{"assetClass":"equity","symbol":"600519","name":"贵州茅台","market":"CN-A","quoteCurrency":"CNY"}`,
+	)
 	if created.Code != http.StatusCreated && created.Code != http.StatusOK {
 		t.Fatalf("add member status = %d, body = %s", created.Code, created.Body.String())
 	}
@@ -223,8 +241,15 @@ func TestUpdatePoolMemberSurfacesDisplaySyncFailure(t *testing.T) {
 		t.Fatal("added member id is empty")
 	}
 
-	updated := performAPIRequest(t, handler, http.MethodPut, "/api/pools/"+pool.PoolIDCNA+"/members/"+member.Instrument.ID, `{"name":"茅台股份"}`)
-	if updated.Code != http.StatusInternalServerError || !strings.Contains(updated.Body.String(), "failed to sync instrument display name") {
+	updated := performAPIRequest(
+		t,
+		handler,
+		http.MethodPut,
+		"/api/pools/"+pool.PoolIDCNA+"/members/"+member.Instrument.ID,
+		`{"name":"茅台股份"}`,
+	)
+	if updated.Code != http.StatusInternalServerError ||
+		!strings.Contains(updated.Body.String(), "failed to sync instrument display name") {
 		t.Fatalf("display sync status = %d, body = %s", updated.Code, updated.Body.String())
 	}
 }

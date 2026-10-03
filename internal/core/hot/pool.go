@@ -162,7 +162,12 @@ func (s *HotService) fetchUSPoolQuotesEastMoney(ctx context.Context, seeds []hot
 	params.Set("wbp2u", "|0|0|0|web")
 	params.Set("fields", "f12,f13,f14,f1,f2,f4,f3,f152,f17,f28,f15,f16,f18,f20,f115")
 
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.URLWithQuery(endpoint.EastMoneyUSHotAPI, params), nil)
+	request, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		endpoint.URLWithQuery(endpoint.EastMoneyUSHotAPI, params),
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +238,11 @@ func (s *HotService) fetchUSPoolQuotesEastMoney(ctx context.Context, seeds []hot
 	return items, nil
 }
 
-func (s *HotService) fetchEastMoneyHotDiffs(ctx context.Context, secids []string, fields string) ([]eastMoneyHotDiff, error) {
+func (s *HotService) fetchEastMoneyHotDiffs(
+	ctx context.Context,
+	secids []string,
+	fields string,
+) ([]eastMoneyHotDiff, error) {
 	diffs := make([]eastMoneyHotDiff, 0, len(secids))
 	for _, batch := range chunkSecIDs(secids, eastMoneyHotBatchSize) {
 		batchDiffs, err := s.fetchEastMoneyHotDiffBatch(ctx, batch, fields)
@@ -286,7 +295,11 @@ func normaliseEastMoneyUSPoolSymbol(symbol string) string {
 	return strings.ReplaceAll(symbol, ".", "-")
 }
 
-func (s *HotService) fetchEastMoneyHotDiffBatch(ctx context.Context, secids []string, fields string) ([]eastMoneyHotDiff, error) {
+func (s *HotService) fetchEastMoneyHotDiffBatch(
+	ctx context.Context,
+	secids []string,
+	fields string,
+) ([]eastMoneyHotDiff, error) {
 	// Keep the single-batch request focused on transport and decoding so the
 	// caller can reason about chunking and aggregation separately.
 	params := url.Values{}
@@ -297,7 +310,12 @@ func (s *HotService) fetchEastMoneyHotDiffBatch(ctx context.Context, secids []st
 	params.Set("fields", fields)
 	params.Set("secids", strings.Join(secids, ","))
 
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.URLWithQuery(endpoint.EastMoneyQuoteAPI, params), nil)
+	request, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		endpoint.URLWithQuery(endpoint.EastMoneyQuoteAPI, params),
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -451,7 +469,13 @@ func (s *HotService) fetchPoolQuotesSina(ctx context.Context, seeds []hotSeed) (
 			sem <- struct{}{}
 			defer func() { <-sem }()
 
-			text, err := provider.FetchTextWithHeaders(ctx, s.client, endpoint.SinaQuoteAPI+strings.Join(batch, ","), sinaHeaders, true)
+			text, err := provider.FetchTextWithHeaders(
+				ctx,
+				s.client,
+				endpoint.SinaQuoteAPI+strings.Join(batch, ","),
+				sinaHeaders,
+				true,
+			)
 			results[i] = batchResult{text: text, err: err}
 		}()
 	}
@@ -508,7 +532,11 @@ func (s *HotService) fetchPoolQuotesSina(ctx context.Context, seeds []hotSeed) (
 	return hotItems, nil
 }
 
-func (s *HotService) fetchPoolQuotesWithProvider(ctx context.Context, seeds []hotSeed, qp core.QuoteProvider) ([]core.HotItem, error) {
+func (s *HotService) fetchPoolQuotesWithProvider(
+	ctx context.Context,
+	seeds []hotSeed,
+	qp core.QuoteProvider,
+) ([]core.HotItem, error) {
 	if len(seeds) == 0 {
 		return nil, fmt.Errorf("Hot fallback quote response is empty")
 	}
@@ -575,7 +603,10 @@ func (s *HotService) fetchPoolQuotesWithProvider(ctx context.Context, seeds []ho
 	return hotItems, nil
 }
 
-func (s *HotService) fetchYahooQuotesConcurrent(ctx context.Context, items []core.WatchlistItem) (map[string]core.Quote, error) {
+func (s *HotService) fetchYahooQuotesConcurrent(
+	ctx context.Context,
+	items []core.WatchlistItem,
+) (map[string]core.Quote, error) {
 	var qp core.QuoteProvider
 	if s.registry != nil {
 		qp = s.registry.QuoteProvider("yahoo")

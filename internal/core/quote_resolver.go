@@ -64,10 +64,22 @@ func resolveExplicitQuoteTarget(rawSymbol, market, currency string) (QuoteTarget
 		return target, true, err
 	}
 
-	if target, ok, err := resolveAffixedQuoteTarget(rawSymbol, market, currency, quotePrefixRules, strings.CutPrefix); ok {
+	if target, ok, err := resolveAffixedQuoteTarget(
+		rawSymbol,
+		market,
+		currency,
+		quotePrefixRules,
+		strings.CutPrefix,
+	); ok {
 		return target, true, err
 	}
-	if target, ok, err := resolveAffixedQuoteTarget(rawSymbol, market, currency, quoteSuffixRules, strings.CutSuffix); ok {
+	if target, ok, err := resolveAffixedQuoteTarget(
+		rawSymbol,
+		market,
+		currency,
+		quoteSuffixRules,
+		strings.CutSuffix,
+	); ok {
 		return target, true, err
 	}
 

@@ -241,9 +241,11 @@ func (b *LogBook) Log(source, scope string, level DeveloperLogLevel, message str
 	}
 
 	if b.console != nil {
-		_ = writeDeveloperLogEntry(b.console, entry) //nolint:errcheck // Console output is best-effort and has no recoverable failure path.
+		// Console output is best-effort and has no recoverable failure path.
+		_ = writeDeveloperLogEntry(b.console, entry) //nolint:errcheck
 		if fileFailure != nil {
-			_ = writeDeveloperLogEntry(b.console, *fileFailure) //nolint:errcheck // Best-effort fallback after the file sink fails.
+			// Best-effort fallback after the file sink fails.
+			_ = writeDeveloperLogEntry(b.console, *fileFailure) //nolint:errcheck
 		}
 	}
 }

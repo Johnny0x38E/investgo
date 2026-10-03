@@ -47,7 +47,11 @@ func (s *HotService) getOrFetchPoolRank(
 	return items, false, nil
 }
 
-func (s *HotService) fetchFullPoolQuotes(ctx context.Context, category core.HotCategory, sourceID string) ([]core.HotItem, error) {
+func (s *HotService) fetchFullPoolQuotes(
+	ctx context.Context,
+	category core.HotCategory,
+	sourceID string,
+) ([]core.HotItem, error) {
 	pool, err := s.poolSeedsForCategory(ctx, category)
 	if err != nil {
 		return nil, err
@@ -113,7 +117,11 @@ func (s *HotService) browsePoolCategory(
 
 // forceOverlayQuotes always re-fetches quotes for the page, ignoring matching
 // QuoteSource labels from a warm rank cache.
-func (s *HotService) forceOverlayQuotes(ctx context.Context, items []core.HotItem, sourceID string) ([]core.HotItem, error) {
+func (s *HotService) forceOverlayQuotes(
+	ctx context.Context,
+	items []core.HotItem,
+	sourceID string,
+) ([]core.HotItem, error) {
 	if len(items) == 0 {
 		return []core.HotItem{}, nil
 	}

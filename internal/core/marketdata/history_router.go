@@ -56,7 +56,11 @@ func (r *HistoryRouter) Name() string { return "HistoryRouter" }
 // tries each provider in order, and returns the first successful result.
 // When every provider in the chain fails the returned error names each provider
 // and its individual error for diagnostics.
-func (r *HistoryRouter) Fetch(ctx context.Context, item core.WatchlistItem, interval core.HistoryInterval) (core.HistorySeries, error) {
+func (r *HistoryRouter) Fetch(
+	ctx context.Context,
+	item core.WatchlistItem,
+	interval core.HistoryInterval,
+) (core.HistorySeries, error) {
 	chain := r.chainForMarket(item.Market)
 
 	var errs []string
@@ -73,7 +77,12 @@ func (r *HistoryRouter) Fetch(ctx context.Context, item core.WatchlistItem, inte
 	}
 
 	if len(errs) > 0 {
-		return core.HistorySeries{}, fmt.Errorf("all history providers failed for %s (%s): %s", item.Symbol, item.Market, strings.Join(errs, "; "))
+		return core.HistorySeries{}, fmt.Errorf(
+			"all history providers failed for %s (%s): %s",
+			item.Symbol,
+			item.Market,
+			strings.Join(errs, "; "),
+		)
 	}
 	return core.HistorySeries{}, fmt.Errorf("no history provider configured for market: %s", item.Market)
 }

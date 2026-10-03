@@ -79,7 +79,7 @@ func validateExistingSQLite(ctx context.Context, databasePath string) error {
 	if err != nil {
 		return fmt.Errorf("open existing sqlite state: %w", err)
 	}
-	defer func() { _ = db.Close() }()
+	defer func() { _ = db.Close() }() //nolint:errcheck
 
 	if err := sqlitestorage.ApplyMigrations(ctx, db); err != nil {
 		return fmt.Errorf("migrate existing sqlite state: %w", err)
@@ -100,7 +100,7 @@ func buildTemporarySQLite(
 	closed := false
 	defer func() {
 		if !closed {
-			_ = db.Close()
+			_ = db.Close() //nolint:errcheck
 		}
 	}()
 
@@ -166,7 +166,7 @@ func validateForeignKeys(ctx context.Context, db *sql.DB) error {
 	if err != nil {
 		return fmt.Errorf("validate sqlite foreign keys: %w", err)
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	if rows.Next() {
 		return errors.New("validate sqlite foreign keys: violation found")
@@ -191,7 +191,7 @@ func backupLegacyJSON(jsonPath string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("open legacy JSON for backup: %w", err)
 	}
-	defer source.Close()
+	defer source.Close() //nolint:errcheck
 
 	sourceInfo, err := source.Stat()
 	if err != nil {
@@ -212,7 +212,7 @@ func backupLegacyJSON(jsonPath string) (string, error) {
 		copyErr = fmt.Errorf("close legacy JSON backup: %w", err)
 	}
 	if copyErr != nil {
-		_ = os.Remove(backupPath)
+		_ = os.Remove(backupPath) //nolint:errcheck
 		return "", copyErr
 	}
 	return backupPath, nil
@@ -233,11 +233,11 @@ func regularFileExists(path string) (bool, error) {
 }
 
 func cleanupSQLiteFiles(path string) {
-	_ = os.Remove(path)
+	_ = os.Remove(path) //nolint:errcheck
 	cleanupSQLiteSidecars(path)
 }
 
 func cleanupSQLiteSidecars(path string) {
-	_ = os.Remove(path + "-wal")
-	_ = os.Remove(path + "-shm")
+	_ = os.Remove(path + "-wal") //nolint:errcheck
+	_ = os.Remove(path + "-shm") //nolint:errcheck
 }

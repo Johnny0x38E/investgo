@@ -204,11 +204,26 @@ func eastMoneySuggestToSeed(item eastMoneySuggestItem, category core.HotCategory
 	switch kind {
 	case eastMoneySuggestCNStock:
 		exchange, market := eastMoneyCNStockVenue(item)
-		return hotSeed{Symbol: strings.ToUpper(code) + "." + exchange, Name: name, Market: market, Currency: "CNY"}, true
+		return hotSeed{
+			Symbol:   strings.ToUpper(code) + "." + exchange,
+			Name:     name,
+			Market:   market,
+			Currency: "CNY",
+		}, true
 	case eastMoneySuggestCNFund:
-		return hotSeed{Symbol: strings.ToUpper(code) + "." + eastMoneyCNExchange(item.MktNum), Name: name, Market: "CN-ETF", Currency: "CNY"}, true
+		return hotSeed{
+			Symbol:   strings.ToUpper(code) + "." + eastMoneyCNExchange(item.MktNum),
+			Name:     name,
+			Market:   "CN-ETF",
+			Currency: "CNY",
+		}, true
 	case eastMoneySuggestHKStock:
-		return hotSeed{Symbol: padHKSuggestCode(code) + ".HK", Name: name, Market: eastMoneyHKStockMarket(code), Currency: "HKD"}, true
+		return hotSeed{
+			Symbol:   padHKSuggestCode(code) + ".HK",
+			Name:     name,
+			Market:   eastMoneyHKStockMarket(code),
+			Currency: "HKD",
+		}, true
 	case eastMoneySuggestHKFund:
 		return hotSeed{Symbol: padHKSuggestCode(code) + ".HK", Name: name, Market: "HK-ETF", Currency: "HKD"}, true
 	default:

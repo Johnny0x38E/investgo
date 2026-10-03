@@ -30,35 +30,83 @@ type BuiltInPoolBaseline struct {
 func BuiltInPoolBaselines() []BuiltInPoolBaseline {
 	baselines := []BuiltInPoolBaseline{
 		baselineFromHotSeeds(
-			pool.Pool{ID: pool.PoolIDUSSP500, Name: "S&P 500", Market: "US-STOCK", AssetClass: instrument.AssetClassEquity, Type: pool.TypeIndex},
+			pool.Pool{
+				ID:         pool.PoolIDUSSP500,
+				Name:       "S&P 500",
+				Market:     "US-STOCK",
+				AssetClass: instrument.AssetClassEquity,
+				Type:       pool.TypeIndex,
+			},
 			normalizedUSHotSeeds(core.HotCategoryUSSP500, hotConstituents[core.HotCategoryUSSP500]),
 		),
 		baselineFromHotSeeds(
-			pool.Pool{ID: pool.PoolIDUSNasdaq, Name: "Nasdaq 100", Market: "US-STOCK", AssetClass: instrument.AssetClassEquity, Type: pool.TypeIndex},
+			pool.Pool{
+				ID:         pool.PoolIDUSNasdaq,
+				Name:       "Nasdaq 100",
+				Market:     "US-STOCK",
+				AssetClass: instrument.AssetClassEquity,
+				Type:       pool.TypeIndex,
+			},
 			normalizedUSHotSeeds(core.HotCategoryUSNasdaq, hotConstituents[core.HotCategoryUSNasdaq]),
 		),
 		baselineFromHotSeeds(
-			pool.Pool{ID: pool.PoolIDUSDow, Name: "Dow Jones 30", Market: "US-STOCK", AssetClass: instrument.AssetClassEquity, Type: pool.TypeIndex},
+			pool.Pool{
+				ID:         pool.PoolIDUSDow,
+				Name:       "Dow Jones 30",
+				Market:     "US-STOCK",
+				AssetClass: instrument.AssetClassEquity,
+				Type:       pool.TypeIndex,
+			},
 			normalizedUSHotSeeds(core.HotCategoryUSDow, hotConstituents[core.HotCategoryUSDow]),
 		),
 		baselineFromHotSeeds(
-			pool.Pool{ID: pool.PoolIDUSETF, Name: "US ETF", Market: "US-ETF", AssetClass: instrument.AssetClassETF, Type: pool.TypeBuiltIn},
+			pool.Pool{
+				ID:         pool.PoolIDUSETF,
+				Name:       "US ETF",
+				Market:     "US-ETF",
+				AssetClass: instrument.AssetClassETF,
+				Type:       pool.TypeBuiltIn,
+			},
 			normalizedUSHotSeeds(core.HotCategoryUSETF, hotConstituents[core.HotCategoryUSETF]),
 		),
 		baselineFromHotSeeds(
-			pool.Pool{ID: pool.PoolIDCNA, Name: "A-shares", Market: "CN-A", AssetClass: instrument.AssetClassEquity, Type: pool.TypeIndex},
+			pool.Pool{
+				ID:         pool.PoolIDCNA,
+				Name:       "A-shares",
+				Market:     "CN-A",
+				AssetClass: instrument.AssetClassEquity,
+				Type:       pool.TypeIndex,
+			},
 			cnAConstituents,
 		),
 		baselineFromHotSeeds(
-			pool.Pool{ID: pool.PoolIDCNETF, Name: "China ETF", Market: "CN-ETF", AssetClass: instrument.AssetClassETF, Type: pool.TypeBuiltIn},
+			pool.Pool{
+				ID:         pool.PoolIDCNETF,
+				Name:       "China ETF",
+				Market:     "CN-ETF",
+				AssetClass: instrument.AssetClassETF,
+				Type:       pool.TypeBuiltIn,
+			},
 			cnETFConstituents,
 		),
 		baselineFromHotSeeds(
-			pool.Pool{ID: pool.PoolIDHK, Name: "Hong Kong", Market: "HK-MAIN", AssetClass: instrument.AssetClassEquity, Type: pool.TypeIndex},
+			pool.Pool{
+				ID:         pool.PoolIDHK,
+				Name:       "Hong Kong",
+				Market:     "HK-MAIN",
+				AssetClass: instrument.AssetClassEquity,
+				Type:       pool.TypeIndex,
+			},
 			hkStockConstituents,
 		),
 		baselineFromHotSeeds(
-			pool.Pool{ID: pool.PoolIDHKETF, Name: "Hong Kong ETF", Market: "HK-ETF", AssetClass: instrument.AssetClassETF, Type: pool.TypeBuiltIn},
+			pool.Pool{
+				ID:         pool.PoolIDHKETF,
+				Name:       "Hong Kong ETF",
+				Market:     "HK-ETF",
+				AssetClass: instrument.AssetClassETF,
+				Type:       pool.TypeBuiltIn,
+			},
 			hkETFConstituents,
 		),
 	}

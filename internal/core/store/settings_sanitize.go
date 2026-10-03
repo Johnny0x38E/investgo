@@ -72,7 +72,11 @@ func sanitiseSettings(
 	settings.FinnhubAPIKey = applyClearableString(settings.FinnhubAPIKey, input.FinnhubAPIKey)
 	settings.TiingoAPIKey = applyClearableString(settings.TiingoAPIKey, input.TiingoAPIKey)
 	settings.PolygonAPIKey = applyClearableString(settings.PolygonAPIKey, input.PolygonAPIKey)
-	settings.DashboardCurrency = applyOptionalString(settings.DashboardCurrency, input.DashboardCurrency, strings.ToUpper)
+	settings.DashboardCurrency = applyOptionalString(
+		settings.DashboardCurrency,
+		input.DashboardCurrency,
+		strings.ToUpper,
+	)
 	if input.DeveloperMode != nil {
 		settings.DeveloperMode = *input.DeveloperMode
 	}
@@ -84,9 +88,24 @@ func sanitiseSettings(
 		return core.AppSettings{}, errors.New("Cache TTL must be at least 10 seconds")
 	}
 	settings.HotCacheTTLSeconds = core.ClampHotCacheTTLSeconds(settings.HotCacheTTLSeconds)
-	settings.CNQuoteSource = normaliseQuoteSourceIDForSettings(settings.CNQuoteSource, "CN-A", quoteProviders, quoteSourceOptions)
-	settings.HKQuoteSource = normaliseQuoteSourceIDForSettings(settings.HKQuoteSource, "HK-MAIN", quoteProviders, quoteSourceOptions)
-	settings.USQuoteSource = normaliseQuoteSourceIDForSettings(settings.USQuoteSource, "US-STOCK", quoteProviders, quoteSourceOptions)
+	settings.CNQuoteSource = normaliseQuoteSourceIDForSettings(
+		settings.CNQuoteSource,
+		"CN-A",
+		quoteProviders,
+		quoteSourceOptions,
+	)
+	settings.HKQuoteSource = normaliseQuoteSourceIDForSettings(
+		settings.HKQuoteSource,
+		"HK-MAIN",
+		quoteProviders,
+		quoteSourceOptions,
+	)
+	settings.USQuoteSource = normaliseQuoteSourceIDForSettings(
+		settings.USQuoteSource,
+		"US-STOCK",
+		quoteProviders,
+		quoteSourceOptions,
+	)
 	if len(quoteProviders) > 0 {
 		if _, ok := quoteProviders[settings.CNQuoteSource]; !ok {
 			return core.AppSettings{}, errors.New("China quote source is invalid")
@@ -142,7 +161,9 @@ func sanitiseSettings(
 		settings.ColorTheme = "blue"
 	case "graphite", "forest", "sunset", "rose", "violet", "amber", "ocean", "mint", "coral", "indigo":
 	default:
-		return core.AppSettings{}, errors.New("Color theme must be one of: blue / graphite / forest / sunset / rose / violet / amber / ocean / mint / coral / indigo")
+		return core.AppSettings{}, errors.New(
+			"Color theme must be one of: blue / graphite / forest / sunset / rose / violet / amber / ocean / mint / coral / indigo",
+		)
 	}
 
 	switch settings.AmountDisplay {

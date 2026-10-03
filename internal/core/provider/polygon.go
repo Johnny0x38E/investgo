@@ -133,7 +133,11 @@ func NewPolygonHistoryProvider(client *http.Client, settings func() core.AppSett
 
 func (p *PolygonHistoryProvider) Name() string { return "Polygon" }
 
-func (p *PolygonHistoryProvider) Fetch(ctx context.Context, item core.WatchlistItem, interval core.HistoryInterval) (core.HistorySeries, error) {
+func (p *PolygonHistoryProvider) Fetch(
+	ctx context.Context,
+	item core.WatchlistItem,
+	interval core.HistoryInterval,
+) (core.HistorySeries, error) {
 	apiKey := strings.TrimSpace(p.settings().PolygonAPIKey)
 	if apiKey == "" {
 		return core.HistorySeries{}, errors.New("Polygon API key is required")
@@ -269,7 +273,9 @@ func fetchPolygonHistory(
 	params.Set("apiKey", apiKey)
 
 	from, to := polygonHistoryWindow(interval)
-	apiURL := endpoint.PolygonAggsAPI + "/" + url.PathEscape(symbol) + "/range/" + multiplier + "/" + resolution + "/" + from + "/" + to
+	apiURL := endpoint.PolygonAggsAPI + "/" + url.PathEscape(
+		symbol,
+	) + "/range/" + multiplier + "/" + resolution + "/" + from + "/" + to
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.URLWithQuery(apiURL, params), nil)
 	if err != nil {
 		return nil, err

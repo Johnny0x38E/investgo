@@ -48,7 +48,10 @@ func NewAlphaVantageQuoteProvider(client *http.Client, settings func() core.AppS
 
 func (p *AlphaVantageQuoteProvider) Name() string { return "Alpha Vantage" }
 
-func (p *AlphaVantageQuoteProvider) Fetch(ctx context.Context, items []core.WatchlistItem) (map[string]core.Quote, error) {
+func (p *AlphaVantageQuoteProvider) Fetch(
+	ctx context.Context,
+	items []core.WatchlistItem,
+) (map[string]core.Quote, error) {
 	apiKey := strings.TrimSpace(p.settings().AlphaVantageAPIKey)
 	if apiKey == "" {
 		return nil, errors.New("Alpha Vantage API key is required")
@@ -84,7 +87,10 @@ func (p *AlphaVantageQuoteProvider) Fetch(ctx context.Context, items []core.Watc
 	return quotes, errs.JoinProblems(problems)
 }
 
-func NewAlphaVantageHistoryProvider(client *http.Client, settings func() core.AppSettings) *AlphaVantageHistoryProvider {
+func NewAlphaVantageHistoryProvider(
+	client *http.Client,
+	settings func() core.AppSettings,
+) *AlphaVantageHistoryProvider {
 	if client == nil {
 		client = &http.Client{Timeout: 10 * time.Second}
 	}
@@ -96,7 +102,11 @@ func NewAlphaVantageHistoryProvider(client *http.Client, settings func() core.Ap
 
 func (p *AlphaVantageHistoryProvider) Name() string { return "Alpha Vantage" }
 
-func (p *AlphaVantageHistoryProvider) Fetch(ctx context.Context, item core.WatchlistItem, interval core.HistoryInterval) (core.HistorySeries, error) {
+func (p *AlphaVantageHistoryProvider) Fetch(
+	ctx context.Context,
+	item core.WatchlistItem,
+	interval core.HistoryInterval,
+) (core.HistorySeries, error) {
 	apiKey := strings.TrimSpace(p.settings().AlphaVantageAPIKey)
 	if apiKey == "" {
 		return core.HistorySeries{}, errors.New("Alpha Vantage API key is required")
@@ -144,7 +154,12 @@ func fetchAlphaVantageQuote(
 	params.Set("symbol", symbol)
 	params.Set("apikey", apiKey)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.URLWithQuery(endpoint.AlphaVantageAPI, params), nil)
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		endpoint.URLWithQuery(endpoint.AlphaVantageAPI, params),
+		nil,
+	)
 	if err != nil {
 		return core.Quote{}, err
 	}
@@ -229,7 +244,12 @@ func fetchAlphaVantageHistory(
 	default:
 		return nil, "", errors.New("History interval must be one of: 1h / 1d / 1w / 1mo / 1y / 3y / all")
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.URLWithQuery(endpoint.AlphaVantageAPI, params), nil)
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		endpoint.URLWithQuery(endpoint.AlphaVantageAPI, params),
+		nil,
+	)
 	if err != nil {
 		return nil, "", err
 	}

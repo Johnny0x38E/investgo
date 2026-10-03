@@ -42,7 +42,7 @@ func (r *PoolRepository) List(ctx context.Context) ([]pool.Pool, error) {
 	if err != nil {
 		return nil, fmt.Errorf("list pools: %w", err)
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	values := make([]pool.Pool, 0)
 	for rows.Next() {
@@ -125,7 +125,7 @@ func (r *PoolRepository) ReplaceBuiltInMembers(
 	if err != nil {
 		return fmt.Errorf("begin built-in membership replacement: %w", err)
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback() }() //nolint:errcheck
 
 	result, err := tx.ExecContext(ctx, `
 		UPDATE pools SET data_version = ?, updated_at = ? WHERE id = ?
@@ -174,7 +174,7 @@ func (r *PoolRepository) ListBuiltInMemberIDs(ctx context.Context, poolID string
 	if err != nil {
 		return nil, fmt.Errorf("list built-in members for %s: %w", poolID, err)
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	values := make([]string, 0)
 	for rows.Next() {
@@ -218,7 +218,7 @@ func (r *PoolRepository) ListOverrides(ctx context.Context, poolID string) ([]po
 	if err != nil {
 		return nil, fmt.Errorf("list pool overrides for %s: %w", poolID, err)
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	values := make([]pool.Override, 0)
 	for rows.Next() {

@@ -32,7 +32,10 @@ func (r *InstrumentRepository) Get(ctx context.Context, id string) (instrument.I
 	return scanInstrument(r.db.QueryRowContext(ctx, instrumentSelect+" WHERE id = ?", id))
 }
 
-func (r *InstrumentRepository) Find(ctx context.Context, identity instrument.Identity) (instrument.Instrument, bool, error) {
+func (r *InstrumentRepository) Find(
+	ctx context.Context,
+	identity instrument.Identity,
+) (instrument.Instrument, bool, error) {
 	if err := r.ready(); err != nil {
 		return instrument.Instrument{}, false, err
 	}
@@ -76,7 +79,7 @@ func (r *InstrumentRepository) Upsert(ctx context.Context, value instrument.Inst
 	if err != nil {
 		return instrument.Instrument{}, fmt.Errorf("begin instrument upsert: %w", err)
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback() }() //nolint:errcheck
 
 	stored, _, err := scanInstrument(tx.QueryRowContext(ctx, `
 		INSERT INTO instruments(
@@ -113,7 +116,10 @@ func (r *InstrumentRepository) Upsert(ctx context.Context, value instrument.Inst
 	return stored, nil
 }
 
-func (r *InstrumentRepository) SetDisplayName(ctx context.Context, id, displayName string) (instrument.Instrument, error) {
+func (r *InstrumentRepository) SetDisplayName(
+	ctx context.Context,
+	id, displayName string,
+) (instrument.Instrument, error) {
 	if err := r.ready(); err != nil {
 		return instrument.Instrument{}, err
 	}
@@ -175,7 +181,7 @@ func (r *InstrumentRepository) UpsertProviderSymbol(
 	if err != nil {
 		return instrument.ProviderSymbol{}, fmt.Errorf("begin provider symbol upsert: %w", err)
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback() }() //nolint:errcheck
 
 	stored, _, err := scanProviderSymbol(tx.QueryRowContext(ctx, `
 		INSERT INTO provider_symbols(

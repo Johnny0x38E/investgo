@@ -34,7 +34,8 @@ func statusForError(err error) int {
 	if errors.Is(err, pool.ErrInvalidOperation) {
 		return http.StatusConflict
 	}
-	if errors.Is(err, pool.ErrPoolNotFound) || errors.Is(err, pool.ErrInstrumentNotFound) || errors.Is(err, pool.ErrMemberNotFound) {
+	if errors.Is(err, pool.ErrPoolNotFound) || errors.Is(err, pool.ErrInstrumentNotFound) ||
+		errors.Is(err, pool.ErrMemberNotFound) {
 		return http.StatusNotFound
 	}
 

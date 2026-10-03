@@ -119,7 +119,15 @@ func TestNormalizeCanonicalInstrumentIdentities(t *testing.T) {
 			}
 			assertInstrumentIdentity(t, got, tt.want)
 			if got.Name != tt.want.Name || got.QuoteCurrency != tt.want.QuoteCurrency || got.Status != tt.want.Status {
-				t.Fatalf("Normalize() metadata = (%q, %q, %q), want (%q, %q, %q)", got.Name, got.QuoteCurrency, got.Status, tt.want.Name, tt.want.QuoteCurrency, tt.want.Status)
+				t.Fatalf(
+					"Normalize() metadata = (%q, %q, %q), want (%q, %q, %q)",
+					got.Name,
+					got.QuoteCurrency,
+					got.Status,
+					tt.want.Name,
+					tt.want.QuoteCurrency,
+					tt.want.Status,
+				)
 			}
 		})
 	}
@@ -194,11 +202,31 @@ func TestNormalizeRejectsInvalidInstrumentIdentity(t *testing.T) {
 		input Instrument
 		field string
 	}{
-		{name: "unknown asset class", input: Instrument{AssetClass: "bond", Market: "US-STOCK", Symbol: "AAPL"}, field: "assetClass"},
-		{name: "asset class conflicts with market", input: Instrument{AssetClass: AssetClassETF, Market: "US-STOCK", Symbol: "SPY"}, field: "market"},
-		{name: "invalid A-share symbol", input: Instrument{AssetClass: AssetClassEquity, Market: "CN-A", Symbol: "60051"}, field: "symbol"},
-		{name: "invalid Hong Kong symbol", input: Instrument{AssetClass: AssetClassEquity, Market: "HK-MAIN", Symbol: "TENCENT"}, field: "symbol"},
-		{name: "missing US symbol", input: Instrument{AssetClass: AssetClassEquity, Market: "US-STOCK"}, field: "symbol"},
+		{
+			name:  "unknown asset class",
+			input: Instrument{AssetClass: "bond", Market: "US-STOCK", Symbol: "AAPL"},
+			field: "assetClass",
+		},
+		{
+			name:  "asset class conflicts with market",
+			input: Instrument{AssetClass: AssetClassETF, Market: "US-STOCK", Symbol: "SPY"},
+			field: "market",
+		},
+		{
+			name:  "invalid A-share symbol",
+			input: Instrument{AssetClass: AssetClassEquity, Market: "CN-A", Symbol: "60051"},
+			field: "symbol",
+		},
+		{
+			name:  "invalid Hong Kong symbol",
+			input: Instrument{AssetClass: AssetClassEquity, Market: "HK-MAIN", Symbol: "TENCENT"},
+			field: "symbol",
+		},
+		{
+			name:  "missing US symbol",
+			input: Instrument{AssetClass: AssetClassEquity, Market: "US-STOCK"},
+			field: "symbol",
+		},
 	}
 
 	for _, tt := range tests {

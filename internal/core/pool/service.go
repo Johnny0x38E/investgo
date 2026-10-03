@@ -519,7 +519,8 @@ func poolAcceptsInstrument(definition Pool, value instrument.Instrument) bool {
 	}
 	switch definition.Market {
 	case "CN-A":
-		return value.Market == "CN-A" || value.Market == "CN-GEM" || value.Market == "CN-STAR" || value.Market == "CN-BJ"
+		return value.Market == "CN-A" || value.Market == "CN-GEM" || value.Market == "CN-STAR" ||
+			value.Market == "CN-BJ"
 	case "HK-MAIN":
 		return value.Market == "HK-MAIN" || value.Market == "HK-GEM"
 	default:

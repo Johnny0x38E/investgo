@@ -106,7 +106,11 @@ func NewFinnhubHistoryProvider(client *http.Client, settings func() core.AppSett
 
 func (p *FinnhubHistoryProvider) Name() string { return "Finnhub" }
 
-func (p *FinnhubHistoryProvider) Fetch(ctx context.Context, item core.WatchlistItem, interval core.HistoryInterval) (core.HistorySeries, error) {
+func (p *FinnhubHistoryProvider) Fetch(
+	ctx context.Context,
+	item core.WatchlistItem,
+	interval core.HistoryInterval,
+) (core.HistorySeries, error) {
 	apiKey := strings.TrimSpace(p.settings().FinnhubAPIKey)
 	if apiKey == "" {
 		return core.HistorySeries{}, errors.New("Finnhub API key is required")
@@ -153,7 +157,12 @@ func fetchFinnhubQuote(
 	params.Set("symbol", symbol)
 	params.Set("token", apiKey)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.URLWithQuery(endpoint.FinnhubQuoteAPI, params), nil)
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		endpoint.URLWithQuery(endpoint.FinnhubQuoteAPI, params),
+		nil,
+	)
 	if err != nil {
 		return core.Quote{}, err
 	}
@@ -216,7 +225,12 @@ func fetchFinnhubHistory(
 	params.Set("to", fmt.Sprintf("%d", now.Unix()))
 	params.Set("token", apiKey)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.URLWithQuery(endpoint.FinnhubCandleAPI, params), nil)
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		endpoint.URLWithQuery(endpoint.FinnhubCandleAPI, params),
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -244,7 +258,13 @@ func fetchFinnhubHistory(
 		return nil, errors.New(FirstNonEmpty(parsed.Status, "History response contains no valid price points"))
 	}
 
-	size := MinInt(len(parsed.Time), MinInt(len(parsed.Open), MinInt(len(parsed.High), MinInt(len(parsed.Low), MinInt(len(parsed.Close), len(parsed.Volume))))))
+	size := MinInt(
+		len(parsed.Time),
+		MinInt(
+			len(parsed.Open),
+			MinInt(len(parsed.High), MinInt(len(parsed.Low), MinInt(len(parsed.Close), len(parsed.Volume)))),
+		),
+	)
 	points := make([]core.HistoryPoint, 0, size)
 	for idx := range size {
 		if parsed.Close[idx] <= 0 {

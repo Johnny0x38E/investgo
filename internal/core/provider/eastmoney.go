@@ -162,7 +162,10 @@ func (p *EastMoneyQuoteProvider) Fetch(ctx context.Context, items []core.Watchli
 			}
 			secids := secidsByTargetKey[key]
 			if len(secids) > 0 {
-				problems = append(problems, fmt.Sprintf("Did not receive EastMoney quote for %s (%s)", target.DisplaySymbol, secids[0]))
+				problems = append(
+					problems,
+					fmt.Sprintf("Did not receive EastMoney quote for %s (%s)", target.DisplaySymbol, secids[0]),
+				)
 			}
 		}
 
@@ -266,13 +269,22 @@ func (p *EastMoneyQuoteProvider) fetchUSQuote(ctx context.Context, target core.Q
 	return core.Quote{}, errs.JoinProblems(problems)
 }
 
-func (p *EastMoneyQuoteProvider) fetchUSQuoteBySecID(ctx context.Context, target core.QuoteTarget, secid string) (core.Quote, error) {
+func (p *EastMoneyQuoteProvider) fetchUSQuoteBySecID(
+	ctx context.Context,
+	target core.QuoteTarget,
+	secid string,
+) (core.Quote, error) {
 	params := url.Values{}
 	params.Set("secid", secid)
 	params.Set("ut", "fa5fd1943c7b386f172d6893dbfba10b")
 	params.Set("fields", "f43,f57,f58,f169,f170,f46,f44,f45,f60,f116")
 
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.URLWithQuery(endpoint.EastMoneyStockAPI, params), nil)
+	request, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		endpoint.URLWithQuery(endpoint.EastMoneyStockAPI, params),
+		nil,
+	)
 	if err != nil {
 		return core.Quote{}, err
 	}
@@ -338,7 +350,10 @@ func (p *EastMoneyQuoteProvider) fetchDiffs(ctx context.Context, secids []string
 	return diffs, nil
 }
 
-func (p *EastMoneyQuoteProvider) fetchDiffBatchAdaptive(ctx context.Context, secids []string) ([]EastMoneyQuoteDataDiff, error) {
+func (p *EastMoneyQuoteProvider) fetchDiffBatchAdaptive(
+	ctx context.Context,
+	secids []string,
+) ([]EastMoneyQuoteDataDiff, error) {
 	if len(secids) == 0 {
 		return nil, nil
 	}
@@ -370,7 +385,10 @@ func (p *EastMoneyQuoteProvider) fetchDiffBatchAdaptive(ctx context.Context, sec
 	return append(left, right...), nil
 }
 
-func (p *EastMoneyQuoteProvider) fetchDiffBatch(ctx context.Context, secids []string) ([]EastMoneyQuoteDataDiff, error) {
+func (p *EastMoneyQuoteProvider) fetchDiffBatch(
+	ctx context.Context,
+	secids []string,
+) ([]EastMoneyQuoteDataDiff, error) {
 	params := url.Values{}
 	params.Set("fltt", "2")
 	params.Set("invt", "2")
@@ -379,7 +397,12 @@ func (p *EastMoneyQuoteProvider) fetchDiffBatch(ctx context.Context, secids []st
 	params.Set("fields", "f2,f3,f4,f12,f13,f14,f15,f16,f17,f18")
 	params.Set("secids", strings.Join(secids, ","))
 
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.URLWithQuery(endpoint.EastMoneyQuoteAPI, params), nil)
+	request, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		endpoint.URLWithQuery(endpoint.EastMoneyQuoteAPI, params),
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -429,7 +452,10 @@ func ResolveAllEastMoneySecIDs(target core.QuoteTarget) ([]string, error) {
 		return nil, fmt.Errorf("A-share / ETF symbol format is invalid: %s", symbol)
 
 	case "CN-BJ":
-		return nil, fmt.Errorf("Realtime quotes are not supported for Beijing Exchange symbols in EastMoney: %s", symbol)
+		return nil, fmt.Errorf(
+			"Realtime quotes are not supported for Beijing Exchange symbols in EastMoney: %s",
+			symbol,
+		)
 
 	case "HK-MAIN", "HK-GEM", "HK-ETF":
 		if code, ok := strings.CutSuffix(symbol, ".HK"); ok {
@@ -500,7 +526,11 @@ func (p *EastMoneyChartProvider) Name() string {
 }
 
 // Fetch fetches historical quote data via the EastMoney K-line API.
-func (p *EastMoneyChartProvider) Fetch(ctx context.Context, item core.WatchlistItem, interval core.HistoryInterval) (core.HistorySeries, error) {
+func (p *EastMoneyChartProvider) Fetch(
+	ctx context.Context,
+	item core.WatchlistItem,
+	interval core.HistoryInterval,
+) (core.HistorySeries, error) {
 	target, err := core.ResolveQuoteTarget(item)
 	if err != nil {
 		return core.HistorySeries{}, fmt.Errorf("EastMoney history failed to resolve item %s: %w", item.Symbol, err)
@@ -563,7 +593,11 @@ func (p *EastMoneyChartProvider) fetchWithSecID(
 	defer resp.Body.Close() // nolint:errcheck
 
 	if resp.StatusCode != http.StatusOK {
-		return core.HistorySeries{}, fmt.Errorf("EastMoney history request failed for %s: status %d", secid, resp.StatusCode)
+		return core.HistorySeries{}, fmt.Errorf(
+			"EastMoney history request failed for %s: status %d",
+			secid,
+			resp.StatusCode,
+		)
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -615,9 +649,23 @@ func eastMoneyHistorySpecFor(interval core.HistoryInterval) (eastMoneyHistorySpe
 
 	switch interval {
 	case core.HistoryRange1h:
-		return eastMoneyHistorySpec{klt: 60, beg: now.AddDate(0, 0, -5).Format("20060102"), end: end, lmt: 50, intraday: true, trimWindow: time.Hour}, nil
+		return eastMoneyHistorySpec{
+			klt:        60,
+			beg:        now.AddDate(0, 0, -5).Format("20060102"),
+			end:        end,
+			lmt:        50,
+			intraday:   true,
+			trimWindow: time.Hour,
+		}, nil
 	case core.HistoryRange1d:
-		return eastMoneyHistorySpec{klt: 60, beg: now.AddDate(0, 0, -5).Format("20060102"), end: end, lmt: 50, intraday: true, trimWindow: 24 * time.Hour}, nil
+		return eastMoneyHistorySpec{
+			klt:        60,
+			beg:        now.AddDate(0, 0, -5).Format("20060102"),
+			end:        end,
+			lmt:        50,
+			intraday:   true,
+			trimWindow: 24 * time.Hour,
+		}, nil
 	case core.HistoryRange1w:
 		return eastMoneyHistorySpec{klt: 101, beg: now.AddDate(0, 0, -14).Format("20060102"), end: end, lmt: 10}, nil
 	case core.HistoryRange1mo:

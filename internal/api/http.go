@@ -248,7 +248,11 @@ func localizeQuoteSourceOptions(locale string, options []core.QuoteSourceOption)
 	localized := append([]core.QuoteSourceOption(nil), options...)
 	for index := range localized {
 		localized[index].Name = localizeQuoteSourceName(locale, localized[index].Name)
-		localized[index].Description = localizeQuoteSourceDescription(locale, localized[index].ID, localized[index].Description)
+		localized[index].Description = localizeQuoteSourceDescription(
+			locale,
+			localized[index].ID,
+			localized[index].Description,
+		)
 	}
 	return localized
 }

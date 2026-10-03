@@ -9,7 +9,9 @@ import (
 // Client logs and store logs share this list so the API does not trust a caller
 // that claims to have redacted already.
 var sensitiveLogPatterns = []*regexp.Regexp{
-	regexp.MustCompile(`(?i)(alphaVantageApiKey|twelveDataApiKey|finnhubApiKey|tiingoApiKey|polygonApiKey)\s*[:=]\s*["']?[^"'\s,;]+["']?`),
+	regexp.MustCompile(
+		`(?i)(alphaVantageApiKey|twelveDataApiKey|finnhubApiKey|tiingoApiKey|polygonApiKey)\s*[:=]\s*["']?[^"'\s,;]+["']?`,
+	),
 	regexp.MustCompile(`(?i)(apikey|api_key|key)=([^&\s]+)`),
 }
 

@@ -122,7 +122,12 @@ func (h *Handler) handlePoolMembers(writer http.ResponseWriter, request *http.Re
 	}
 	status := pool.MemberStatus(strings.ToLower(strings.TrimSpace(request.URL.Query().Get("status"))))
 	if status != "" && status != pool.MemberStatusActive && status != pool.MemberStatusExcluded {
-		writeError(writer, request, http.StatusBadRequest, &apiError{message: "Pool member status must be active or excluded"})
+		writeError(
+			writer,
+			request,
+			http.StatusBadRequest,
+			&apiError{message: "Pool member status must be active or excluded"},
+		)
 		return
 	}
 	filtered := make([]pool.Member, 0, len(values))
@@ -188,11 +193,16 @@ func (h *Handler) handleUpdatePoolMember(writer http.ResponseWriter, request *ht
 		return
 	}
 	poolID := request.PathValue("id")
-	member, err := h.pools.UpdateMember(request.Context(), poolID, request.PathValue("instrumentId"), pool.UpdateMemberInput{
-		Symbol:    payload.Symbol,
-		Name:      payload.Name,
-		ResetName: payload.ResetName,
-	})
+	member, err := h.pools.UpdateMember(
+		request.Context(),
+		poolID,
+		request.PathValue("instrumentId"),
+		pool.UpdateMemberInput{
+			Symbol:    payload.Symbol,
+			Name:      payload.Name,
+			ResetName: payload.ResetName,
+		},
+	)
 	if err != nil {
 		h.writePoolError(writer, request, err)
 		return
@@ -362,16 +372,26 @@ func newPoolMemberDTO(value pool.Member) poolMemberDTO {
 	return poolMemberDTO{
 		PoolID: value.PoolID,
 		Instrument: instrumentDTO{
-			ID: value.Instrument.ID, AssetClass: value.Instrument.AssetClass, Symbol: value.Instrument.Symbol,
-			Name: value.Instrument.Display(), DefaultName: value.Instrument.Name, HasCustomName: value.Instrument.HasCustomName(),
-			Market: value.Instrument.Market, Exchange: value.Instrument.Exchange,
-			BaseAsset: value.Instrument.BaseAsset, QuoteCurrency: value.Instrument.QuoteCurrency,
-			Status: value.Instrument.Status, UpdatedAt: value.Instrument.UpdatedAt,
+			ID:            value.Instrument.ID,
+			AssetClass:    value.Instrument.AssetClass,
+			Symbol:        value.Instrument.Symbol,
+			Name:          value.Instrument.Display(),
+			DefaultName:   value.Instrument.Name,
+			HasCustomName: value.Instrument.HasCustomName(),
+			Market:        value.Instrument.Market,
+			Exchange:      value.Instrument.Exchange,
+			BaseAsset:     value.Instrument.BaseAsset,
+			QuoteCurrency: value.Instrument.QuoteCurrency,
+			Status:        value.Instrument.Status,
+			UpdatedAt:     value.Instrument.UpdatedAt,
 		},
 		Source: value.Source, Status: value.Status, UpdatedAt: value.UpdatedAt,
 	}
 }
 
 func poolMemberNotFound(poolID, instrumentID string) error {
-	return errors.Join(pool.ErrMemberNotFound, &apiError{message: "Pool member not found: " + poolID + "/" + instrumentID})
+	return errors.Join(
+		pool.ErrMemberNotFound,
+		&apiError{message: "Pool member not found: " + poolID + "/" + instrumentID},
+	)
 }

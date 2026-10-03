@@ -92,6 +92,8 @@ type frankfurterResponse struct {
 // Fetch fetches FX rates of various currencies against CNY from the Frankfurter API.
 // Fetches foreign currency rates with CNY as base, then takes reciprocals to get "foreign currency → CNY" mapping.
 // Concurrent callers share one in-flight request and receive the same success or error result.
+//
+//nolint:contextcheck // A nil ctx deliberately falls back to context.Background().
 func (f *FxRates) Fetch(ctx context.Context) error {
 	if ctx == nil {
 		ctx = context.Background()

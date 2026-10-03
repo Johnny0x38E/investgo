@@ -78,7 +78,8 @@ func SchemaVersion(ctx context.Context, db *sql.DB) (int, error) {
 	}
 
 	var version int
-	if err := db.QueryRowContext(ctx, "SELECT COALESCE(MAX(version), 0) FROM schema_migrations").Scan(&version); err != nil {
+	if err := db.QueryRowContext(ctx, "SELECT COALESCE(MAX(version), 0) FROM schema_migrations").
+		Scan(&version); err != nil {
 		return 0, fmt.Errorf("read sqlite schema version: %w", err)
 	}
 	return version, nil
@@ -102,7 +103,12 @@ func loadMigrations() ([]migration, error) {
 			return nil, err
 		}
 		if previous, exists := seenVersions[version]; exists {
-			return nil, fmt.Errorf("duplicate sqlite migration version %d in %s and %s", version, previous, entry.Name())
+			return nil, fmt.Errorf(
+				"duplicate sqlite migration version %d in %s and %s",
+				version,
+				previous,
+				entry.Name(),
+			)
 		}
 
 		path := "migrations/" + entry.Name()
@@ -141,7 +147,7 @@ func applyMigration(ctx context.Context, db *sql.DB, candidate migration) error 
 	if err != nil {
 		return fmt.Errorf("begin sqlite migration %s: %w", candidate.name, err)
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback() }() //nolint:errcheck
 
 	if _, err := tx.ExecContext(ctx, candidate.sql); err != nil {
 		return fmt.Errorf("apply sqlite migration %s: %w", candidate.name, err)

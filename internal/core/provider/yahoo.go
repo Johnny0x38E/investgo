@@ -91,7 +91,10 @@ func cloneYahooClient(client *http.Client) *http.Client {
 }
 
 func setYahooBrowserHeaders(request *http.Request, host string) {
-	request.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15")
+	request.Header.Set(
+		"User-Agent",
+		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
+	)
 	request.Header.Set("Accept", "application/json,text/plain,*/*")
 	request.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	request.Header.Set("Origin", endpoint.YahooFinanceOrigin)
@@ -123,8 +126,9 @@ func primeYahooSession(ctx context.Context, client *http.Client) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()               // nolint:errcheck
-	_, _ = io.Copy(io.Discard, resp.Body) //nolint:errcheck // Best-effort drain enables connection reuse; cookies are already stored from the headers.
+	defer resp.Body.Close() // nolint:errcheck
+	// Best-effort drain enables connection reuse; cookies are already stored from the headers.
+	_, _ = io.Copy(io.Discard, resp.Body) //nolint:errcheck
 	return nil
 }
 
@@ -324,7 +328,11 @@ func (p *YahooQuoteProvider) Fetch(ctx context.Context, items []core.WatchlistIt
 
 // fetchChartSnapshot calls the Yahoo Finance chart API, parses the last 5 days of daily data,
 // and builds a Quote from the latest price point.
-func (p *YahooQuoteProvider) fetchChartSnapshot(ctx context.Context, item core.WatchlistItem, yahooSymbol string) (core.Quote, error) {
+func (p *YahooQuoteProvider) fetchChartSnapshot(
+	ctx context.Context,
+	item core.WatchlistItem,
+	yahooSymbol string,
+) (core.Quote, error) {
 	params := url.Values{}
 	params.Set("range", "5d")
 	params.Set("interval", "1d")
@@ -396,7 +404,11 @@ func (p *YahooChartProvider) Name() string {
 
 // Fetch implements the core.HistoryProvider interface,
 // fetching historical quote data from Yahoo Finance and converting it to the unified format.
-func (p *YahooChartProvider) Fetch(ctx context.Context, item core.WatchlistItem, interval core.HistoryInterval) (core.HistorySeries, error) {
+func (p *YahooChartProvider) Fetch(
+	ctx context.Context,
+	item core.WatchlistItem,
+	interval core.HistoryInterval,
+) (core.HistorySeries, error) {
 	yahooSymbol, err := resolveYahooSymbol(item)
 	if err != nil {
 		return core.HistorySeries{}, err

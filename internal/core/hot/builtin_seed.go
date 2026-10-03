@@ -23,7 +23,12 @@ func SeedBuiltInPools(ctx context.Context, repositories Repositories, dataVersio
 	return seedBuiltInPools(ctx, repositories, dataVersion, BuiltInPoolBaselines())
 }
 
-func seedBuiltInPools(ctx context.Context, repositories Repositories, dataVersion string, baselines []BuiltInPoolBaseline) error {
+func seedBuiltInPools(
+	ctx context.Context,
+	repositories Repositories,
+	dataVersion string,
+	baselines []BuiltInPoolBaseline,
+) error {
 	if repositories.Instruments == nil {
 		return errors.New("seed built-in pools: instrument repository is required")
 	}
@@ -76,7 +81,12 @@ func seedBuiltInPools(ctx context.Context, repositories Repositories, dataVersio
 		}
 
 		if storedPool.Type != pool.TypeCustom {
-			if err := repositories.Pools.ReplaceBuiltInMembers(ctx, storedPool.ID, dataVersion, instrumentIDs); err != nil {
+			if err := repositories.Pools.ReplaceBuiltInMembers(
+				ctx,
+				storedPool.ID,
+				dataVersion,
+				instrumentIDs,
+			); err != nil {
 				return fmt.Errorf("seed membership for pool %s: %w", storedPool.ID, err)
 			}
 		}

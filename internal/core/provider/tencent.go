@@ -171,7 +171,13 @@ func (p *TencentQuoteProvider) Fetch(ctx context.Context, items []core.Watchlist
 	}
 
 	for _, batch := range ChunkStrings(queryCodes, tencentBatchSize) {
-		body, err := FetchTextWithHeaders(ctx, p.client, endpoint.TencentQuoteAPI+strings.Join(batch, ","), tencentHeaders, true)
+		body, err := FetchTextWithHeaders(
+			ctx,
+			p.client,
+			endpoint.TencentQuoteAPI+strings.Join(batch, ","),
+			tencentHeaders,
+			true,
+		)
 		if err != nil {
 			problems = append(problems, err.Error())
 			continue
@@ -207,7 +213,11 @@ func (p *TencentQuoteProvider) Fetch(ctx context.Context, items []core.Watchlist
 
 func (p *TencentHistoryProvider) Name() string { return "Tencent Finance" }
 
-func (p *TencentHistoryProvider) Fetch(ctx context.Context, item core.WatchlistItem, interval core.HistoryInterval) (core.HistorySeries, error) {
+func (p *TencentHistoryProvider) Fetch(
+	ctx context.Context,
+	item core.WatchlistItem,
+	interval core.HistoryInterval,
+) (core.HistorySeries, error) {
 	target, err := core.ResolveQuoteTarget(item)
 	if err != nil {
 		return core.HistorySeries{}, err
@@ -251,7 +261,10 @@ func (p *TencentHistoryProvider) fetchHistoryWithCode(
 		return core.HistorySeries{}, err
 	}
 	req.Header.Set("Referer", endpoint.TencentFinanceReferer)
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+	req.Header.Set(
+		"User-Agent",
+		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+	)
 
 	resp, err := p.client.Do(req)
 	if err != nil {
@@ -259,7 +272,11 @@ func (p *TencentHistoryProvider) fetchHistoryWithCode(
 	}
 	defer resp.Body.Close() // nolint:errcheck
 	if resp.StatusCode != http.StatusOK {
-		return core.HistorySeries{}, fmt.Errorf("Tencent history request failed for %s: status %d", code, resp.StatusCode)
+		return core.HistorySeries{}, fmt.Errorf(
+			"Tencent history request failed for %s: status %d",
+			code,
+			resp.StatusCode,
+		)
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -338,7 +355,11 @@ func buildTencentQuote(item core.WatchlistItem, target core.QuoteTarget, fields 
 	quote := BuildQuote(name, current, previous, open, high, low, updatedAt, "Tencent Finance")
 	quote.Symbol = target.DisplaySymbol
 	quote.Market = target.Market
-	quote.Currency = FirstNonEmpty(PartsAt(fields, tencentCurrencyFieldIndex(target.Market)), item.Currency, target.Currency)
+	quote.Currency = FirstNonEmpty(
+		PartsAt(fields, tencentCurrencyFieldIndex(target.Market)),
+		item.Currency,
+		target.Currency,
+	)
 	quote.Change = ParseFloat(PartsAt(fields, 31))
 	quote.ChangePercent = ParseFloat(PartsAt(fields, 32))
 

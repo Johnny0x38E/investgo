@@ -59,7 +59,8 @@ func TestLookupSymbolPrefillsIdentityAndQuote(t *testing.T) {
 	if err != nil {
 		t.Fatalf("lookup 600519: %v", err)
 	}
-	if got.Symbol != "600519.SH" || got.Name != "贵州茅台" || got.Market != "CN-A" || got.Currency != "CNY" || got.CurrentPrice != 1420.5 {
+	if got.Symbol != "600519.SH" || got.Name != "贵州茅台" || got.Market != "CN-A" || got.Currency != "CNY" ||
+		got.CurrentPrice != 1420.5 {
 		t.Fatalf("unexpected CN lookup: %+v", got)
 	}
 
@@ -91,7 +92,8 @@ func TestLookupSymbolReturnsIdentityWhenQuoteFails(t *testing.T) {
 	if err != nil {
 		t.Fatalf("lookup should succeed without live quote: %v", err)
 	}
-	if got.Symbol != "688981.SH" || got.Market != "CN-STAR" || got.Currency != "CNY" || got.Name != "688981.SH" || got.CurrentPrice != 0 {
+	if got.Symbol != "688981.SH" || got.Market != "CN-STAR" || got.Currency != "CNY" || got.Name != "688981.SH" ||
+		got.CurrentPrice != 0 {
 		t.Fatalf("unexpected fallback lookup: %+v", got)
 	}
 	if provider.calls.Load() != 1 {

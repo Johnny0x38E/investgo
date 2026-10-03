@@ -84,12 +84,20 @@ func (p *XueqiuQuoteProvider) Fetch(ctx context.Context, items []core.WatchlistI
 	for _, batch := range ChunkStrings(xueqiuSymbols, xueqiuBatchSize) {
 		params := url.Values{}
 		params.Set("symbol", strings.Join(batch, ","))
-		request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.XueqiuQuoteAPI+"?"+params.Encode(), nil)
+		request, err := http.NewRequestWithContext(
+			ctx,
+			http.MethodGet,
+			endpoint.XueqiuQuoteAPI+"?"+params.Encode(),
+			nil,
+		)
 		if err != nil {
 			problems = append(problems, err.Error())
 			continue
 		}
-		request.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+		request.Header.Set(
+			"User-Agent",
+			"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+		)
 		request.Header.Set("Referer", endpoint.XueqiuReferer)
 		request.Header.Set("Origin", endpoint.XueqiuOrigin)
 
@@ -116,7 +124,10 @@ func (p *XueqiuQuoteProvider) Fetch(ctx context.Context, items []core.WatchlistI
 			continue
 		}
 		if parsed.ErrorCode != 0 {
-			problems = append(problems, fmt.Sprintf("Xueqiu quote error %d: %s", parsed.ErrorCode, parsed.ErrorDescription))
+			problems = append(
+				problems,
+				fmt.Sprintf("Xueqiu quote error %d: %s", parsed.ErrorCode, parsed.ErrorDescription),
+			)
 			continue
 		}
 

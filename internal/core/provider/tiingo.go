@@ -145,7 +145,11 @@ func NewTiingoHistoryProvider(client *http.Client, settings func() core.AppSetti
 
 func (p *TiingoHistoryProvider) Name() string { return "Tiingo" }
 
-func (p *TiingoHistoryProvider) Fetch(ctx context.Context, item core.WatchlistItem, interval core.HistoryInterval) (core.HistorySeries, error) {
+func (p *TiingoHistoryProvider) Fetch(
+	ctx context.Context,
+	item core.WatchlistItem,
+	interval core.HistoryInterval,
+) (core.HistorySeries, error) {
 	apiKey := strings.TrimSpace(p.settings().TiingoAPIKey)
 	if apiKey == "" {
 		return core.HistorySeries{}, errors.New("Tiingo API key is required")
@@ -197,7 +201,12 @@ func fetchTiingoIEXQuotes(
 	params.Set("tickers", strings.Join(symbols, ","))
 	params.Set("token", apiKey)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.URLWithQuery(endpoint.TiingoIEXAPI, params), nil)
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		endpoint.URLWithQuery(endpoint.TiingoIEXAPI, params),
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}

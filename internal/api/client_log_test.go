@@ -34,7 +34,10 @@ func TestClientLogsRejectsOversizedPayloadAndBatch(t *testing.T) {
 	logs := logger.NewLogBook(10)
 	handler := NewHandler(nil, nil, logs, nil)
 
-	oversized := `{"source":"frontend","scope":"console","level":"info","message":"` + strings.Repeat("a", maxClientLogBodyBytes) + `"}`
+	oversized := `{"source":"frontend","scope":"console","level":"info","message":"` + strings.Repeat(
+		"a",
+		maxClientLogBodyBytes,
+	) + `"}`
 	response := performAPIRequest(t, handler, http.MethodPost, "/api/client-logs", oversized)
 	if response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), "too large") {
 		t.Fatalf("oversize status = %d, body = %s", response.Code, response.Body.String())

@@ -287,7 +287,9 @@ func (s *HotService) searchCNHK(
 	seeds := s.searchEastMoneySeeds(ctx, keyword, category)
 
 	// Also try to filter from cached items (from previous normal browsing).
-	if cachedItems, ok := s.loadCachedItems(hotSearchCacheKey(category, sortBy, resolveHotQuoteSource(category, options))); ok {
+	if cachedItems, ok := s.loadCachedItems(
+		hotSearchCacheKey(category, sortBy, resolveHotQuoteSource(category, options)),
+	); ok {
 		cachedMatches := filterHotItems(cachedItems, keyword)
 		for _, item := range cachedMatches {
 			seeds = mergeHotSeeds(seeds, []hotSeed{{
@@ -342,7 +344,11 @@ func (s *HotService) searchCNHK(
 }
 
 // loadHotItemsForSeeds fetches real-time quotes for the given hotSeed list and returns only rows backed by live data.
-func (s *HotService) loadHotItemsForSeeds(ctx context.Context, seeds []hotSeed, options HotListOptions) ([]core.HotItem, error) {
+func (s *HotService) loadHotItemsForSeeds(
+	ctx context.Context,
+	seeds []hotSeed,
+	options HotListOptions,
+) ([]core.HotItem, error) {
 	if len(seeds) == 0 {
 		return []core.HotItem{}, nil
 	}

@@ -68,7 +68,8 @@ func TestPoolManagementHTTPLifecycle(t *testing.T) {
 		Status string `json:"status"`
 	}
 	decodePoolResponse(t, response, &added)
-	if added.Instrument.ID == "" || added.Instrument.Symbol != "NVDA" || added.Source != "user" || added.Status != "active" {
+	if added.Instrument.ID == "" || added.Instrument.Symbol != "NVDA" || added.Source != "user" ||
+		added.Status != "active" {
 		t.Fatalf("added member = %+v", added)
 	}
 
@@ -77,7 +78,13 @@ func TestPoolManagementHTTPLifecycle(t *testing.T) {
 		t.Fatalf("POST duplicate member status = %d, body = %s", response.Code, response.Body.String())
 	}
 
-	response = performPoolRequest(t, handler, http.MethodDelete, "/api/pools/"+pool.PoolIDUSSP500+"/members/"+aapl.ID, nil)
+	response = performPoolRequest(
+		t,
+		handler,
+		http.MethodDelete,
+		"/api/pools/"+pool.PoolIDUSSP500+"/members/"+aapl.ID,
+		nil,
+	)
 	if response.Code != http.StatusOK {
 		t.Fatalf("DELETE built-in member status = %d, body = %s", response.Code, response.Body.String())
 	}
@@ -90,7 +97,13 @@ func TestPoolManagementHTTPLifecycle(t *testing.T) {
 		t.Fatalf("excluded member = %+v", excluded)
 	}
 
-	response = performPoolRequest(t, handler, http.MethodGet, "/api/pools/"+pool.PoolIDUSSP500+"/members?status=excluded", nil)
+	response = performPoolRequest(
+		t,
+		handler,
+		http.MethodGet,
+		"/api/pools/"+pool.PoolIDUSSP500+"/members?status=excluded",
+		nil,
+	)
 	if response.Code != http.StatusOK {
 		t.Fatalf("GET excluded members status = %d, body = %s", response.Code, response.Body.String())
 	}
@@ -103,12 +116,24 @@ func TestPoolManagementHTTPLifecycle(t *testing.T) {
 		t.Fatalf("excluded page = %+v", excludedPage)
 	}
 
-	response = performPoolRequest(t, handler, http.MethodPost, "/api/pools/"+pool.PoolIDUSSP500+"/members/"+aapl.ID+"/restore", nil)
+	response = performPoolRequest(
+		t,
+		handler,
+		http.MethodPost,
+		"/api/pools/"+pool.PoolIDUSSP500+"/members/"+aapl.ID+"/restore",
+		nil,
+	)
 	if response.Code != http.StatusOK {
 		t.Fatalf("POST restore status = %d, body = %s", response.Code, response.Body.String())
 	}
 
-	response = performPoolRequest(t, handler, http.MethodDelete, "/api/pools/"+pool.PoolIDUSSP500+"/members/"+added.Instrument.ID, nil)
+	response = performPoolRequest(
+		t,
+		handler,
+		http.MethodDelete,
+		"/api/pools/"+pool.PoolIDUSSP500+"/members/"+added.Instrument.ID,
+		nil,
+	)
 	if response.Code != http.StatusNoContent {
 		t.Fatalf("DELETE user member status = %d, body = %s", response.Code, response.Body.String())
 	}
@@ -121,12 +146,18 @@ func TestPoolManagementHTTPValidationAndNotFound(t *testing.T) {
 	t.Parallel()
 
 	handler, _, _, _ := newPoolAPIHandler(t)
-	response := performPoolRequest(t, handler, http.MethodPost, "/api/pools/"+pool.PoolIDUSSP500+"/members", map[string]any{
-		"assetClass": "equity",
-		"symbol":     "***",
-		"name":       "Invalid",
-		"market":     "US-STOCK",
-	})
+	response := performPoolRequest(
+		t,
+		handler,
+		http.MethodPost,
+		"/api/pools/"+pool.PoolIDUSSP500+"/members",
+		map[string]any{
+			"assetClass": "equity",
+			"symbol":     "***",
+			"name":       "Invalid",
+			"market":     "US-STOCK",
+		},
+	)
 	if response.Code != http.StatusBadRequest {
 		t.Fatalf("invalid member status = %d, body = %s", response.Code, response.Body.String())
 	}
@@ -161,9 +192,15 @@ func TestPoolManagementHTTPEditMember(t *testing.T) {
 	}
 
 	// Edit a built-in member's name.
-	response := performPoolRequest(t, handler, http.MethodPut, "/api/pools/"+pool.PoolIDUSSP500+"/members/"+aapl.ID, map[string]any{
-		"name": "Apple Inc.",
-	})
+	response := performPoolRequest(
+		t,
+		handler,
+		http.MethodPut,
+		"/api/pools/"+pool.PoolIDUSSP500+"/members/"+aapl.ID,
+		map[string]any{
+			"name": "Apple Inc.",
+		},
+	)
 	if response.Code != http.StatusOK {
 		t.Fatalf("PUT edit built-in status = %d, body = %s", response.Code, response.Body.String())
 	}
@@ -194,17 +231,29 @@ func TestPoolManagementHTTPEditMember(t *testing.T) {
 	if err := pools.ReplaceBuiltInMembers(ctx, pool.PoolIDUSSP500, "v2", []string{aapl.ID, msft.ID}); err != nil {
 		t.Fatalf("seed S&P 500 v2: %v", err)
 	}
-	response = performPoolRequest(t, handler, http.MethodPut, "/api/pools/"+pool.PoolIDUSSP500+"/members/"+aapl.ID, map[string]any{
-		"symbol": "MSFT",
-	})
+	response = performPoolRequest(
+		t,
+		handler,
+		http.MethodPut,
+		"/api/pools/"+pool.PoolIDUSSP500+"/members/"+aapl.ID,
+		map[string]any{
+			"symbol": "MSFT",
+		},
+	)
 	if response.Code != http.StatusConflict {
 		t.Fatalf("PUT collision status = %d, body = %s", response.Code, response.Body.String())
 	}
 
 	// Symbol rename persists in the effective membership.
-	response = performPoolRequest(t, handler, http.MethodPut, "/api/pools/"+pool.PoolIDUSSP500+"/members/"+aapl.ID, map[string]any{
-		"symbol": "META",
-	})
+	response = performPoolRequest(
+		t,
+		handler,
+		http.MethodPut,
+		"/api/pools/"+pool.PoolIDUSSP500+"/members/"+aapl.ID,
+		map[string]any{
+			"symbol": "META",
+		},
+	)
 	if response.Code != http.StatusOK {
 		t.Fatalf("PUT rename status = %d, body = %s", response.Code, response.Body.String())
 	}
@@ -241,7 +290,12 @@ func newPoolAPIHandler(t *testing.T) (*Handler, context.Context, instrument.Repo
 	return NewHandler(nil, hotService, nil, nil, poolService), ctx, catalog, pools
 }
 
-func performPoolRequest(t *testing.T, handler http.Handler, method, target string, payload any) *httptest.ResponseRecorder {
+func performPoolRequest(
+	t *testing.T,
+	handler http.Handler,
+	method, target string,
+	payload any,
+) *httptest.ResponseRecorder {
 	t.Helper()
 
 	var body bytes.Buffer

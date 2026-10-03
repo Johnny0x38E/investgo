@@ -3,7 +3,6 @@ package hot
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"investgo/internal/core"
 	"investgo/internal/core/provider"
@@ -12,7 +11,11 @@ import (
 // applyProviderQuotes fetches live quotes for the given items via qp and returns a new slice
 // with price/volume/market-cap fields overwritten. Items for which the provider returns no quote
 // are dropped. Returns an error if the provider returns no quotes at all.
-func (s *HotService) applyProviderQuotes(ctx context.Context, items []core.HotItem, qp core.QuoteProvider) ([]core.HotItem, error) {
+func (s *HotService) applyProviderQuotes(
+	ctx context.Context,
+	items []core.HotItem,
+	qp core.QuoteProvider,
+) ([]core.HotItem, error) {
 	if len(items) == 0 {
 		return []core.HotItem{}, nil
 	}
@@ -70,19 +73,4 @@ func (s *HotService) applyProviderQuotes(ctx context.Context, items []core.HotIt
 		return nil, fmt.Errorf("No live hot quotes are available from %s", qp.Name())
 	}
 	return enriched, nil
-}
-
-// hotItemsAlreadyUseSource reports whether every item in the slice carries quotes from the
-// named source. Returns true for an empty slice (nothing to re-fetch).
-func hotItemsAlreadyUseSource(items []core.HotItem, source string) bool {
-	if len(items) == 0 {
-		return true
-	}
-	source = strings.TrimSpace(source)
-	for _, item := range items {
-		if strings.TrimSpace(item.QuoteSource) != source {
-			return false
-		}
-	}
-	return true
 }

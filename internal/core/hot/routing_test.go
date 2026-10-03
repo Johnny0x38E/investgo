@@ -93,7 +93,10 @@ func TestListRoutesEveryCategoryThroughThePool(t *testing.T) {
 				}
 				items := make([]core.HotItem, 0, len(seeds))
 				for _, seed := range seeds {
-					items = append(items, membershipItem(seed.Symbol, seed.Name, seed.Market, seed.Currency, "Yahoo Finance", 1))
+					items = append(
+						items,
+						membershipItem(seed.Symbol, seed.Name, seed.Market, seed.Currency, "Yahoo Finance", 1),
+					)
 				}
 				return items, nil
 			}

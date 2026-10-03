@@ -71,12 +71,14 @@ func NewStoreWithRepository(
 		quoteSourceOptions: append([]core.QuoteSourceOption(nil), quoteSourceOptions...),
 		historyProvider:    historyProvider,
 		logs:               logs,
-		fxRates:            fx.NewFxRates(httpClient), // use shared http.Client so proxy transport settings apply to FX rate requests
-		runtime:            core.RuntimeStatus{AppVersion: appVersion},
-		refreshCache:       ttlcache.NewTTLWithMax[string, core.StateSnapshot](32),
-		itemRefreshCache:   ttlcache.NewTTLWithMax[string, core.StateSnapshot](32),
-		historyCache:       ttlcache.NewTTLWithMax[string, core.HistorySeries](512),
-		overviewCache:      ttlcache.NewTTLWithMax[string, cachedOverviewValue](16),
+		fxRates: fx.NewFxRates(
+			httpClient,
+		), // use shared http.Client so proxy transport settings apply to FX rate requests
+		runtime:          core.RuntimeStatus{AppVersion: appVersion},
+		refreshCache:     ttlcache.NewTTLWithMax[string, core.StateSnapshot](32),
+		itemRefreshCache: ttlcache.NewTTLWithMax[string, core.StateSnapshot](32),
+		historyCache:     ttlcache.NewTTLWithMax[string, core.HistorySeries](512),
+		overviewCache:    ttlcache.NewTTLWithMax[string, cachedOverviewValue](16),
 	}
 	if err := store.load(); err != nil {
 		return nil, err
